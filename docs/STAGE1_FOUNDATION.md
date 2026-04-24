@@ -8,8 +8,21 @@ This stage intentionally establishes architecture and integration seams without 
 - Access-oriented backend design
 - Attachments/reports stored in file system roots
 
-## Next-stage safety notes
-- Keep screen IDs/routes stable to avoid breaking host navigation and test scripts.
-- Keep model contracts in `webapp/js/models/contracts.js` as canonical UI payload shape.
-- Implement service adapters by filling in `webapp/js/services/*Service.js` files, not by bypassing them in screens.
-- Convert schema artifacts to executable Access setup script/automation before enabling data writes.
+## Explicit stage boundary
+### Implemented now
+- Desktop host scaffold + web shell scaffold
+- Placeholder routes/screens for all major flows
+- Model contracts and service interfaces/stubs
+- Access schema/seed/setup design artifacts
+
+### Intentionally stubbed
+- DAO-backed service behavior
+- Real business save/load logic
+- Real end-to-end attachment/report/send logic
+
+### Deferred to Stage 2 / Stage 3
+- Stage 2: executable Access bootstrap + approved lookup data
+- Stage 3: DAO repositories + service runtime wiring
+
+No production DAO wiring exists in Stage 1.
+No real attachment/report/send workflow exists in Stage 1.

@@ -16,7 +16,7 @@ public partial class MainWindow : Window
     {
         await AppWebView.EnsureCoreWebView2Async();
 
-        // Stage 1 contract: host loads static local web app.
+        // Stage 1 scaffold contract: host loads static local web app via relative dev path.
         var indexPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "webapp", "index.html"));
 
         if (!File.Exists(indexPath))
@@ -27,6 +27,6 @@ public partial class MainWindow : Window
 
         AppWebView.Source = new Uri(indexPath);
 
-        // Stage 2+: wire host<->web IPC bridge for file dialogs, report open folder, send workflow hooks.
+        // Stage 2+/packaging: implement production runtime asset resolution + host<->web IPC bridge.
     }
 }
