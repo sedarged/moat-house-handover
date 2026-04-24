@@ -8,6 +8,9 @@ export const appState = {
 };
 
 export function applySessionPayload(sessionPayload) {
+  appState.activeDepartmentName = null;
+  appState.activeDepartment = null;
+
   appState.session = {
     ...createInitialSessionState(),
     sessionId: sessionPayload.sessionId,
@@ -39,7 +42,12 @@ export function applyDepartmentSummaryPayload(departments) {
 
   appState.session.departments = departments;
 
-  const now = new Date().toISOString();
-  appState.session.updatedAt = now;
-  appState.session.updatedBy = appState.activeDepartment?.updatedBy || appState.session.updatedBy;
+  const latest = departments
+    .filter((dept) => dept?.updatedAt)
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+
+  if (latest) {
+    appState.session.updatedAt = latest.updatedAt;
+    appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy;
+  }
 }

@@ -43,7 +43,10 @@ public sealed class DepartmentService
 
     private static void ValidateMetrics(DepartmentSaveRequest request)
     {
-        var isMetricDept = request.DeptName is "Injection" or "MetaPress" or "Berks" or "Wilts";
+        var isMetricDept = string.Equals(request.DeptName, "Injection", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.DeptName, "MetaPress", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.DeptName, "Berks", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(request.DeptName, "Wilts", StringComparison.OrdinalIgnoreCase);
         if (!isMetricDept)
         {
             return;
