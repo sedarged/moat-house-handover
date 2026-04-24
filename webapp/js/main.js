@@ -6,11 +6,25 @@ const root = document.getElementById('screen-root');
 const navButtons = document.querySelectorAll('[data-route]');
 const appContext = document.getElementById('app-context');
 
+function refreshContext() {
+  if (appState.session?.sessionId) {
+    appContext.textContent = `Session #${appState.session.sessionId} • ${appState.session.shiftCode} • ${appState.session.shiftDate} • ${appState.session.sessionStatus}`;
+    return;
+  }
+
+  appContext.textContent = 'Runtime ready • open a shift session';
+}
+
 function navigate(routeName) {
   const route = routes[routeName] ? routeName : 'shift';
   appState.currentRoute = route;
   renderRoute(route, root, appState);
+  refreshContext();
 }
+
+window.addEventListener('app:navigate', (event) => {
+  navigate(event.detail?.route || 'shift');
+});
 
 navButtons.forEach((button) => {
   button.addEventListener('click', () => navigate(button.dataset.route));
@@ -23,7 +37,7 @@ getRuntimeStatus()
     appContext.textContent = `Runtime ready • DB: ${status.accessDatabasePath}`;
   })
   .catch(() => {
-    appContext.textContent = 'Stage 2A Runtime (host bridge unavailable in browser mode)';
+    appContext.textContent = 'Stage 2B runtime bridge unavailable in browser mode';
   });
 
 navigate('shift');

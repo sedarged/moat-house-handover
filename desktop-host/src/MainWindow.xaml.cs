@@ -27,7 +27,9 @@ public partial class MainWindow : Window
             }
 
             await AppWebView.EnsureCoreWebView2Async();
-            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger);
+            var sessionRepository = new SessionRepository(startup.RuntimeStatus.AccessDatabasePath);
+            var sessionService = new SessionService(sessionRepository);
+            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService);
             _hostWebBridge.Attach(AppWebView.CoreWebView2);
 
             AppWebView.Source = new Uri(indexPath);

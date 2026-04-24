@@ -19,11 +19,13 @@ public sealed class HostWebBridge
 
     private readonly HostRuntimeStatus _runtimeStatus;
     private readonly BootstrapLogger _logger;
+    private readonly SessionService _sessionService;
 
-    public HostWebBridge(HostRuntimeStatus runtimeStatus, BootstrapLogger logger)
+    public HostWebBridge(HostRuntimeStatus runtimeStatus, BootstrapLogger logger, SessionService sessionService)
     {
         _runtimeStatus = runtimeStatus;
         _logger = logger;
+        _sessionService = sessionService;
     }
 
     public void Attach(CoreWebView2 webView)
@@ -55,25 +57,73 @@ public sealed class HostWebBridge
             return;
         }
 
-        switch (request.Type)
+        try
         {
-            case "runtime.getStatus":
-                SendResponse(webView, request.RequestId, true, null, _runtimeStatus);
-                break;
+            switch (request.Type)
+            {
+                case "runtime.getStatus":
+                    SendResponse(webView, request.RequestId, true, null, _runtimeStatus);
+                    break;
 
-            case "shell.openOutputFolder":
-                OpenFolder(_runtimeStatus.ReportsOutputRoot);
-                SendResponse(webView, request.RequestId, true, null, new { opened = _runtimeStatus.ReportsOutputRoot });
-                break;
+                case "shell.openOutputFolder":
+                    OpenFolder(_runtimeStatus.ReportsOutputRoot);
+                    SendResponse(webView, request.RequestId, true, null, new { opened = _runtimeStatus.ReportsOutputRoot });
+                    break;
 
-            case "file.pickFile":
-                SendResponse(webView, request.RequestId, false, "Not implemented in Stage 2A.", null);
-                break;
+                case "session.open":
+                {
+                    var payload = DeserializePayload<SessionOpenRequest>(request.Payload);
+                    var result = _sessionService.OpenSession(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
 
-            default:
-                SendResponse(webView, request.RequestId, false, $"Unsupported bridge message: {request.Type}", null);
-                break;
+                case "session.createBlank":
+                {
+                    var payload = DeserializePayload<SessionCreateBlankRequest>(request.Payload);
+                    var result = _sessionService.CreateBlankSession(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "session.clearDay":
+                {
+                    var payload = DeserializePayload<SessionClearDayRequest>(request.Payload);
+                    var result = _sessionService.ClearDay(payload);
+                    SendResponse(webView, request.RequestId, true, null, new { session = result });
+                    break;
+                }
+
+                case "file.pickFile":
+                    SendResponse(webView, request.RequestId, false, "Not implemented in Stage 2A.", null);
+                    break;
+
+                default:
+                    SendResponse(webView, request.RequestId, false, $"Unsupported bridge message: {request.Type}", null);
+                    break;
+            }
         }
+        catch (Exception ex)
+        {
+            _logger.Log($"Bridge request failed ({request.Type}): {ex}");
+            SendResponse(webView, request.RequestId, false, ex.Message, null);
+        }
+    }
+
+    private static T DeserializePayload<T>(JsonElement? payload)
+    {
+        if (payload is null)
+        {
+            throw new InvalidOperationException("Bridge payload is required.");
+        }
+
+        var value = payload.Value.Deserialize<T>(RequestJsonOptions);
+        if (value is null)
+        {
+            throw new InvalidOperationException("Bridge payload could not be parsed.");
+        }
+
+        return value;
     }
 
     private void OpenFolder(string path)

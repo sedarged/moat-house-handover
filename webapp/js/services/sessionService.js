@@ -1,20 +1,15 @@
-/** Session service stub: open/create/clear handover session. */
+import { hostRequest } from '../core/hostBridge.js';
+
 export const sessionService = {
   async openSession(shiftCode, shiftDate, userName) {
-    void shiftCode;
-    void shiftDate;
-    void userName;
-    throw new Error('sessionService.openSession is not implemented (Stage 1 stub).');
+    return hostRequest('session.open', { shiftCode, shiftDate, userName });
   },
+
   async createBlankSession(shiftCode, shiftDate, userName) {
-    void shiftCode;
-    void shiftDate;
-    void userName;
-    throw new Error('sessionService.createBlankSession is not implemented (Stage 1 stub).');
+    return hostRequest('session.createBlank', { shiftCode, shiftDate, userName });
   },
+
   async clearDay(sessionId, userName) {
-    void sessionId;
-    void userName;
-    throw new Error('sessionService.clearDay is not implemented (Stage 1 stub).');
+    return hostRequest('session.clearDay', { sessionId, userName });
   }
 };

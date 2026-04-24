@@ -259,5 +259,5 @@ public sealed class AccessBootstrapper
         return indexes.Rows.Count > 0;
     }
 
-    private static string BuildConnectionString(string fullPath) => $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={fullPath};Persist Security Info=False;";
+    public static string BuildConnectionString(string fullPath) => $"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={fullPath};Persist Security Info=False;";
 }
