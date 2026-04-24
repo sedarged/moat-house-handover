@@ -1,5 +1,5 @@
 import { sessionService } from '../services/sessionService.js';
-import { applySessionPayload } from '../state/appState.js';
+import { applySessionPayload, setActiveDepartmentName } from '../state/appState.js';
 
 function renderDepartments(departments) {
   if (!departments?.length) {
@@ -7,7 +7,14 @@ function renderDepartments(departments) {
   }
 
   return departments
-    .map((dept) => `<li><strong>${dept.deptName}</strong> — ${dept.deptStatus}</li>`)
+    .map(
+      (dept) => `
+      <li>
+        <strong>${dept.deptName}</strong> — ${dept.deptStatus}
+        <span class="meta">Updated: ${dept.updatedAt || 'n/a'} by ${dept.updatedBy || 'n/a'}</span>
+        <button class="secondary" type="button" data-open-dept="${dept.deptName}">Open</button>
+      </li>`
+    )
     .join('');
 }
 
@@ -40,6 +47,14 @@ export function renderDashboardScreen(root, state) {
       <p id="dashboard-message" class="meta"></p>
     </section>
   `;
+
+  root.querySelectorAll('[data-open-dept]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const deptName = button.getAttribute('data-open-dept');
+      setActiveDepartmentName(deptName);
+      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'department', deptName } }));
+    });
+  });
 
   const msg = root.querySelector('#dashboard-message');
   const clearButton = root.querySelector('#clear-day-btn');

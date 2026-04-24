@@ -1,6 +1,6 @@
 import { routes, renderRoute } from './core/router.js';
 import { initializeHostBridge, getRuntimeStatus } from './core/hostBridge.js';
-import { appState } from './state/appState.js';
+import { appState, setActiveDepartmentName } from './state/appState.js';
 
 const root = document.getElementById('screen-root');
 const navButtons = document.querySelectorAll('[data-route]');
@@ -23,6 +23,10 @@ function navigate(routeName) {
 }
 
 window.addEventListener('app:navigate', (event) => {
+  if (event.detail?.deptName) {
+    setActiveDepartmentName(event.detail.deptName);
+  }
+
   navigate(event.detail?.route || 'shift');
 });
 

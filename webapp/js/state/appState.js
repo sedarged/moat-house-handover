@@ -2,7 +2,9 @@ import { createInitialSessionState } from '../models/contracts.js';
 
 export const appState = {
   currentRoute: 'shift',
-  session: createInitialSessionState()
+  session: createInitialSessionState(),
+  activeDepartmentName: null,
+  activeDepartment: null
 };
 
 export function applySessionPayload(sessionPayload) {
@@ -19,4 +21,25 @@ export function applySessionPayload(sessionPayload) {
     updatedAt: sessionPayload.updatedAt,
     updatedBy: sessionPayload.updatedBy
   };
+}
+
+export function setActiveDepartmentName(deptName) {
+  appState.activeDepartmentName = deptName || null;
+}
+
+export function applyActiveDepartmentPayload(payload) {
+  appState.activeDepartment = payload || null;
+  appState.activeDepartmentName = payload?.deptName || appState.activeDepartmentName;
+}
+
+export function applyDepartmentSummaryPayload(departments) {
+  if (!Array.isArray(departments)) {
+    return;
+  }
+
+  appState.session.departments = departments;
+
+  const now = new Date().toISOString();
+  appState.session.updatedAt = now;
+  appState.session.updatedBy = appState.activeDepartment?.updatedBy || appState.session.updatedBy;
 }
