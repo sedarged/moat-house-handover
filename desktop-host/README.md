@@ -1,14 +1,23 @@
-# Desktop Host (WebView2 Foundation)
+# Desktop Host (Stage 2A Runtime)
 
-This folder holds the Windows desktop host skeleton that will load the `webapp` assets into WebView2.
+This folder holds the Windows WPF + WebView2 host that loads local web assets and initializes local runtime dependencies.
 
-## Stage 1 status
-- Project file and entry point scaffolded
-- Config loading contract defined
-- Browser host wiring shown as implementation target
-- No production IPC bridge implementation yet
+## Stage 2A status
+- Runtime config JSON loading with validated required keys
+- Config path lookup strategy suitable for packaged workstation deployment
+- Startup initializer service for folder checks and Access bootstrap
+- Idempotent Access schema + approved seed setup path
+- Bootstrap logging
+- Host-to-web message bridge skeleton
 
-## Index path strategy note
-The current `MainWindow` implementation loads `webapp/index.html` from a relative scaffold path to support Stage 1 development.
-This is **not** the final deployment/runtime asset resolution strategy.
-A production-safe path strategy for packaged local workstations will be implemented in a later stage.
+## Runtime asset strategy
+- Primary: `<app>/webapp/index.html` from packaged output
+- Fallback: repository `webapp/index.html` for local development
+- No local web server required
+
+## Runtime config file
+Packaged default:
+- `<app>/config/runtime.config.json`
+
+Development default:
+- `desktop-host/config/runtime.config.json`

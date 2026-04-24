@@ -6,6 +6,8 @@ namespace MoatHouseHandover.Host;
 
 public partial class MainWindow : Window
 {
+    private HostWebBridge? _hostWebBridge;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -14,19 +16,31 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        await AppWebView.EnsureCoreWebView2Async();
-
-        // Stage 1 scaffold contract: host loads static local web app via relative dev path.
-        var indexPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "webapp", "index.html"));
-
-        if (!File.Exists(indexPath))
+        try
         {
-            MessageBox.Show($"webapp index not found: {indexPath}", "Startup error", MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
+            var startup = new StartupInitializer().Initialize();
+            var indexPath = Path.Combine(startup.RuntimeStatus.AssetRoot, "index.html");
+
+            if (!File.Exists(indexPath))
+            {
+                throw new InvalidOperationException($"webapp index not found: {indexPath}");
+            }
+
+            await AppWebView.EnsureCoreWebView2Async();
+            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger);
+            _hostWebBridge.Attach(AppWebView.CoreWebView2);
+
+            AppWebView.Source = new Uri(indexPath);
+            Title = $"MOAT HOUSE HANDOVER v2 — {Path.GetFileName(startup.RuntimeStatus.ConfigPath)}";
         }
-
-        AppWebView.Source = new Uri(indexPath);
-
-        // Stage 2+/packaging: implement production runtime asset resolution + host<->web IPC bridge.
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Host startup failed.\n\n{ex.Message}",
+                "Startup error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Close();
+        }
     }
 }
