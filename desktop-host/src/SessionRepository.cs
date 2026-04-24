@@ -74,7 +74,7 @@ VALUES (?, ?, 'Open', ?, ?, ?, ?)";
         using var tx = connection.BeginTransaction();
         var now = DateTime.Now;
 
-        using (var updateHeader = new OleDbCommand("UPDATE tblHandoverHeader SET SessionStatus = 'Cleared', UpdatedAt = ?, UpdatedBy = ? WHERE HandoverID = ?", connection, tx))
+        using (var updateHeader = new OleDbCommand("UPDATE tblHandoverHeader SET SessionStatus = 'Open', UpdatedAt = ?, UpdatedBy = ? WHERE HandoverID = ?", connection, tx))
         {
             updateHeader.Parameters.AddWithValue("@p1", now);
             updateHeader.Parameters.AddWithValue("@p2", userName);

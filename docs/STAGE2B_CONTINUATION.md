@@ -16,7 +16,7 @@
   - Ensures default department rows for active departments.
   - Returns `{ created, session }` payload.
 - `session.clearDay`
-  - Marks header status as `Cleared`.
+  - Resets header status back to `Open` after clear so the day is immediately usable.
   - Deletes rows scoped to the current session for departments, attachments, and budget tables.
   - Re-seeds default department rows.
   - Returns refreshed `{ session }` payload.
