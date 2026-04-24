@@ -1,0 +1,13 @@
+# Build artifacts
+bin/
+obj/
+dist/
+*.user
+*.suo
+
+# Runtime/generated local artifacts
+runtime/
+logs/
+
+# Secrets/local overrides
+*.local.json
