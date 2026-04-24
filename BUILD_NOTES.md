@@ -12,6 +12,7 @@ This repository now contains **Stage 2A infrastructure** for MOAT HOUSE HANDOVER
 - Bootstrap logging to local files
 - Local packaged web asset resolution (`<app>/webapp`) with dev fallback
 - Host ↔ web bridge skeleton (`runtime.getStatus`, `shell.openOutputFolder`)
+- Explicit Access dependency: `System.Data.OleDb` package is referenced by the host project for bootstrap/runtime database access
 
 ## Runtime config file
 Default packaged config location:
@@ -30,3 +31,7 @@ Alternative lookup locations are documented in:
 - Department, budget, attachment, preview, report and send workflows
 
 No full business workflow is implemented in Stage 2A.
+
+## Host package dependencies
+- `Microsoft.Web.WebView2` for desktop WebView host.
+- `System.Data.OleDb` for Access bootstrap/setup (`ACE.OLEDB`) calls used during startup.

@@ -40,6 +40,7 @@
 
 ### Host ↔ web bridge skeleton
 - Added a message contract skeleton with request/response envelope.
+- Bridge JSON serialization now explicitly uses camelCase response payloads and case-insensitive request parsing.
 - Implemented bridge handlers:
   - `runtime.getStatus`
   - `shell.openOutputFolder`

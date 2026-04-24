@@ -7,6 +7,16 @@ namespace MoatHouseHandover.Host;
 
 public sealed class HostWebBridge
 {
+    private static readonly JsonSerializerOptions RequestJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    private static readonly JsonSerializerOptions ResponseJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     private readonly HostRuntimeStatus _runtimeStatus;
     private readonly BootstrapLogger _logger;
 
@@ -31,7 +41,7 @@ public sealed class HostWebBridge
         BridgeRequest? request;
         try
         {
-            request = JsonSerializer.Deserialize<BridgeRequest>(e.WebMessageAsJson);
+            request = JsonSerializer.Deserialize<BridgeRequest>(e.WebMessageAsJson, RequestJsonOptions);
         }
         catch
         {
@@ -80,7 +90,7 @@ public sealed class HostWebBridge
     private static void SendResponse(CoreWebView2 webView, string? requestId, bool success, string? error, object? payload)
     {
         var response = new BridgeResponse(requestId, success, error, payload);
-        webView.PostWebMessageAsJson(JsonSerializer.Serialize(response));
+        webView.PostWebMessageAsJson(JsonSerializer.Serialize(response, ResponseJsonOptions));
     }
 }
 
