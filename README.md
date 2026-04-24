@@ -1,21 +1,24 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 1 foundation for a local-first Windows desktop handover application.
+Stage 2A baseline for a local-first Windows desktop handover application.
 
-## Repository Structure (Stage 1)
+## Repository Structure
 
-- `desktop-host/` — WebView2 desktop shell foundation
+- `desktop-host/` — WPF + WebView2 desktop host with runtime bootstrap
 - `webapp/` — HTML/CSS/JS application shell and placeholder screens
-- `backend/access/` — Access schema design + setup artifacts
+- `backend/access/` — Access schema and seed artifacts used by host bootstrap
 - `docs/` — stage notes and continuation guidance
-- `BUILD_NOTES.md` — quick local build intentions
+- `BUILD_NOTES.md` — local build and runtime notes
 
-## Stage 1 Scope Completed
-- Project skeleton/file tree
-- Desktop shell foundation (WebView2 host design)
-- HTML/CSS/JS app foundation
-- Placeholder screens for Shift, Dashboard, Department, Budget, Preview, Image Viewer, Send
-- Application state/model contracts
-- Service layer interfaces/stubs
-- Access backend schema and setup artifacts
-- Config structure for DB path, attachments root, reports root
+## Stage 2A Scope Completed
+- Local runtime config loading from JSON with safe path fallback strategy
+- Startup validation for required runtime config values
+- Startup initialization service (folder checks + Access bootstrap + logging)
+- Idempotent Access schema + approved seed bootstrap path
+- Deployment-safe local web asset resolution without local web server
+- Initial host-to-web bridge contract skeleton (`runtime.getStatus`, `shell.openOutputFolder`)
+
+## Still Deferred (by design)
+- DAO repository implementation
+- Production business save/load workflows
+- Attachment/report/send end-to-end runtime workflows

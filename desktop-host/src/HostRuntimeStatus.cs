@@ -1,0 +1,10 @@
+namespace MoatHouseHandover.Host;
+
+public sealed record HostRuntimeStatus(
+    string ConfigPath,
+    string AccessDatabasePath,
+    string AttachmentsRoot,
+    string ReportsOutputRoot,
+    string AssetRoot,
+    bool DatabaseReady,
+    bool FoldersReady);

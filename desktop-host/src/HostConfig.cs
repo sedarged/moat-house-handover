@@ -1,8 +1,7 @@
 namespace MoatHouseHandover.Host;
 
 /// <summary>
-/// Host runtime configuration contract. Maps to `webapp/js/config/app.config.template.json` keys.
-/// Stage 1: design-only, concrete loading and validation lands in later stages.
+/// Runtime configuration loaded from local JSON.
 /// </summary>
 public sealed class HostConfig
 {
@@ -11,4 +10,6 @@ public sealed class HostConfig
     public required string AttachmentsRoot { get; init; }
 
     public required string ReportsOutputRoot { get; init; }
+
+    public string? LogRoot { get; init; }
 }
