@@ -15,7 +15,10 @@ public sealed class SessionService
     public SessionOpenResult OpenSession(SessionOpenRequest request)
     {
         var shiftDate = ParseShiftDate(request.ShiftDate);
-        var session = _repository.OpenExistingSession(NormalizeShiftCode(request.ShiftCode), shiftDate);
+        var session = _repository.OpenExistingSession(
+            NormalizeShiftCode(request.ShiftCode),
+            shiftDate,
+            NormalizeUser(request.UserName));
         return new SessionOpenResult(session is not null, session);
     }
 

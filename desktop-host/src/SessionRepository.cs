@@ -14,7 +14,7 @@ public sealed class SessionRepository
         _connectionString = AccessBootstrapper.BuildConnectionString(accessDatabasePath);
     }
 
-    public SessionPayload? OpenExistingSession(string shiftCode, DateTime shiftDate)
+    public SessionPayload? OpenExistingSession(string shiftCode, DateTime shiftDate, string userName)
     {
         using var connection = OpenConnection();
         var header = FindHeader(connection, shiftCode, shiftDate);
@@ -23,7 +23,7 @@ public sealed class SessionRepository
             return null;
         }
 
-        EnsureDepartmentRows(connection, header.Value.HandoverId, "system");
+        EnsureDepartmentRows(connection, header.Value.HandoverId, userName);
         return LoadSessionPayload(connection, header.Value.HandoverId);
     }
 
@@ -165,15 +165,20 @@ FROM tblHandoverHeader WHERE HandoverID = ?";
             using var reader = cmd.ExecuteReader();
             if (reader!.Read())
             {
+                var createdAt = reader["CreatedAt"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(reader["CreatedAt"]);
+                var updatedAt = reader["UpdatedAt"] == DBNull.Value ? createdAt : Convert.ToDateTime(reader["UpdatedAt"]);
+                var createdBy = reader["CreatedBy"] == DBNull.Value ? string.Empty : (Convert.ToString(reader["CreatedBy"]) ?? string.Empty);
+                var updatedBy = reader["UpdatedBy"] == DBNull.Value ? createdBy : (Convert.ToString(reader["UpdatedBy"]) ?? string.Empty);
+
                 header = new HeaderRow(
                     HandoverId: Convert.ToInt64(reader["HandoverID"]),
                     ShiftCode: Convert.ToString(reader["ShiftCode"]) ?? string.Empty,
                     ShiftDate: Convert.ToDateTime(reader["ShiftDate"]),
                     SessionStatus: Convert.ToString(reader["SessionStatus"]) ?? "Open",
-                    CreatedAt: Convert.ToDateTime(reader["CreatedAt"]),
-                    CreatedBy: Convert.ToString(reader["CreatedBy"]) ?? string.Empty,
-                    UpdatedAt: Convert.ToDateTime(reader["UpdatedAt"]),
-                    UpdatedBy: Convert.ToString(reader["UpdatedBy"]) ?? string.Empty);
+                    CreatedAt: createdAt,
+                    CreatedBy: createdBy,
+                    UpdatedAt: updatedAt,
+                    UpdatedBy: updatedBy);
             }
         }
 
@@ -183,10 +188,11 @@ FROM tblHandoverHeader WHERE HandoverID = ?";
         }
 
         var departments = new List<DepartmentSummaryPayload>();
-        const string deptSql = @"SELECT DeptName, DeptStatus, UpdatedAt, UpdatedBy
-FROM tblHandoverDept
-WHERE HandoverID = ? AND (IsDeleted = FALSE OR IsDeleted IS NULL)
-ORDER BY DeptName";
+        const string deptSql = @"SELECT d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy
+FROM tblHandoverDept AS d
+LEFT JOIN tblDepartments AS cfg ON d.DeptName = cfg.DeptName
+WHERE d.HandoverID = ? AND (d.IsDeleted = FALSE OR d.IsDeleted IS NULL)
+ORDER BY cfg.DisplayOrder, d.DeptName";
 
         using (var deptCmd = new OleDbCommand(deptSql, connection))
         {
@@ -231,15 +237,20 @@ WHERE ShiftCode = ? AND ShiftDate = ?";
             return null;
         }
 
+        var createdAt = reader["CreatedAt"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(reader["CreatedAt"]);
+        var updatedAt = reader["UpdatedAt"] == DBNull.Value ? createdAt : Convert.ToDateTime(reader["UpdatedAt"]);
+        var createdBy = reader["CreatedBy"] == DBNull.Value ? string.Empty : (Convert.ToString(reader["CreatedBy"]) ?? string.Empty);
+        var updatedBy = reader["UpdatedBy"] == DBNull.Value ? createdBy : (Convert.ToString(reader["UpdatedBy"]) ?? string.Empty);
+
         return new HeaderRow(
             HandoverId: Convert.ToInt64(reader["HandoverID"]),
             ShiftCode: Convert.ToString(reader["ShiftCode"]) ?? string.Empty,
             ShiftDate: Convert.ToDateTime(reader["ShiftDate"]),
             SessionStatus: Convert.ToString(reader["SessionStatus"]) ?? "Open",
-            CreatedAt: Convert.ToDateTime(reader["CreatedAt"]),
-            CreatedBy: Convert.ToString(reader["CreatedBy"]) ?? string.Empty,
-            UpdatedAt: Convert.ToDateTime(reader["UpdatedAt"]),
-            UpdatedBy: Convert.ToString(reader["UpdatedBy"]) ?? string.Empty);
+            CreatedAt: createdAt,
+            CreatedBy: createdBy,
+            UpdatedAt: updatedAt,
+            UpdatedBy: updatedBy);
     }
 
     private OleDbConnection OpenConnection()
