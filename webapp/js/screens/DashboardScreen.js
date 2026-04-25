@@ -1,5 +1,15 @@
 import { sessionService } from '../services/sessionService.js';
-import { applySessionPayload, setActiveDepartmentName } from '../state/appState.js';
+import { budgetService } from '../services/budgetService.js';
+import {
+  applyBudgetSummaryPayload,
+  applySessionPayload,
+  setActiveDepartmentName
+} from '../state/appState.js';
+
+function formatNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+}
 
 function createDepartmentList(container, departments) {
   container.textContent = '';
@@ -64,10 +74,15 @@ export function renderDashboardScreen(root, state) {
       <p id="dashboard-updated" class="meta"></p>
       <p id="dashboard-total-attachments" class="meta"></p>
 
+      <h3>Budget Summary</h3>
+      <p id="dashboard-budget-summary" class="meta">Loading budget summary...</p>
+      <p id="dashboard-budget-updated" class="meta"></p>
+
       <h3>Department Summary</h3>
       <ul id="dashboard-dept-list" class="dept-list"></ul>
 
       <div class="actions-row">
+        <button id="open-budget-btn" type="button">Open Budget</button>
         <button id="clear-day-btn" type="button">Clear Day</button>
         <button id="back-shift-btn" type="button" class="secondary">Back to Shift</button>
       </div>
@@ -78,8 +93,11 @@ export function renderDashboardScreen(root, state) {
   const sessionText = root.querySelector('#dashboard-session');
   const updatedText = root.querySelector('#dashboard-updated');
   const totalText = root.querySelector('#dashboard-total-attachments');
+  const budgetSummaryText = root.querySelector('#dashboard-budget-summary');
+  const budgetUpdatedText = root.querySelector('#dashboard-budget-updated');
   const deptList = root.querySelector('#dashboard-dept-list');
   const msg = root.querySelector('#dashboard-message');
+  const openBudgetButton = root.querySelector('#open-budget-btn');
   const clearButton = root.querySelector('#clear-day-btn');
   const backButton = root.querySelector('#back-shift-btn');
 
@@ -90,6 +108,22 @@ export function renderDashboardScreen(root, state) {
   totalText.textContent = `Total attachments in session: ${totalAttachments}`;
 
   createDepartmentList(deptList, session.departments || []);
+
+  async function refreshBudgetSummary() {
+    try {
+      const summary = await budgetService.loadDashboardBudgetSummary(session.sessionId);
+      applyBudgetSummaryPayload(summary);
+      budgetSummaryText.textContent = `Planned: ${formatNumber(summary.plannedTotal)} • Used: ${formatNumber(summary.usedTotal)} • Variance: ${formatNumber(summary.varianceTotal)} • Status: ${summary.status || 'not set'} • Rows: ${summary.rowCount || 0}`;
+      budgetUpdatedText.textContent = `Budget updated: ${summary.lastUpdatedAt || 'n/a'} by ${summary.lastUpdatedBy || 'n/a'}`;
+    } catch (error) {
+      budgetSummaryText.textContent = error instanceof Error ? error.message : 'Failed to load budget summary.';
+      budgetUpdatedText.textContent = '';
+    }
+  }
+
+  openBudgetButton?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'budget' } }));
+  });
 
   clearButton?.addEventListener('click', async () => {
     const confirmed = window.confirm('Clear current day? This resets department, attachment, and budget rows for this session.');
@@ -111,4 +145,6 @@ export function renderDashboardScreen(root, state) {
   backButton?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'shift' } }));
   });
+
+  refreshBudgetSummary();
 }
