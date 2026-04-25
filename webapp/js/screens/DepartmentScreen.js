@@ -5,9 +5,22 @@ import {
   setActiveDepartmentName
 } from '../state/appState.js';
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function optionMarkup(departments, selectedDeptName) {
   return departments
-    .map((dept) => `<option value="${dept.deptName}" ${dept.deptName === selectedDeptName ? 'selected' : ''}>${dept.deptName}</option>`)
+    .map((dept) => {
+      const safeDeptName = escapeHtml(dept.deptName);
+      const selected = dept.deptName === selectedDeptName ? 'selected' : '';
+      return `<option value="${safeDeptName}" ${selected}>${safeDeptName}</option>`;
+    })
     .join('');
 }
 
@@ -19,15 +32,15 @@ function metricFieldsMarkup(model) {
   return `
     <label>
       Downtime (min)
-      <input type="number" min="0" step="1" name="downtimeMin" value="${model.downtimeMin ?? ''}" />
+      <input type="number" min="0" step="1" name="downtimeMin" value="${escapeHtml(model.downtimeMin ?? '')}" />
     </label>
     <label>
       Efficiency (%)
-      <input type="number" min="0" max="100" step="0.1" name="efficiencyPct" value="${model.efficiencyPct ?? ''}" />
+      <input type="number" min="0" max="100" step="0.1" name="efficiencyPct" value="${escapeHtml(model.efficiencyPct ?? '')}" />
     </label>
     <label>
       Yield (%)
-      <input type="number" min="0" max="100" step="0.1" name="yieldPct" value="${model.yieldPct ?? ''}" />
+      <input type="number" min="0" max="100" step="0.1" name="yieldPct" value="${escapeHtml(model.yieldPct ?? '')}" />
     </label>
   `;
 }
@@ -60,7 +73,7 @@ export function renderDepartmentScreen(root, state) {
   root.innerHTML = `
     <section class="panel">
       <h2>Department</h2>
-      <p class="meta">Session #${session.sessionId} • ${session.shiftCode} • ${session.shiftDate}</p>
+      <p class="meta">Session #${escapeHtml(session.sessionId)} • ${escapeHtml(session.shiftCode)} • ${escapeHtml(session.shiftDate)}</p>
       <label>
         Department
         <select id="dept-selector">${optionMarkup(deptOptions, selectedDeptName)}</select>
@@ -98,12 +111,12 @@ export function renderDepartmentScreen(root, state) {
       <form id="dept-form" class="form-grid">
         <label>
           Status
-          <input type="text" name="deptStatus" required value="${model.deptStatus || 'Not running'}" />
+          <input type="text" name="deptStatus" required value="${escapeHtml(model.deptStatus || 'Not running')}" />
         </label>
         ${metricFieldsMarkup(model)}
         <label>
           Notes
-          <textarea name="deptNotes" rows="5">${model.deptNotes || ''}</textarea>
+          <textarea name="deptNotes" rows="5">${escapeHtml(model.deptNotes || '')}</textarea>
         </label>
         <div class="actions-row">
           <button type="submit">Save Department</button>

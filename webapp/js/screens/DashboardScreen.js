@@ -1,20 +1,34 @@
 import { sessionService } from '../services/sessionService.js';
 import { applySessionPayload, setActiveDepartmentName } from '../state/appState.js';
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function renderDepartments(departments) {
   if (!departments?.length) {
     return '<li>No department rows loaded.</li>';
   }
 
   return departments
-    .map(
-      (dept) => `
+    .map((dept) => {
+      const safeDeptName = escapeHtml(dept.deptName);
+      const safeDeptStatus = escapeHtml(dept.deptStatus);
+      const safeUpdatedAt = escapeHtml(dept.updatedAt || 'n/a');
+      const safeUpdatedBy = escapeHtml(dept.updatedBy || 'n/a');
+
+      return `
       <li>
-        <strong>${dept.deptName}</strong> — ${dept.deptStatus}
-        <span class="meta">Updated: ${dept.updatedAt || 'n/a'} by ${dept.updatedBy || 'n/a'}</span>
-        <button class="secondary" type="button" data-open-dept="${dept.deptName}">Open</button>
-      </li>`
-    )
+        <strong>${safeDeptName}</strong> — ${safeDeptStatus}
+        <span class="meta">Updated: ${safeUpdatedAt} by ${safeUpdatedBy}</span>
+        <button class="secondary" type="button" data-open-dept="${safeDeptName}">Open</button>
+      </li>`;
+    })
     .join('');
 }
 
@@ -31,11 +45,18 @@ export function renderDashboardScreen(root, state) {
     return;
   }
 
+  const safeSessionId = escapeHtml(session.sessionId);
+  const safeShiftCode = escapeHtml(session.shiftCode);
+  const safeShiftDate = escapeHtml(session.shiftDate);
+  const safeSessionStatus = escapeHtml(session.sessionStatus);
+  const safeUpdatedAt = escapeHtml(session.updatedAt || 'n/a');
+  const safeUpdatedBy = escapeHtml(session.updatedBy || 'n/a');
+
   root.innerHTML = `
     <section class="panel">
       <h2>Dashboard</h2>
-      <p class="meta">Session #${session.sessionId} • ${session.shiftCode} • ${session.shiftDate} • ${session.sessionStatus}</p>
-      <p class="meta">Updated: ${session.updatedAt || 'n/a'} by ${session.updatedBy || 'n/a'}</p>
+      <p class="meta">Session #${safeSessionId} • ${safeShiftCode} • ${safeShiftDate} • ${safeSessionStatus}</p>
+      <p class="meta">Updated: ${safeUpdatedAt} by ${safeUpdatedBy}</p>
 
       <h3>Department Summary</h3>
       <ul class="dept-list">${renderDepartments(session.departments)}</ul>
