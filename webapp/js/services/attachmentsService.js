@@ -1,18 +1,33 @@
-/** Attachment service stub: list/add/remove and viewer payloads. */
+import { hostRequest } from '../core/hostBridge.js';
+
 export const attachmentsService = {
-  async listAttachments(deptRecordId) {
-    void deptRecordId;
-    throw new Error('attachmentsService.listAttachments is not implemented (Stage 1 stub).');
+  async pickFile() {
+    return hostRequest('file.pickFile', {
+      title: 'Choose attachment file',
+      filter: 'Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.tif;*.tiff|All files|*.*'
+    });
   },
-  async addAttachment(deptRecordId, sourceFilePath, userName) {
-    void deptRecordId;
-    void sourceFilePath;
-    void userName;
-    throw new Error('attachmentsService.addAttachment is not implemented (Stage 1 stub).');
+
+  async listAttachments(sessionId, deptRecordId, deptName) {
+    return hostRequest('attachment.list', { sessionId, deptRecordId, deptName });
   },
+
+  async addAttachment(sessionId, deptRecordId, deptName, sourceFilePath, displayName, userName) {
+    return hostRequest('attachment.add', {
+      sessionId,
+      deptRecordId,
+      deptName,
+      sourceFilePath,
+      displayName,
+      userName
+    });
+  },
+
   async removeAttachment(attachmentId, userName) {
-    void attachmentId;
-    void userName;
-    throw new Error('attachmentsService.removeAttachment is not implemented (Stage 1 stub).');
+    return hostRequest('attachment.remove', { attachmentId, userName });
+  },
+
+  async openViewer(sessionId, deptRecordId, attachmentId) {
+    return hostRequest('attachment.openViewer', { sessionId, deptRecordId, attachmentId });
   }
 };

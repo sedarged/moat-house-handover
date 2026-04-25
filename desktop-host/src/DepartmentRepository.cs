@@ -104,10 +104,13 @@ WHERE HandoverID = ? AND DeptName = ? AND (IsDeleted = FALSE OR IsDeleted IS NUL
     private static List<DepartmentSummaryPayload> LoadDashboardDepartmentSummary(OleDbConnection connection, long sessionId)
     {
         var result = new List<DepartmentSummaryPayload>();
-        const string sql = @"SELECT d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy
+        const string sql = @"SELECT d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy,
+SUM(IIF(a.IsDeleted = FALSE OR a.IsDeleted IS NULL, 1, 0)) AS AttachmentCount
 FROM tblHandoverDept AS d
 LEFT JOIN tblDepartments AS cfg ON d.DeptName = cfg.DeptName
+LEFT JOIN tblAttachments AS a ON a.DeptRecordID = d.DeptRecordID
 WHERE d.HandoverID = ? AND (d.IsDeleted = FALSE OR d.IsDeleted IS NULL)
+GROUP BY d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy, cfg.DisplayOrder
 ORDER BY cfg.DisplayOrder, d.DeptName";
 
         using var cmd = new OleDbCommand(sql, connection);
@@ -119,7 +122,8 @@ ORDER BY cfg.DisplayOrder, d.DeptName";
                 DeptName: Convert.ToString(reader["DeptName"]) ?? string.Empty,
                 DeptStatus: Convert.ToString(reader["DeptStatus"]) ?? "Not running",
                 UpdatedAt: reader["UpdatedAt"] == DBNull.Value ? null : ToIso(reader["UpdatedAt"]),
-                UpdatedBy: reader["UpdatedBy"] == DBNull.Value ? null : Convert.ToString(reader["UpdatedBy"])));
+                UpdatedBy: reader["UpdatedBy"] == DBNull.Value ? null : Convert.ToString(reader["UpdatedBy"]),
+                AttachmentCount: reader["AttachmentCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["AttachmentCount"])));
         }
 
         return result;

@@ -18,7 +18,8 @@ public sealed record DepartmentSummaryPayload(
     string DeptName,
     string DeptStatus,
     string? UpdatedAt,
-    string? UpdatedBy);
+    string? UpdatedBy,
+    int AttachmentCount);
 
 public sealed record SessionOpenResult(bool Found, SessionPayload? Session);
 

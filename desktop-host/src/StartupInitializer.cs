@@ -35,7 +35,7 @@ public sealed class StartupInitializer
             DatabaseReady: true,
             FoldersReady: true);
 
-        return new StartupResult(status, logger);
+        return new StartupResult(status, logger, configResult.Config);
     }
 
     public static string ResolveAssetRoot()
@@ -68,4 +68,4 @@ public sealed class StartupInitializer
     }
 }
 
-public sealed record StartupResult(HostRuntimeStatus RuntimeStatus, BootstrapLogger Logger);
+public sealed record StartupResult(HostRuntimeStatus RuntimeStatus, BootstrapLogger Logger, HostConfig Config);

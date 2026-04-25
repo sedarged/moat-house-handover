@@ -4,12 +4,18 @@ export const appState = {
   currentRoute: 'shift',
   session: createInitialSessionState(),
   activeDepartmentName: null,
-  activeDepartment: null
+  activeDepartment: null,
+  activeAttachments: [],
+  selectedAttachmentId: null,
+  viewerState: null
 };
 
 export function applySessionPayload(sessionPayload) {
   appState.activeDepartmentName = null;
   appState.activeDepartment = null;
+  appState.activeAttachments = [];
+  appState.selectedAttachmentId = null;
+  appState.viewerState = null;
 
   appState.session = {
     ...createInitialSessionState(),
@@ -50,4 +56,21 @@ export function applyDepartmentSummaryPayload(departments) {
     appState.session.updatedAt = latest.updatedAt;
     appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy;
   }
+}
+
+export function applyAttachmentListPayload(listPayload) {
+  appState.activeAttachments = Array.isArray(listPayload?.attachments) ? listPayload.attachments : [];
+
+  if (!appState.activeAttachments.some((item) => item.attachmentId === appState.selectedAttachmentId)) {
+    appState.selectedAttachmentId = appState.activeAttachments[0]?.attachmentId ?? null;
+  }
+}
+
+export function setSelectedAttachmentId(attachmentId) {
+  appState.selectedAttachmentId = attachmentId || null;
+}
+
+export function applyViewerPayload(viewerPayload) {
+  appState.viewerState = viewerPayload || null;
+  appState.selectedAttachmentId = viewerPayload?.current?.attachmentId || appState.selectedAttachmentId;
 }

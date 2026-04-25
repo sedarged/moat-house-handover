@@ -59,9 +59,9 @@ VALUES (?, ?, 'Open', ?, ?, ?, ?)";
         var header = FindHeader(connection, shiftCode, shiftDate)
             ?? throw new InvalidOperationException("Unable to find newly created session header.");
 
-        EnsureDepartmentRows(connection, header.Value.HandoverId, userName);
+        EnsureDepartmentRows(connection, header.HandoverId, userName);
 
-        var payload = LoadSessionPayload(connection, header.Value.HandoverId)
+        var payload = LoadSessionPayload(connection, header.HandoverId)
             ?? throw new InvalidOperationException("Unable to load newly created session payload.");
 
         return new SessionCreateResult(true, payload);
@@ -188,10 +188,13 @@ FROM tblHandoverHeader WHERE HandoverID = ?";
         }
 
         var departments = new List<DepartmentSummaryPayload>();
-        const string deptSql = @"SELECT d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy
+        const string deptSql = @"SELECT d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy,
+SUM(IIF(a.IsDeleted = FALSE OR a.IsDeleted IS NULL, 1, 0)) AS AttachmentCount
 FROM tblHandoverDept AS d
 LEFT JOIN tblDepartments AS cfg ON d.DeptName = cfg.DeptName
+LEFT JOIN tblAttachments AS a ON a.DeptRecordID = d.DeptRecordID
 WHERE d.HandoverID = ? AND (d.IsDeleted = FALSE OR d.IsDeleted IS NULL)
+GROUP BY d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy, cfg.DisplayOrder
 ORDER BY cfg.DisplayOrder, d.DeptName";
 
         using (var deptCmd = new OleDbCommand(deptSql, connection))
@@ -206,7 +209,8 @@ ORDER BY cfg.DisplayOrder, d.DeptName";
                     DeptName: Convert.ToString(reader["DeptName"]) ?? string.Empty,
                     DeptStatus: Convert.ToString(reader["DeptStatus"]) ?? "Not running",
                     UpdatedAt: updatedAt,
-                    UpdatedBy: updatedBy));
+                    UpdatedBy: updatedBy,
+                    AttachmentCount: reader["AttachmentCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["AttachmentCount"])));
             }
         }
 

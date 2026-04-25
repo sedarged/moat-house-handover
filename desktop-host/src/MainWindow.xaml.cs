@@ -29,9 +29,12 @@ public partial class MainWindow : Window
             await AppWebView.EnsureCoreWebView2Async();
             var sessionRepository = new SessionRepository(startup.RuntimeStatus.AccessDatabasePath);
             var departmentRepository = new DepartmentRepository(startup.RuntimeStatus.AccessDatabasePath);
+            var attachmentRepository = new AttachmentRepository(startup.RuntimeStatus.AccessDatabasePath);
             var sessionService = new SessionService(sessionRepository);
             var departmentService = new DepartmentService(departmentRepository);
-            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService);
+            var attachmentService = new AttachmentService(attachmentRepository, startup.Config);
+            var fileDialogService = new FileDialogService();
+            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService, attachmentService, fileDialogService);
             _hostWebBridge.Attach(AppWebView.CoreWebView2);
 
             AppWebView.Source = new Uri(indexPath);

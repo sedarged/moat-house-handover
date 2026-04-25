@@ -21,10 +21,12 @@ function renderDepartments(departments) {
       const safeDeptStatus = escapeHtml(dept.deptStatus);
       const safeUpdatedAt = escapeHtml(dept.updatedAt || 'n/a');
       const safeUpdatedBy = escapeHtml(dept.updatedBy || 'n/a');
+      const safeAttachmentCount = escapeHtml(dept.attachmentCount ?? 0);
 
       return `
       <li>
         <strong>${safeDeptName}</strong> — ${safeDeptStatus}
+        <span class="meta">Attachments: ${safeAttachmentCount}</span>
         <span class="meta">Updated: ${safeUpdatedAt} by ${safeUpdatedBy}</span>
         <button class="secondary" type="button" data-open-dept="${safeDeptName}">Open</button>
       </li>`;
@@ -51,12 +53,14 @@ export function renderDashboardScreen(root, state) {
   const safeSessionStatus = escapeHtml(session.sessionStatus);
   const safeUpdatedAt = escapeHtml(session.updatedAt || 'n/a');
   const safeUpdatedBy = escapeHtml(session.updatedBy || 'n/a');
+  const totalAttachments = (session.departments || []).reduce((sum, dept) => sum + Number(dept.attachmentCount || 0), 0);
 
   root.innerHTML = `
     <section class="panel">
       <h2>Dashboard</h2>
       <p class="meta">Session #${safeSessionId} • ${safeShiftCode} • ${safeShiftDate} • ${safeSessionStatus}</p>
       <p class="meta">Updated: ${safeUpdatedAt} by ${safeUpdatedBy}</p>
+      <p class="meta">Total attachments in session: ${escapeHtml(totalAttachments)}</p>
 
       <h3>Department Summary</h3>
       <ul class="dept-list">${renderDepartments(session.departments)}</ul>
