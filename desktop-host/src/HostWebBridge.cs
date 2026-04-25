@@ -21,13 +21,23 @@ public sealed class HostWebBridge
     private readonly BootstrapLogger _logger;
     private readonly SessionService _sessionService;
     private readonly DepartmentService _departmentService;
+    private readonly AttachmentService _attachmentService;
+    private readonly FileDialogService _fileDialogService;
 
-    public HostWebBridge(HostRuntimeStatus runtimeStatus, BootstrapLogger logger, SessionService sessionService, DepartmentService departmentService)
+    public HostWebBridge(
+        HostRuntimeStatus runtimeStatus,
+        BootstrapLogger logger,
+        SessionService sessionService,
+        DepartmentService departmentService,
+        AttachmentService attachmentService,
+        FileDialogService fileDialogService)
     {
         _runtimeStatus = runtimeStatus;
         _logger = logger;
         _sessionService = sessionService;
         _departmentService = departmentService;
+        _attachmentService = attachmentService;
+        _fileDialogService = fileDialogService;
     }
 
     public void Attach(CoreWebView2 webView)
@@ -96,7 +106,6 @@ public sealed class HostWebBridge
                     break;
                 }
 
-
                 case "department.load":
                 {
                     var payload = DeserializePayload<DepartmentLoadRequest>(request.Payload);
@@ -112,9 +121,48 @@ public sealed class HostWebBridge
                     SendResponse(webView, request.RequestId, true, null, result);
                     break;
                 }
+
                 case "file.pickFile":
-                    SendResponse(webView, request.RequestId, false, "Not implemented in Stage 2A.", null);
+                {
+                    var payload = request.Payload is null
+                        ? new FilePickRequest(null, null)
+                        : DeserializePayload<FilePickRequest>(request.Payload);
+                    var result = _fileDialogService.PickFile(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
                     break;
+                }
+
+                case "attachment.list":
+                {
+                    var payload = DeserializePayload<AttachmentListRequest>(request.Payload);
+                    var result = _attachmentService.ListAttachments(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "attachment.add":
+                {
+                    var payload = DeserializePayload<AttachmentAddRequest>(request.Payload);
+                    var result = _attachmentService.AddAttachment(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "attachment.remove":
+                {
+                    var payload = DeserializePayload<AttachmentRemoveRequest>(request.Payload);
+                    var result = _attachmentService.RemoveAttachment(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "attachment.openViewer":
+                {
+                    var payload = DeserializePayload<AttachmentViewerRequest>(request.Payload);
+                    var result = _attachmentService.GetViewerPayload(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
 
                 default:
                     SendResponse(webView, request.RequestId, false, $"Unsupported bridge message: {request.Type}", null);

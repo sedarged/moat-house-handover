@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ApplicationDefinition Include="src\App.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="..\webapp\**\*">
       <Link>webapp\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

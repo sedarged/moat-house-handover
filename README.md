@@ -1,6 +1,6 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 2A baseline for a local-first Windows desktop handover application.
+Stage 2D Extended baseline for a local-first Windows desktop handover application.
 
 ## Repository Structure
 
@@ -11,18 +11,21 @@ Stage 2A baseline for a local-first Windows desktop handover application.
 - `scripts/` — repeatable helper scripts for checks, build, SDK bootstrap, and local packaging
 - `BUILD_NOTES.md` — local build and runtime notes
 
-## Stage 2A Scope Completed
+## Stage 2D Extended Scope Completed
 - Local runtime config loading from JSON with safe path fallback strategy
 - Startup validation for required runtime config values
 - Startup initialization service (folder checks + Access bootstrap + logging)
 - Idempotent Access schema + approved seed bootstrap path
 - Deployment-safe local web asset resolution without local web server
-- Initial host-to-web bridge contract skeleton (`runtime.getStatus`, `shell.openOutputFolder`)
+- Session + department persistence (Stage 2B/2C)
+- Attachment bridge actions and Access-backed metadata persistence (`attachment.list`, `attachment.add`, `attachment.remove`, `attachment.openViewer`)
+- Host-side local file picker/copy flow (`file.pickFile`)
+- Department attachment panel + viewer flow + dashboard attachment counts
 
 ## Still Deferred (by design)
-- DAO repository implementation
-- Production business save/load workflows
-- Attachment/report/send end-to-end runtime workflows
+- Budget persistence workflows
+- Preview/report/send end-to-end runtime workflows
+- Windows runtime validation of WebView2 image rendering + ACE/OLEDB behavior
 
 ## Helper scripts
 These scripts are intended for both **AI agents** and **human reviewers** so repository checks/builds can be repeated consistently.

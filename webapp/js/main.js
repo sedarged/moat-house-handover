@@ -1,6 +1,6 @@
 import { routes, renderRoute } from './core/router.js';
 import { initializeHostBridge, getRuntimeStatus } from './core/hostBridge.js';
-import { appState, setActiveDepartmentName } from './state/appState.js';
+import { appState, setActiveDepartmentName, setSelectedAttachmentId } from './state/appState.js';
 
 const root = document.getElementById('screen-root');
 const navButtons = document.querySelectorAll('[data-route]');
@@ -27,6 +27,10 @@ window.addEventListener('app:navigate', (event) => {
     setActiveDepartmentName(event.detail.deptName);
   }
 
+  if (event.detail?.attachmentId) {
+    setSelectedAttachmentId(Number(event.detail.attachmentId));
+  }
+
   navigate(event.detail?.route || 'shift');
 });
 
@@ -41,7 +45,7 @@ getRuntimeStatus()
     appContext.textContent = `Runtime ready • DB: ${status.accessDatabasePath}`;
   })
   .catch(() => {
-    appContext.textContent = 'Stage 2B runtime bridge unavailable in browser mode';
+    appContext.textContent = 'Stage 2D runtime bridge unavailable in browser mode';
   });
 
 navigate('shift');
