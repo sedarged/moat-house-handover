@@ -105,7 +105,7 @@ WHERE HandoverID = ? AND DeptName = ? AND (IsDeleted = FALSE OR IsDeleted IS NUL
     {
         var result = new List<DepartmentSummaryPayload>();
         const string sql = @"SELECT d.DeptName, d.DeptStatus, d.UpdatedAt, d.UpdatedBy,
-SUM(IIF(a.IsDeleted = FALSE OR a.IsDeleted IS NULL, 1, 0)) AS AttachmentCount
+SUM(IIF(a.AttachmentID IS NOT NULL AND (a.IsDeleted = FALSE OR a.IsDeleted IS NULL), 1, 0)) AS AttachmentCount
 FROM tblHandoverDept AS d
 LEFT JOIN tblDepartments AS cfg ON d.DeptName = cfg.DeptName
 LEFT JOIN tblAttachments AS a ON a.DeptRecordID = d.DeptRecordID
