@@ -1,6 +1,6 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 2D Extended baseline for a local-first Windows desktop handover application.
+Stage 2E Extended baseline for a local-first Windows desktop handover application.
 
 ## Repository Structure
 
@@ -11,7 +11,7 @@ Stage 2D Extended baseline for a local-first Windows desktop handover applicatio
 - `scripts/` — repeatable helper scripts for checks, build, SDK bootstrap, and local packaging
 - `BUILD_NOTES.md` — local build and runtime notes
 
-## Stage 2D Extended Scope Completed
+## Stage 2E Extended Scope Completed
 - Local runtime config loading from JSON with safe path fallback strategy
 - Startup validation for required runtime config values
 - Startup initialization service (folder checks + Access bootstrap + logging)
@@ -21,9 +21,11 @@ Stage 2D Extended baseline for a local-first Windows desktop handover applicatio
 - Attachment bridge actions and Access-backed metadata persistence (`attachment.list`, `attachment.add`, `attachment.remove`, `attachment.openViewer`)
 - Host-side local file picker/copy flow (`file.pickFile`)
 - Department attachment panel + viewer flow + dashboard attachment counts
+- Budget header/row persistence (`budget.load`, `budget.save`, `budget.recalculate`) with per-session row seeding
+- Dashboard budget summary from persisted Access-backed totals (`dashboard.budgetSummary`)
+- Budget screen edit/recalculate/save/reload flow tied to active session
 
 ## Still Deferred (by design)
-- Budget persistence workflows
 - Preview/report/send end-to-end runtime workflows
 - Windows runtime validation of WebView2 image rendering + ACE/OLEDB behavior
 

@@ -124,3 +124,24 @@ textarea {
 .dept-list .meta {
   display: block;
 }
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.budget-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.budget-table th,
+.budget-table td {
+  border: 1px solid #334155;
+  padding: 0.45rem;
+  vertical-align: top;
+}
+
+.budget-table textarea {
+  min-width: 200px;
+}

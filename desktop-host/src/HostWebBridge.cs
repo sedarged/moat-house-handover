@@ -22,6 +22,7 @@ public sealed class HostWebBridge
     private readonly SessionService _sessionService;
     private readonly DepartmentService _departmentService;
     private readonly AttachmentService _attachmentService;
+    private readonly BudgetService _budgetService;
     private readonly FileDialogService _fileDialogService;
 
     public HostWebBridge(
@@ -30,6 +31,7 @@ public sealed class HostWebBridge
         SessionService sessionService,
         DepartmentService departmentService,
         AttachmentService attachmentService,
+        BudgetService budgetService,
         FileDialogService fileDialogService)
     {
         _runtimeStatus = runtimeStatus;
@@ -37,6 +39,7 @@ public sealed class HostWebBridge
         _sessionService = sessionService;
         _departmentService = departmentService;
         _attachmentService = attachmentService;
+        _budgetService = budgetService;
         _fileDialogService = fileDialogService;
     }
 
@@ -160,6 +163,39 @@ public sealed class HostWebBridge
                 {
                     var payload = DeserializePayload<AttachmentViewerRequest>(request.Payload);
                     var result = _attachmentService.GetViewerPayload(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+
+                case "budget.load":
+                {
+                    var payload = DeserializePayload<BudgetLoadRequest>(request.Payload);
+                    var result = _budgetService.LoadBudget(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "budget.save":
+                {
+                    var payload = DeserializePayload<BudgetSaveRequest>(request.Payload);
+                    var result = _budgetService.SaveBudget(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "budget.recalculate":
+                {
+                    var payload = DeserializePayload<BudgetRecalculateRequest>(request.Payload);
+                    var result = _budgetService.Recalculate(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "dashboard.budgetSummary":
+                {
+                    var payload = DeserializePayload<DashboardBudgetSummaryRequest>(request.Payload);
+                    var result = _budgetService.LoadBudgetSummary(payload.SessionId);
                     SendResponse(webView, request.RequestId, true, null, result);
                     break;
                 }

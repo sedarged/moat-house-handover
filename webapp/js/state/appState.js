@@ -7,7 +7,9 @@ export const appState = {
   activeDepartment: null,
   activeAttachments: [],
   selectedAttachmentId: null,
-  viewerState: null
+  viewerState: null,
+  activeBudget: null,
+  budgetSummary: null
 };
 
 export function applySessionPayload(sessionPayload) {
@@ -16,6 +18,8 @@ export function applySessionPayload(sessionPayload) {
   appState.activeAttachments = [];
   appState.selectedAttachmentId = null;
   appState.viewerState = null;
+  appState.activeBudget = null;
+  appState.budgetSummary = null;
 
   appState.session = {
     ...createInitialSessionState(),
@@ -73,4 +77,13 @@ export function setSelectedAttachmentId(attachmentId) {
 export function applyViewerPayload(viewerPayload) {
   appState.viewerState = viewerPayload || null;
   appState.selectedAttachmentId = viewerPayload?.current?.attachmentId || appState.selectedAttachmentId;
+}
+
+export function applyBudgetPayload(payload) {
+  appState.activeBudget = payload || null;
+  appState.budgetSummary = payload?.summary || payload?.totals || null;
+}
+
+export function applyBudgetSummaryPayload(payload) {
+  appState.budgetSummary = payload || null;
 }
