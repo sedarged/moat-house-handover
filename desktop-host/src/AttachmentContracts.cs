@@ -27,7 +27,7 @@ public sealed record AttachmentPayload(
     string DeptName,
     string DisplayName,
     string FilePath,
-    string CapturedOn,
+    string? CapturedOn,
     long SequenceNo,
     bool IsDeleted);
 

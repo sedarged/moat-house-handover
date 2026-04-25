@@ -52,7 +52,7 @@ WHERE d.DeptRecordID = ? AND d.HandoverID = ?", connection))
         return ListAttachments(request.SessionId, request.DeptRecordId, request.DeptName);
     }
 
-    public AttachmentListResult RemoveAttachment(long attachmentId, string userName)
+    public AttachmentListResult RemoveAttachment(long attachmentId)
     {
         using var connection = OpenConnection();
         var target = GetAttachmentContext(connection, attachmentId)
@@ -120,7 +120,7 @@ ORDER BY SequenceNo, AttachmentID", connection);
                 DeptName: Convert.ToString(reader["DeptName"]) ?? string.Empty,
                 DisplayName: Convert.ToString(reader["DisplayName"]) ?? string.Empty,
                 FilePath: Convert.ToString(reader["FilePath"]) ?? string.Empty,
-                CapturedOn: reader["CapturedOn"] == DBNull.Value ? string.Empty : ToIso(reader["CapturedOn"]),
+                CapturedOn: reader["CapturedOn"] == DBNull.Value ? null : ToIso(reader["CapturedOn"]),
                 SequenceNo: reader["SequenceNo"] == DBNull.Value ? 0 : Convert.ToInt64(reader["SequenceNo"]),
                 IsDeleted: reader["IsDeleted"] != DBNull.Value && Convert.ToBoolean(reader["IsDeleted"])));
         }

@@ -22,6 +22,7 @@
   - attachment metadata is soft-deleted in Access
   - physical file is retained on disk for safety and auditability in this stage
   - physical cleanup policy is deferred
+  - per-user attachment deletion audit detail is deferred (metadata soft delete only in Stage 2D)
 
 ### Bridge actions implemented for this stage
 - `file.pickFile`

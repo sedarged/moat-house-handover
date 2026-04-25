@@ -1,13 +1,31 @@
 import { attachmentsService } from '../services/attachmentsService.js';
 import { applyViewerPayload, setSelectedAttachmentId } from '../state/appState.js';
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+function renderViewerMeta(container, current) {
+  container.textContent = '';
+
+  const name = document.createElement('p');
+  const strong = document.createElement('strong');
+  strong.textContent = current.displayName;
+  name.append(strong);
+
+  const dept = document.createElement('p');
+  dept.className = 'meta';
+  dept.textContent = `Department: ${current.deptName}`;
+
+  const captured = document.createElement('p');
+  captured.className = 'meta';
+  captured.textContent = `Captured: ${current.capturedOn || 'n/a'}`;
+
+  const path = document.createElement('p');
+  path.className = 'meta';
+  path.textContent = `Stored path: ${current.filePath}`;
+
+  container.append(name, dept, captured, path);
+}
+
+function toFileUrl(path) {
+  return `file:///${String(path).replaceAll('\\', '/')}`;
 }
 
 export function renderImageViewerScreen(root, state) {
@@ -59,14 +77,9 @@ export function renderImageViewerScreen(root, state) {
 
       const current = payload.current;
       viewerMessage.textContent = `Attachment ${payload.currentIndex + 1} of ${payload.totalCount}`;
-      viewerMeta.innerHTML = `
-        <p><strong>${escapeHtml(current.displayName)}</strong></p>
-        <p class="meta">Department: ${escapeHtml(current.deptName)}</p>
-        <p class="meta">Captured: ${escapeHtml(current.capturedOn || 'n/a')}</p>
-        <p class="meta">Stored path: ${escapeHtml(current.filePath)}</p>
-      `;
+      renderViewerMeta(viewerMeta, current);
 
-      viewerImage.src = `file:///${current.filePath.replaceAll('\\', '/')}`;
+      viewerImage.src = toFileUrl(current.filePath);
       viewerImage.dataset.attachmentId = String(current.attachmentId);
 
       prevButton.disabled = !payload.previous;
@@ -91,7 +104,7 @@ export function renderImageViewerScreen(root, state) {
       };
     } catch (error) {
       viewerMessage.textContent = error instanceof Error ? error.message : 'Failed to load viewer.';
-      viewerMeta.innerHTML = '';
+      viewerMeta.textContent = '';
       viewerImage.removeAttribute('src');
       prevButton.disabled = true;
       nextButton.disabled = true;

@@ -8,46 +8,6 @@ import {
   setSelectedAttachmentId
 } from '../state/appState.js';
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function optionMarkup(departments, selectedDeptName) {
-  return departments
-    .map((dept) => {
-      const safeDeptName = escapeHtml(dept.deptName);
-      const selected = dept.deptName === selectedDeptName ? 'selected' : '';
-      return `<option value="${safeDeptName}" ${selected}>${safeDeptName}</option>`;
-    })
-    .join('');
-}
-
-function metricFieldsMarkup(model) {
-  if (!model?.isMetricDept) {
-    return '<p class="meta">This is a non-metric department. Downtime, efficiency, and yield are not used.</p>';
-  }
-
-  return `
-    <label>
-      Downtime (min)
-      <input type="number" min="0" step="1" name="downtimeMin" value="${escapeHtml(model.downtimeMin ?? '')}" />
-    </label>
-    <label>
-      Efficiency (%)
-      <input type="number" min="0" max="100" step="0.1" name="efficiencyPct" value="${escapeHtml(model.efficiencyPct ?? '')}" />
-    </label>
-    <label>
-      Yield (%)
-      <input type="number" min="0" max="100" step="0.1" name="yieldPct" value="${escapeHtml(model.yieldPct ?? '')}" />
-    </label>
-  `;
-}
-
 function toNumberOrNull(value) {
   if (value === '' || value == null) {
     return null;
@@ -57,34 +17,158 @@ function toNumberOrNull(value) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function attachmentListMarkup(attachments, selectedId) {
-  if (!attachments?.length) {
-    return '<li class="meta">No attachments saved for this department.</li>';
-  }
-
-  return attachments
-    .map((item) => {
-      const selectedClass = item.attachmentId === selectedId ? 'attachment-selected' : '';
-      return `<li>
-        <button type="button" class="secondary attachment-item ${selectedClass}" data-attachment-id="${escapeHtml(item.attachmentId)}">
-          #${escapeHtml(item.sequenceNo)} — ${escapeHtml(item.displayName)}
-        </button>
-      </li>`;
-    })
-    .join('');
+function createDepartmentOptions(select, departments, selectedDeptName) {
+  select.textContent = '';
+  departments.forEach((dept) => {
+    const option = document.createElement('option');
+    option.value = dept.deptName;
+    option.textContent = dept.deptName;
+    option.selected = dept.deptName === selectedDeptName;
+    select.append(option);
+  });
 }
 
-function selectedAttachmentMarkup(attachments, selectedId) {
-  const selected = attachments.find((item) => item.attachmentId === selectedId) || attachments[0];
-  if (!selected) {
-    return '<p class="meta">Select an attachment to view metadata.</p>';
+function createAttachmentList(listEl, attachments, selectedId, onSelect) {
+  listEl.textContent = '';
+
+  if (!attachments.length) {
+    const empty = document.createElement('li');
+    empty.className = 'meta';
+    empty.textContent = 'No attachments saved for this department.';
+    listEl.append(empty);
+    return;
   }
 
-  return `
-    <p><strong>${escapeHtml(selected.displayName)}</strong></p>
-    <p class="meta">Captured: ${escapeHtml(selected.capturedOn || 'n/a')}</p>
-    <p class="meta">Stored path: ${escapeHtml(selected.filePath)}</p>
-  `;
+  attachments.forEach((item) => {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary attachment-item';
+    if (item.attachmentId === selectedId) {
+      button.classList.add('attachment-selected');
+    }
+
+    button.textContent = `#${item.sequenceNo} — ${item.displayName}`;
+    button.addEventListener('click', () => onSelect(item.attachmentId));
+    li.append(button);
+    listEl.append(li);
+  });
+}
+
+function renderSelectedAttachmentMeta(container, attachments, selectedId) {
+  container.textContent = '';
+
+  const selected = attachments.find((item) => item.attachmentId === selectedId) || attachments[0];
+  if (!selected) {
+    const none = document.createElement('p');
+    none.className = 'meta';
+    none.textContent = 'Select an attachment to view metadata.';
+    container.append(none);
+    return;
+  }
+
+  const name = document.createElement('p');
+  const strong = document.createElement('strong');
+  strong.textContent = selected.displayName;
+  name.append(strong);
+
+  const captured = document.createElement('p');
+  captured.className = 'meta';
+  captured.textContent = `Captured: ${selected.capturedOn || 'n/a'}`;
+
+  const path = document.createElement('p');
+  path.className = 'meta';
+  path.textContent = `Stored path: ${selected.filePath}`;
+
+  container.append(name, captured, path);
+}
+
+function renderDepartmentForm(formArea, model) {
+  formArea.textContent = '';
+
+  const form = document.createElement('form');
+  form.id = 'dept-form';
+  form.className = 'form-grid';
+
+  const statusLabel = document.createElement('label');
+  statusLabel.append('Status');
+  const statusInput = document.createElement('input');
+  statusInput.type = 'text';
+  statusInput.name = 'deptStatus';
+  statusInput.required = true;
+  statusInput.value = model.deptStatus || 'Not running';
+  statusLabel.append(statusInput);
+  form.append(statusLabel);
+
+  if (model.isMetricDept) {
+    const dtLabel = document.createElement('label');
+    dtLabel.append('Downtime (min)');
+    const dtInput = document.createElement('input');
+    dtInput.type = 'number';
+    dtInput.min = '0';
+    dtInput.step = '1';
+    dtInput.name = 'downtimeMin';
+    dtInput.value = model.downtimeMin ?? '';
+    dtLabel.append(dtInput);
+
+    const effLabel = document.createElement('label');
+    effLabel.append('Efficiency (%)');
+    const effInput = document.createElement('input');
+    effInput.type = 'number';
+    effInput.min = '0';
+    effInput.max = '100';
+    effInput.step = '0.1';
+    effInput.name = 'efficiencyPct';
+    effInput.value = model.efficiencyPct ?? '';
+    effLabel.append(effInput);
+
+    const yieldLabel = document.createElement('label');
+    yieldLabel.append('Yield (%)');
+    const yieldInput = document.createElement('input');
+    yieldInput.type = 'number';
+    yieldInput.min = '0';
+    yieldInput.max = '100';
+    yieldInput.step = '0.1';
+    yieldInput.name = 'yieldPct';
+    yieldInput.value = model.yieldPct ?? '';
+    yieldLabel.append(yieldInput);
+
+    form.append(dtLabel, effLabel, yieldLabel);
+  } else {
+    const note = document.createElement('p');
+    note.className = 'meta';
+    note.textContent = 'This is a non-metric department. Downtime, efficiency, and yield are not used.';
+    form.append(note);
+  }
+
+  const notesLabel = document.createElement('label');
+  notesLabel.append('Notes');
+  const notesArea = document.createElement('textarea');
+  notesArea.name = 'deptNotes';
+  notesArea.rows = 5;
+  notesArea.value = model.deptNotes || '';
+  notesLabel.append(notesArea);
+  form.append(notesLabel);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions-row';
+
+  const saveButton = document.createElement('button');
+  saveButton.type = 'submit';
+  saveButton.textContent = 'Save Department';
+
+  const saveReturn = document.createElement('button');
+  saveReturn.id = 'save-return';
+  saveReturn.type = 'button';
+  saveReturn.className = 'secondary';
+  saveReturn.textContent = 'Save + Return';
+
+  actions.append(saveButton, saveReturn);
+  form.append(actions);
+
+  formArea.append(form);
+
+  return { form, saveReturn };
 }
 
 export function renderDepartmentScreen(root, state) {
@@ -106,10 +190,10 @@ export function renderDepartmentScreen(root, state) {
   root.innerHTML = `
     <section class="panel department-layout">
       <h2>Department</h2>
-      <p class="meta">Session #${escapeHtml(session.sessionId)} • ${escapeHtml(session.shiftCode)} • ${escapeHtml(session.shiftDate)}</p>
+      <p id="dept-session" class="meta"></p>
       <label>
         Department
-        <select id="dept-selector">${optionMarkup(deptOptions, selectedDeptName)}</select>
+        <select id="dept-selector"></select>
       </label>
       <p id="dept-message" class="meta">Loading persisted department values...</p>
       <div id="dept-form-area"></div>
@@ -131,7 +215,11 @@ export function renderDepartmentScreen(root, state) {
     </section>
   `;
 
+  root.querySelector('#dept-session').textContent = `Session #${session.sessionId} • ${session.shiftCode} • ${session.shiftDate}`;
+
   const selector = root.querySelector('#dept-selector');
+  createDepartmentOptions(selector, deptOptions, selectedDeptName);
+
   const message = root.querySelector('#dept-message');
   const formArea = root.querySelector('#dept-form-area');
   const attachmentMessage = root.querySelector('#attachment-message');
@@ -145,16 +233,13 @@ export function renderDepartmentScreen(root, state) {
   function refreshAttachmentPanel() {
     const attachments = state.activeAttachments || [];
     attachmentCount.textContent = String(attachments.length);
-    attachmentList.innerHTML = attachmentListMarkup(attachments, state.selectedAttachmentId);
-    attachmentSelectedMeta.innerHTML = selectedAttachmentMarkup(attachments, state.selectedAttachmentId);
 
-    attachmentList.querySelectorAll('[data-attachment-id]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const selectedId = Number(button.getAttribute('data-attachment-id'));
-        setSelectedAttachmentId(selectedId);
-        refreshAttachmentPanel();
-      });
+    createAttachmentList(attachmentList, attachments, state.selectedAttachmentId, (selectedId) => {
+      setSelectedAttachmentId(selectedId);
+      refreshAttachmentPanel();
     });
+
+    renderSelectedAttachmentMeta(attachmentSelectedMeta, attachments, state.selectedAttachmentId);
   }
 
   async function loadAttachments() {
@@ -185,37 +270,18 @@ export function renderDepartmentScreen(root, state) {
     try {
       const department = await departmentsService.loadDepartment(session.sessionId, deptName);
       applyActiveDepartmentPayload(department);
-      renderEditForm(department);
+      bindDepartmentForm(department);
       message.textContent = `Loaded ${deptName}.`;
       await loadAttachments();
     } catch (error) {
-      formArea.innerHTML = '';
+      formArea.textContent = '';
       message.textContent = error instanceof Error ? error.message : 'Failed to load department.';
       attachmentMessage.textContent = 'Attachment list unavailable until department loads.';
     }
   }
 
-  function renderEditForm(model) {
-    formArea.innerHTML = `
-      <form id="dept-form" class="form-grid">
-        <label>
-          Status
-          <input type="text" name="deptStatus" required value="${escapeHtml(model.deptStatus || 'Not running')}" />
-        </label>
-        ${metricFieldsMarkup(model)}
-        <label>
-          Notes
-          <textarea name="deptNotes" rows="5">${escapeHtml(model.deptNotes || '')}</textarea>
-        </label>
-        <div class="actions-row">
-          <button type="submit">Save Department</button>
-          <button id="save-return" type="button" class="secondary">Save + Return</button>
-        </div>
-      </form>
-    `;
-
-    const form = root.querySelector('#dept-form');
-    const saveReturn = root.querySelector('#save-return');
+  function bindDepartmentForm(model) {
+    const { form, saveReturn } = renderDepartmentForm(formArea, model);
 
     const performSave = async (goDashboard) => {
       const data = new FormData(form);
@@ -243,7 +309,7 @@ export function renderDepartmentScreen(root, state) {
         applyActiveDepartmentPayload(saveResult.department);
         applyDepartmentSummaryPayload(saveResult.dashboardDepartments);
         selector.value = saveResult.department.deptName;
-        renderEditForm(saveResult.department);
+        bindDepartmentForm(saveResult.department);
         message.textContent = `Saved ${payload.deptName} at ${saveResult.department.updatedAt || 'now'}.`;
 
         if (goDashboard) {
