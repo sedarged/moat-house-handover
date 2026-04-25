@@ -2,10 +2,15 @@ import { createInitialSessionState } from '../models/contracts.js';
 
 export const appState = {
   currentRoute: 'shift',
-  session: createInitialSessionState()
+  session: createInitialSessionState(),
+  activeDepartmentName: null,
+  activeDepartment: null
 };
 
 export function applySessionPayload(sessionPayload) {
+  appState.activeDepartmentName = null;
+  appState.activeDepartment = null;
+
   appState.session = {
     ...createInitialSessionState(),
     sessionId: sessionPayload.sessionId,
@@ -19,4 +24,30 @@ export function applySessionPayload(sessionPayload) {
     updatedAt: sessionPayload.updatedAt,
     updatedBy: sessionPayload.updatedBy
   };
+}
+
+export function setActiveDepartmentName(deptName) {
+  appState.activeDepartmentName = deptName || null;
+}
+
+export function applyActiveDepartmentPayload(payload) {
+  appState.activeDepartment = payload || null;
+  appState.activeDepartmentName = payload?.deptName || appState.activeDepartmentName;
+}
+
+export function applyDepartmentSummaryPayload(departments) {
+  if (!Array.isArray(departments)) {
+    return;
+  }
+
+  appState.session.departments = departments;
+
+  const latest = departments
+    .filter((dept) => dept?.updatedAt)
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+
+  if (latest) {
+    appState.session.updatedAt = latest.updatedAt;
+    appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy;
+  }
 }

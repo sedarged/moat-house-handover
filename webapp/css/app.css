@@ -106,3 +106,21 @@ button.secondary {
   margin: 0;
   padding-left: 1.1rem;
 }
+
+
+textarea {
+  background: #0b1220;
+  color: var(--text);
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font-family: Arial, sans-serif;
+}
+
+.dept-list li {
+  margin-bottom: 0.6rem;
+}
+
+.dept-list .meta {
+  display: block;
+}

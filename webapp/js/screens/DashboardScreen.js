@@ -1,5 +1,14 @@
 import { sessionService } from '../services/sessionService.js';
-import { applySessionPayload } from '../state/appState.js';
+import { applySessionPayload, setActiveDepartmentName } from '../state/appState.js';
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
 function renderDepartments(departments) {
   if (!departments?.length) {
@@ -7,7 +16,19 @@ function renderDepartments(departments) {
   }
 
   return departments
-    .map((dept) => `<li><strong>${dept.deptName}</strong> — ${dept.deptStatus}</li>`)
+    .map((dept) => {
+      const safeDeptName = escapeHtml(dept.deptName);
+      const safeDeptStatus = escapeHtml(dept.deptStatus);
+      const safeUpdatedAt = escapeHtml(dept.updatedAt || 'n/a');
+      const safeUpdatedBy = escapeHtml(dept.updatedBy || 'n/a');
+
+      return `
+      <li>
+        <strong>${safeDeptName}</strong> — ${safeDeptStatus}
+        <span class="meta">Updated: ${safeUpdatedAt} by ${safeUpdatedBy}</span>
+        <button class="secondary" type="button" data-open-dept="${safeDeptName}">Open</button>
+      </li>`;
+    })
     .join('');
 }
 
@@ -24,11 +45,18 @@ export function renderDashboardScreen(root, state) {
     return;
   }
 
+  const safeSessionId = escapeHtml(session.sessionId);
+  const safeShiftCode = escapeHtml(session.shiftCode);
+  const safeShiftDate = escapeHtml(session.shiftDate);
+  const safeSessionStatus = escapeHtml(session.sessionStatus);
+  const safeUpdatedAt = escapeHtml(session.updatedAt || 'n/a');
+  const safeUpdatedBy = escapeHtml(session.updatedBy || 'n/a');
+
   root.innerHTML = `
     <section class="panel">
       <h2>Dashboard</h2>
-      <p class="meta">Session #${session.sessionId} • ${session.shiftCode} • ${session.shiftDate} • ${session.sessionStatus}</p>
-      <p class="meta">Updated: ${session.updatedAt || 'n/a'} by ${session.updatedBy || 'n/a'}</p>
+      <p class="meta">Session #${safeSessionId} • ${safeShiftCode} • ${safeShiftDate} • ${safeSessionStatus}</p>
+      <p class="meta">Updated: ${safeUpdatedAt} by ${safeUpdatedBy}</p>
 
       <h3>Department Summary</h3>
       <ul class="dept-list">${renderDepartments(session.departments)}</ul>
@@ -40,6 +68,14 @@ export function renderDashboardScreen(root, state) {
       <p id="dashboard-message" class="meta"></p>
     </section>
   `;
+
+  root.querySelectorAll('[data-open-dept]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const deptName = button.getAttribute('data-open-dept');
+      setActiveDepartmentName(deptName);
+      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'department', deptName } }));
+    });
+  });
 
   const msg = root.querySelector('#dashboard-message');
   const clearButton = root.querySelector('#clear-day-btn');

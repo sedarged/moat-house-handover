@@ -20,12 +20,14 @@ public sealed class HostWebBridge
     private readonly HostRuntimeStatus _runtimeStatus;
     private readonly BootstrapLogger _logger;
     private readonly SessionService _sessionService;
+    private readonly DepartmentService _departmentService;
 
-    public HostWebBridge(HostRuntimeStatus runtimeStatus, BootstrapLogger logger, SessionService sessionService)
+    public HostWebBridge(HostRuntimeStatus runtimeStatus, BootstrapLogger logger, SessionService sessionService, DepartmentService departmentService)
     {
         _runtimeStatus = runtimeStatus;
         _logger = logger;
         _sessionService = sessionService;
+        _departmentService = departmentService;
     }
 
     public void Attach(CoreWebView2 webView)
@@ -94,6 +96,22 @@ public sealed class HostWebBridge
                     break;
                 }
 
+
+                case "department.load":
+                {
+                    var payload = DeserializePayload<DepartmentLoadRequest>(request.Payload);
+                    var result = _departmentService.LoadDepartment(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "department.save":
+                {
+                    var payload = DeserializePayload<DepartmentSaveRequest>(request.Payload);
+                    var result = _departmentService.SaveDepartment(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
                 case "file.pickFile":
                     SendResponse(webView, request.RequestId, false, "Not implemented in Stage 2A.", null);
                     break;
