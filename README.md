@@ -8,6 +8,7 @@ Stage 2A baseline for a local-first Windows desktop handover application.
 - `webapp/` — HTML/CSS/JS application shell and placeholder screens
 - `backend/access/` — Access schema and seed artifacts used by host bootstrap
 - `docs/` — stage notes and continuation guidance
+- `scripts/` — repeatable helper scripts for checks, build, SDK bootstrap, and local packaging
 - `BUILD_NOTES.md` — local build and runtime notes
 
 ## Stage 2A Scope Completed
@@ -22,3 +23,36 @@ Stage 2A baseline for a local-first Windows desktop handover application.
 - DAO repository implementation
 - Production business save/load workflows
 - Attachment/report/send end-to-end runtime workflows
+
+## Helper scripts
+These scripts are intended for both **AI agents** and **human reviewers** so repository checks/builds can be repeated consistently.
+
+
+- `scripts/bootstrap-dotnet.sh`
+  - Use when `dotnet` is unavailable in cloud/dev environments.
+  - Installs a local .NET SDK into `./.dotnet` (idempotent) so build/package scripts can run without system-wide installation.
+
+- `scripts/check-prereqs.sh`
+  - Use when first entering the repo.
+  - Confirms required CLI tools are present (`git`, `node`, `dotnet`), including local `./.dotnet/dotnet` when bootstrapped.
+
+- `scripts/check-web.sh`
+  - Use before/after web-layer edits.
+  - Verifies `webapp/index.html` exists and runs `node --check` over JS files.
+
+- `scripts/build-host.sh`
+  - Use when validating host compilation.
+  - Builds `desktop-host/MoatHouseHandover.Host.csproj` in Release mode with Windows targeting enabled.
+
+- `scripts/package-local.sh`
+  - Use when preparing a local distributable output for review.
+  - Publishes the desktop host into `dist/local-host` with Windows targeting enabled.
+
+- `scripts/verify-package-assets.sh`
+  - Use after packaging.
+  - Verifies packaged `webapp/index.html` and `config/runtime.config.json` exist in the publish output.
+
+## Codex working model
+- Spec files (`01_*` through `07_*`) are the source of truth.
+- Root `AGENTS.md` instructions must be respected.
+- Prefer repository helper scripts over ad hoc commands wherever possible.

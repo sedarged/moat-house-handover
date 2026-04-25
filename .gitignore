@@ -11,3 +11,7 @@ logs/
 
 # Secrets/local overrides
 *.local.json
+
+# Local SDK bootstrap artifacts
+.dotnet/
+.tmp/
