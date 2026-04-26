@@ -74,3 +74,24 @@ These scripts are intended for both **AI agents** and **human reviewers** so rep
 - Root `AGENTS.md` instructions must be respected.
 - Prefer repository helper scripts over ad hoc commands wherever possible.
 - For real workstation verification flow, follow `docs/LOCAL_WINDOWS_RUNBOOK.md` and `docs/WINDOWS_RUNTIME_TEST_CHECKLIST.md`.
+
+## Windows CI
+
+GitHub Actions now includes a Windows workflow at `.github/workflows/windows-build.yml` for pull requests and manual dispatch.
+
+### What it verifies
+- Web syntax checks (`node --check`) for the JavaScript application files.
+- Windows-targeted desktop host build for `desktop-host/MoatHouseHandover.Host.csproj`.
+- Local package publish output under `dist/local-host`.
+- Packaged asset presence checks for:
+  - `webapp/index.html`
+  - `config/runtime.config.json`
+- Upload of packaged output as a CI artifact when packaging succeeds.
+
+### What it does **not** fully verify
+- Outlook COM draft creation behavior on an actual user workstation.
+- ACE/OLEDB runtime installation and behavior on the target workstation.
+- Interactive WebView2 UI behavior during real user workflows.
+- Real shared-folder/network permission behavior in workplace environments.
+
+Windows CI is build/package validation, not a replacement for real workstation runtime verification.
