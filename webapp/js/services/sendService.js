@@ -1,11 +1,15 @@
-/** Send service stub: resolve email profile and create draft. */
+import { hostRequest } from '../core/hostBridge.js';
+
 export const sendService = {
-  async getEmailProfile(shiftCode) {
-    void shiftCode;
-    throw new Error('sendService.getEmailProfile is not implemented (Stage 1 stub).');
+  async loadEmailProfileForShift(shiftCode) {
+    return hostRequest('emailProfile.loadForShift', { shiftCode });
   },
-  async createDraft(sessionId) {
-    void sessionId;
-    throw new Error('sendService.createDraft is not implemented (Stage 1 stub).');
+
+  async preparePackage(sessionId, userName = '') {
+    return hostRequest('send.preparePackage', { sessionId, userName });
+  },
+
+  async createOutlookDraft(sessionId, userName = '') {
+    return hostRequest('send.createOutlookDraft', { sessionId, userName });
   }
 };

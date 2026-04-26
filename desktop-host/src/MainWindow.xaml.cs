@@ -32,14 +32,18 @@ public partial class MainWindow : Window
             var attachmentRepository = new AttachmentRepository(startup.RuntimeStatus.AccessDatabasePath);
             var budgetRepository = new BudgetRepository(startup.RuntimeStatus.AccessDatabasePath);
             var previewRepository = new PreviewRepository(startup.RuntimeStatus.AccessDatabasePath);
+            var emailProfileRepository = new EmailProfileRepository(startup.RuntimeStatus.AccessDatabasePath);
             var sessionService = new SessionService(sessionRepository);
             var departmentService = new DepartmentService(departmentRepository);
             var attachmentService = new AttachmentService(attachmentRepository, startup.Config);
             var budgetService = new BudgetService(budgetRepository);
             var previewService = new PreviewService(previewRepository);
             var reportService = new ReportService(previewService, startup.Config);
+            var emailProfileService = new EmailProfileService(emailProfileRepository);
+            var outlookDraftService = new OutlookDraftService();
+            var sendPackageService = new SendPackageService(previewService, reportService, emailProfileService, outlookDraftService);
             var fileDialogService = new FileDialogService();
-            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService, attachmentService, budgetService, previewService, reportService, fileDialogService);
+            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService, attachmentService, budgetService, previewService, reportService, emailProfileService, sendPackageService, fileDialogService);
             _hostWebBridge.Attach(AppWebView.CoreWebView2);
 
             AppWebView.Source = new Uri(indexPath);

@@ -1,6 +1,6 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 2F + 3A combined baseline for a local-first Windows desktop handover application.
+Stage 3B + 4A combined baseline for a local-first Windows desktop handover application.
 
 ## Repository Structure
 
@@ -27,9 +27,13 @@ Stage 2F + 3A combined baseline for a local-first Windows desktop handover appli
 - Real persisted Preview payload + screen rendering (`preview.load`)
 - Local HTML report generation foundation (`reports.generateHandover`, `reports.generateBudget`, `reports.generateAll`)
 - Session-scoped reports folder open action (`shell.openReportsFolder`)
+- Shift-based email profile loading from Access (`emailProfile.loadForShift`)
+- Send package preparation with validation (`send.preparePackage`)
+- Outlook draft-only creation boundary (`send.createOutlookDraft`) with graceful non-Windows/Outlook handling
+- Real Send screen for package preparation, validation display, and draft creation workflow
 
 ## Still Deferred (by design)
-- Send workflow (Outlook draft/email actions)
+- Actual email send action (auto/manual send remains intentionally deferred)
 - Windows runtime validation of WebView2 image rendering + ACE/OLEDB behavior
 
 ## Helper scripts
