@@ -73,6 +73,15 @@ No Outlook draft/send flow is included in this slice.
 - Dashboard keeps existing summary behavior.
 - Added explicit `Open Preview` action to navigate into preview.
 
+
+## Validation commands executed in cloud environment
+- ✅ `cd /workspace/moat-house-handover && scripts/check-web.sh`
+- ⚠️ `cd /workspace/moat-house-handover && scripts/build-host.sh` initially failed because local dotnet was missing
+- ✅ `cd /workspace/moat-house-handover && scripts/bootstrap-dotnet.sh`
+- ✅ `cd /workspace/moat-house-handover && scripts/build-host.sh` passed after bootstrap
+- ✅ `cd /workspace/moat-house-handover && scripts/package-local.sh`
+- ✅ `cd /workspace/moat-house-handover && scripts/verify-package-assets.sh`
+
 ## Deferred after this slice
 - Outlook draft workflow
 - Email send workflow
