@@ -31,7 +31,9 @@ public sealed class StartupInitializer
             AccessDatabasePath: Path.GetFullPath(configResult.Config.AccessDatabasePath),
             AttachmentsRoot: Path.GetFullPath(configResult.Config.AttachmentsRoot),
             ReportsOutputRoot: Path.GetFullPath(configResult.Config.ReportsOutputRoot),
+            LogRoot: Path.GetFullPath(logRoot!),
             AssetRoot: assets,
+            IsWindows: OperatingSystem.IsWindows(),
             DatabaseReady: true,
             FoldersReady: true);
 

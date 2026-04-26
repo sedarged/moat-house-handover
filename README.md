@@ -1,6 +1,6 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 4B + 5A combined baseline for a local-first Windows desktop handover application.
+Stage 5B runtime-readiness baseline for a local-first Windows desktop handover application.
 
 ## Repository Structure
 
@@ -8,6 +8,7 @@ Stage 4B + 5A combined baseline for a local-first Windows desktop handover appli
 - `webapp/` — HTML/CSS/JS application shell and placeholder screens
 - `backend/access/` — Access schema and seed artifacts used by host bootstrap
 - `docs/` — stage notes and continuation guidance
+- `docs/LOCAL_WINDOWS_RUNBOOK.md` — practical workstation run/test instructions
 - `scripts/` — repeatable helper scripts for checks, build, SDK bootstrap, and local packaging
 - `BUILD_NOTES.md` — local build and runtime notes
 
@@ -72,3 +73,4 @@ These scripts are intended for both **AI agents** and **human reviewers** so rep
 - Spec files (`01_*` through `07_*`) are the source of truth.
 - Root `AGENTS.md` instructions must be respected.
 - Prefer repository helper scripts over ad hoc commands wherever possible.
+- For real workstation verification flow, follow `docs/LOCAL_WINDOWS_RUNBOOK.md` and `docs/WINDOWS_RUNTIME_TEST_CHECKLIST.md`.

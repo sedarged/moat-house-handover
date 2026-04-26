@@ -5,6 +5,8 @@ public sealed record HostRuntimeStatus(
     string AccessDatabasePath,
     string AttachmentsRoot,
     string ReportsOutputRoot,
+    string LogRoot,
     string AssetRoot,
+    bool IsWindows,
     bool DatabaseReady,
     bool FoldersReady);

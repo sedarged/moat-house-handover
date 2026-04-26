@@ -1,5 +1,6 @@
 import { diagnosticsService } from '../services/diagnosticsService.js';
 import { auditService } from '../services/auditService.js';
+import { getRuntimeStatus } from '../core/hostBridge.js';
 
 function makeMeta(label, value) {
   const row = document.createElement('p');
@@ -80,8 +81,12 @@ export function renderDiagnosticsScreen(root, state) {
 
   const hint = document.createElement('p');
   hint.className = 'meta';
-  hint.textContent = 'Run diagnostics to validate database/config/folder/profile/Outlook readiness. No email is sent here.';
+  hint.textContent = 'Run Diagnostics first on each workstation before session testing. No email is sent here.';
   panel.append(hint);
+  const boundary = document.createElement('p');
+  boundary.className = 'meta';
+  boundary.textContent = 'Outlook draft creation requires Windows + Outlook desktop. Access checks require local ACE/OLEDB runtime support.';
+  panel.append(boundary);
 
   const msg = document.createElement('p');
   msg.className = 'meta';
@@ -98,6 +103,11 @@ export function renderDiagnosticsScreen(root, state) {
   auditButton.type = 'button';
   auditButton.textContent = 'Refresh Audit';
 
+  const logsButton = document.createElement('button');
+  logsButton.type = 'button';
+  logsButton.className = 'secondary';
+  logsButton.textContent = 'Open Logs Folder';
+
   const backDashboard = document.createElement('button');
   backDashboard.type = 'button';
   backDashboard.className = 'secondary';
@@ -108,7 +118,7 @@ export function renderDiagnosticsScreen(root, state) {
   backShift.className = 'secondary';
   backShift.textContent = 'Back to Shift';
 
-  actions.append(runButton, auditButton, backDashboard, backShift);
+  actions.append(runButton, auditButton, logsButton, backDashboard, backShift);
   panel.append(actions);
 
   const overall = document.createElement('div');
@@ -128,11 +138,18 @@ export function renderDiagnosticsScreen(root, state) {
   const auditWrap = document.createElement('div');
   panel.append(auditWrap);
 
+  const pathsTitle = document.createElement('h3');
+  pathsTitle.textContent = 'Runtime Paths';
+  panel.append(pathsTitle);
+  const pathsWrap = document.createElement('div');
+  panel.append(pathsWrap);
+
   root.append(panel);
 
   const setBusy = (busy) => {
     runButton.disabled = busy;
     auditButton.disabled = busy;
+    logsButton.disabled = busy;
   };
 
   const renderOverall = (payload) => {
@@ -146,8 +163,19 @@ export function renderDiagnosticsScreen(root, state) {
     overall.append(makeMeta('Access database path', getStatus('access.database.path')));
     overall.append(makeMeta('Attachments root', getStatus('attachments.root.exists')));
     overall.append(makeMeta('Reports root', getStatus('reports.root.exists')));
+    overall.append(makeMeta('Logs root', getStatus('logs.root.exists')));
     overall.append(makeMeta('Email profiles AM/PM/NS', getStatus('email.profiles.exist')));
     overall.append(makeMeta('Outlook availability', getStatus('outlook.com.available')));
+  };
+
+  const renderRuntimePaths = (status) => {
+    pathsWrap.textContent = '';
+    pathsWrap.append(makeMeta('Config file', status?.configPath || 'n/a'));
+    pathsWrap.append(makeMeta('Access DB', status?.accessDatabasePath || 'n/a'));
+    pathsWrap.append(makeMeta('Attachments root', status?.attachmentsRoot || 'n/a'));
+    pathsWrap.append(makeMeta('Reports root', status?.reportsOutputRoot || 'n/a'));
+    pathsWrap.append(makeMeta('Logs root', status?.logRoot || 'n/a'));
+    pathsWrap.append(makeMeta('Asset root', status?.assetRoot || 'n/a'));
   };
 
   async function runDiagnostics() {
@@ -187,6 +215,17 @@ export function renderDiagnosticsScreen(root, state) {
 
   runButton.addEventListener('click', runDiagnostics);
   auditButton.addEventListener('click', loadAudit);
+  logsButton.addEventListener('click', async () => {
+    setBusy(true);
+    try {
+      const result = await diagnosticsService.openLogsFolder();
+      msg.textContent = `Opened logs folder: ${result?.openedPath || 'n/a'}`;
+    } catch (error) {
+      msg.textContent = error instanceof Error ? error.message : 'Failed to open logs folder.';
+    } finally {
+      setBusy(false);
+    }
+  });
 
   backDashboard.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
@@ -197,6 +236,7 @@ export function renderDiagnosticsScreen(root, state) {
   });
 
   renderOverall(null);
+  getRuntimeStatus().then(renderRuntimePaths).catch(() => renderRuntimePaths(null));
   renderChecks(checksWrap, []);
   renderAudit(auditWrap, []);
   loadAudit();

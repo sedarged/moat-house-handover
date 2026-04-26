@@ -70,6 +70,7 @@ export function renderDashboardScreen(root, state) {
   root.innerHTML = `
     <section class="panel">
       <h2>Dashboard</h2>
+      <p class="meta">Before full test pass on a new workstation, run Diagnostics and resolve warnings/failures.</p>
       <p id="dashboard-session" class="meta"></p>
       <p id="dashboard-updated" class="meta"></p>
       <p id="dashboard-total-attachments" class="meta"></p>
