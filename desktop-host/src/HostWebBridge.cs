@@ -23,6 +23,8 @@ public sealed class HostWebBridge
     private readonly DepartmentService _departmentService;
     private readonly AttachmentService _attachmentService;
     private readonly BudgetService _budgetService;
+    private readonly PreviewService _previewService;
+    private readonly ReportService _reportService;
     private readonly FileDialogService _fileDialogService;
 
     public HostWebBridge(
@@ -32,6 +34,8 @@ public sealed class HostWebBridge
         DepartmentService departmentService,
         AttachmentService attachmentService,
         BudgetService budgetService,
+        PreviewService previewService,
+        ReportService reportService,
         FileDialogService fileDialogService)
     {
         _runtimeStatus = runtimeStatus;
@@ -40,6 +44,8 @@ public sealed class HostWebBridge
         _departmentService = departmentService;
         _attachmentService = attachmentService;
         _budgetService = budgetService;
+        _previewService = previewService;
+        _reportService = reportService;
         _fileDialogService = fileDialogService;
     }
 
@@ -81,9 +87,16 @@ public sealed class HostWebBridge
                     break;
 
                 case "shell.openOutputFolder":
-                    OpenFolder(_runtimeStatus.ReportsOutputRoot);
-                    SendResponse(webView, request.RequestId, true, null, new { opened = _runtimeStatus.ReportsOutputRoot });
+                case "shell.openReportsFolder":
+                {
+                    var payload = request.Payload is null
+                        ? new ReportsFolderRequest(null)
+                        : DeserializePayload<ReportsFolderRequest>(request.Payload);
+                    var folder = _reportService.ResolveReportsFolder(payload);
+                    OpenFolder(folder.OpenedPath);
+                    SendResponse(webView, request.RequestId, true, null, folder);
                     break;
+                }
 
                 case "session.open":
                 {
@@ -196,6 +209,38 @@ public sealed class HostWebBridge
                 {
                     var payload = DeserializePayload<DashboardBudgetSummaryRequest>(request.Payload);
                     var result = _budgetService.LoadBudgetSummary(payload.SessionId);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "preview.load":
+                {
+                    var payload = DeserializePayload<PreviewLoadRequest>(request.Payload);
+                    var result = _previewService.LoadPreview(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "reports.generateHandover":
+                {
+                    var payload = DeserializePayload<ReportGenerateRequest>(request.Payload);
+                    var result = _reportService.GenerateHandoverReport(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "reports.generateBudget":
+                {
+                    var payload = DeserializePayload<ReportGenerateRequest>(request.Payload);
+                    var result = _reportService.GenerateBudgetReport(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "reports.generateAll":
+                {
+                    var payload = DeserializePayload<ReportGenerateRequest>(request.Payload);
+                    var result = _reportService.GenerateAllReports(payload);
                     SendResponse(webView, request.RequestId, true, null, result);
                     break;
                 }

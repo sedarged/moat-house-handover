@@ -9,7 +9,9 @@ export const appState = {
   selectedAttachmentId: null,
   viewerState: null,
   activeBudget: null,
-  budgetSummary: null
+  budgetSummary: null,
+  preview: null,
+  generatedReports: []
 };
 
 export function applySessionPayload(sessionPayload) {
@@ -20,6 +22,8 @@ export function applySessionPayload(sessionPayload) {
   appState.viewerState = null;
   appState.activeBudget = null;
   appState.budgetSummary = null;
+  appState.preview = null;
+  appState.generatedReports = [];
 
   appState.session = {
     ...createInitialSessionState(),
@@ -86,4 +90,17 @@ export function applyBudgetPayload(payload) {
 
 export function applyBudgetSummaryPayload(payload) {
   appState.budgetSummary = payload || null;
+}
+
+export function applyPreviewPayload(payload) {
+  appState.preview = payload || null;
+}
+
+export function appendGeneratedReport(result) {
+  if (!result) {
+    return;
+  }
+
+  const existing = Array.isArray(appState.generatedReports) ? appState.generatedReports : [];
+  appState.generatedReports = [result, ...existing].slice(0, 10);
 }

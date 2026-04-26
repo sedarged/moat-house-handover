@@ -1,15 +1,19 @@
-/** Reports service stub: generate handover and budget report files. */
+import { hostRequest } from '../core/hostBridge.js';
+
 export const reportsService = {
-  async generateHandoverReport(sessionId) {
-    void sessionId;
-    throw new Error('reportsService.generateHandoverReport is not implemented (Stage 1 stub).');
+  async generateHandoverReport(sessionId, userName = '') {
+    return hostRequest('reports.generateHandover', { sessionId, userName });
   },
-  async generateBudgetReport(sessionId) {
-    void sessionId;
-    throw new Error('reportsService.generateBudgetReport is not implemented (Stage 1 stub).');
+
+  async generateBudgetReport(sessionId, userName = '') {
+    return hostRequest('reports.generateBudget', { sessionId, userName });
   },
-  async openOutputFolder(sessionId) {
-    void sessionId;
-    throw new Error('reportsService.openOutputFolder is not implemented (Stage 1 stub).');
+
+  async generateAllReports(sessionId, userName = '') {
+    return hostRequest('reports.generateAll', { sessionId, userName });
+  },
+
+  async openReportsFolder(sessionId = null) {
+    return hostRequest('shell.openReportsFolder', { sessionId });
   }
 };

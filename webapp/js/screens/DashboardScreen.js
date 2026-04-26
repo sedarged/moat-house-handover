@@ -83,6 +83,7 @@ export function renderDashboardScreen(root, state) {
 
       <div class="actions-row">
         <button id="open-budget-btn" type="button">Open Budget</button>
+        <button id="open-preview-btn" type="button">Open Preview</button>
         <button id="clear-day-btn" type="button">Clear Day</button>
         <button id="back-shift-btn" type="button" class="secondary">Back to Shift</button>
       </div>
@@ -98,6 +99,7 @@ export function renderDashboardScreen(root, state) {
   const deptList = root.querySelector('#dashboard-dept-list');
   const msg = root.querySelector('#dashboard-message');
   const openBudgetButton = root.querySelector('#open-budget-btn');
+  const previewButton = root.querySelector('#open-preview-btn');
   const clearButton = root.querySelector('#clear-day-btn');
   const backButton = root.querySelector('#back-shift-btn');
 
@@ -123,6 +125,10 @@ export function renderDashboardScreen(root, state) {
 
   openBudgetButton?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'budget' } }));
+  });
+
+  previewButton?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'preview' } }));
   });
 
   clearButton?.addEventListener('click', async () => {
