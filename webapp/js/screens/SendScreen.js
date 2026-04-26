@@ -172,7 +172,11 @@ export function renderSendScreen(root, state) {
       const result = await sendService.createOutlookDraft(sessionId, state.session?.userName || '');
       applySendPackagePayload(result.package);
       renderPackage(result.package);
-      message.textContent = result.draft?.message || (result.success ? 'Outlook draft created.' : 'Outlook draft was not created.');
+      if (result.success) {
+        message.textContent = result.draft?.message || 'Outlook draft created. Email was not sent.';
+      } else {
+        message.textContent = result.draft?.message || 'Outlook draft was not created. Review validation/errors and retry.';
+      }
     } catch (error) {
       message.textContent = error instanceof Error ? error.message : 'Failed to create Outlook draft.';
     } finally {

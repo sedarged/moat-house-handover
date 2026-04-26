@@ -9,11 +9,13 @@ namespace MoatHouseHandover.Host;
 public sealed class ReportService
 {
     private readonly PreviewService _previewService;
+    private readonly AuditLogService _auditLogService;
     private readonly string _reportsRoot;
 
-    public ReportService(PreviewService previewService, HostConfig config)
+    public ReportService(PreviewService previewService, AuditLogService auditLogService, HostConfig config)
     {
         _previewService = previewService;
+        _auditLogService = auditLogService;
         _reportsRoot = Path.GetFullPath(config.ReportsOutputRoot);
     }
 
@@ -21,41 +23,51 @@ public sealed class ReportService
     {
         var normalizedUser = NormalizeUser(request.UserName);
         var preview = LoadPreview(request.SessionId);
-        var reportDirectory = EnsureSessionReportDirectory(preview.Session);
+        var fullPath = WriteReportFile(preview, "Handover", BuildHandoverHtml(preview));
+        var result = BuildResult("handover", normalizedUser, preview.Session, new[] { fullPath });
+        _auditLogService.BestEffortLog(
+            actionType: "reports.generateHandover",
+            entityType: "Report",
+            entityKey: AuditLogService.BuildSessionKey(preview.Session.SessionId),
+            userName: normalizedUser,
+            details: new { sessionId = preview.Session.SessionId, reportType = "handover", fileCount = 1 });
 
-        var fileName = BuildFileName("Handover", preview.Session);
-        var fullPath = Path.Combine(reportDirectory, fileName);
-        File.WriteAllText(fullPath, BuildHandoverHtml(preview), Encoding.UTF8);
-
-        return BuildResult("handover", normalizedUser, preview.Session, new[] { fullPath });
+        return result;
     }
 
     public ReportGenerateResult GenerateBudgetReport(ReportGenerateRequest request)
     {
         var normalizedUser = NormalizeUser(request.UserName);
         var preview = LoadPreview(request.SessionId);
-        var reportDirectory = EnsureSessionReportDirectory(preview.Session);
+        var fullPath = WriteReportFile(preview, "Budget", BuildBudgetHtml(preview));
+        var result = BuildResult("budget", normalizedUser, preview.Session, new[] { fullPath });
+        _auditLogService.BestEffortLog(
+            actionType: "reports.generateBudget",
+            entityType: "Report",
+            entityKey: AuditLogService.BuildSessionKey(preview.Session.SessionId),
+            userName: normalizedUser,
+            details: new { sessionId = preview.Session.SessionId, reportType = "budget", fileCount = 1 });
 
-        var fileName = BuildFileName("Budget", preview.Session);
-        var fullPath = Path.Combine(reportDirectory, fileName);
-        File.WriteAllText(fullPath, BuildBudgetHtml(preview), Encoding.UTF8);
-
-        return BuildResult("budget", normalizedUser, preview.Session, new[] { fullPath });
+        return result;
     }
 
     public ReportGenerateResult GenerateAllReports(ReportGenerateRequest request)
     {
         var normalizedUser = NormalizeUser(request.UserName);
         var preview = LoadPreview(request.SessionId);
-        var reportDirectory = EnsureSessionReportDirectory(preview.Session);
 
-        var handoverPath = Path.Combine(reportDirectory, BuildFileName("Handover", preview.Session));
-        var budgetPath = Path.Combine(reportDirectory, BuildFileName("Budget", preview.Session));
+        var handoverPath = WriteReportFile(preview, "Handover", BuildHandoverHtml(preview));
+        var budgetPath = WriteReportFile(preview, "Budget", BuildBudgetHtml(preview));
 
-        File.WriteAllText(handoverPath, BuildHandoverHtml(preview), Encoding.UTF8);
-        File.WriteAllText(budgetPath, BuildBudgetHtml(preview), Encoding.UTF8);
+        var result = BuildResult("all", normalizedUser, preview.Session, new[] { handoverPath, budgetPath });
+        _auditLogService.BestEffortLog(
+            actionType: "reports.generateAll",
+            entityType: "Report",
+            entityKey: AuditLogService.BuildSessionKey(preview.Session.SessionId),
+            userName: normalizedUser,
+            details: new { sessionId = preview.Session.SessionId, reportType = "all", fileCount = 2 });
 
-        return BuildResult("all", normalizedUser, preview.Session, new[] { handoverPath, budgetPath });
+        return result;
     }
 
     public ReportsFolderResult ResolveReportsFolder(ReportsFolderRequest request)
@@ -69,6 +81,32 @@ public sealed class ReportService
 
         Directory.CreateDirectory(_reportsRoot);
         return new ReportsFolderResult(_reportsRoot);
+    }
+
+
+    private string WriteReportFile(PreviewPayload preview, string reportPrefix, string html)
+    {
+        var reportDirectory = EnsureSessionReportDirectory(preview.Session);
+        var fileName = BuildFileName(reportPrefix, preview.Session);
+        var fullPath = Path.Combine(reportDirectory, fileName);
+
+        try
+        {
+            File.WriteAllText(fullPath, html, Encoding.UTF8);
+            return fullPath;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new InvalidOperationException($"Report generation failed due to folder permissions: {fullPath}", ex);
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            throw new InvalidOperationException($"Report output folder is unavailable: {reportDirectory}", ex);
+        }
+        catch (IOException ex)
+        {
+            throw new InvalidOperationException($"Report file write failed: {fullPath}", ex);
+        }
     }
 
     private PreviewPayload LoadPreview(long sessionId)

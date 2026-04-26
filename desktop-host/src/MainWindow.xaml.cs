@@ -33,17 +33,35 @@ public partial class MainWindow : Window
             var budgetRepository = new BudgetRepository(startup.RuntimeStatus.AccessDatabasePath);
             var previewRepository = new PreviewRepository(startup.RuntimeStatus.AccessDatabasePath);
             var emailProfileRepository = new EmailProfileRepository(startup.RuntimeStatus.AccessDatabasePath);
-            var sessionService = new SessionService(sessionRepository);
-            var departmentService = new DepartmentService(departmentRepository);
-            var attachmentService = new AttachmentService(attachmentRepository, startup.Config);
-            var budgetService = new BudgetService(budgetRepository);
+            var auditLogRepository = new AuditLogRepository(startup.RuntimeStatus.AccessDatabasePath);
+
+            var auditLogService = new AuditLogService(auditLogRepository, startup.Logger);
+            var sessionService = new SessionService(sessionRepository, auditLogService);
+            var departmentService = new DepartmentService(departmentRepository, auditLogService);
+            var attachmentService = new AttachmentService(attachmentRepository, auditLogService, startup.Config);
+            var budgetService = new BudgetService(budgetRepository, auditLogService);
             var previewService = new PreviewService(previewRepository);
-            var reportService = new ReportService(previewService, startup.Config);
+            var reportService = new ReportService(previewService, auditLogService, startup.Config);
             var emailProfileService = new EmailProfileService(emailProfileRepository);
             var outlookDraftService = new OutlookDraftService();
-            var sendPackageService = new SendPackageService(previewService, reportService, emailProfileService, outlookDraftService);
+            var sendPackageService = new SendPackageService(previewService, reportService, emailProfileService, outlookDraftService, auditLogService);
+            var diagnosticsService = new DiagnosticsService(startup.RuntimeStatus, startup.Config);
             var fileDialogService = new FileDialogService();
-            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService, attachmentService, budgetService, previewService, reportService, emailProfileService, sendPackageService, fileDialogService);
+
+            _hostWebBridge = new HostWebBridge(
+                startup.RuntimeStatus,
+                startup.Logger,
+                sessionService,
+                departmentService,
+                attachmentService,
+                budgetService,
+                previewService,
+                reportService,
+                emailProfileService,
+                sendPackageService,
+                diagnosticsService,
+                auditLogService,
+                fileDialogService);
             _hostWebBridge.Attach(AppWebView.CoreWebView2);
 
             AppWebView.Source = new Uri(indexPath);

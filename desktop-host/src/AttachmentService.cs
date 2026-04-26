@@ -8,11 +8,13 @@ namespace MoatHouseHandover.Host;
 public sealed class AttachmentService
 {
     private readonly AttachmentRepository _repository;
+    private readonly AuditLogService _auditLogService;
     private readonly string _attachmentsRootFullPath;
 
-    public AttachmentService(AttachmentRepository repository, HostConfig config)
+    public AttachmentService(AttachmentRepository repository, AuditLogService auditLogService, HostConfig config)
     {
         _repository = repository;
+        _auditLogService = auditLogService;
         _attachmentsRootFullPath = EnsureTrailingDirectorySeparator(Path.GetFullPath(config.AttachmentsRoot));
     }
 
@@ -62,7 +64,15 @@ public sealed class AttachmentService
             UserName = NormalizeUser(request.UserName)
         };
 
-        return _repository.AddAttachmentMetadata(normalized, targetPath, normalized.UserName);
+        var result = _repository.AddAttachmentMetadata(normalized, targetPath, normalized.UserName);
+        _auditLogService.BestEffortLog(
+            actionType: "attachment.add",
+            entityType: "Attachment",
+            entityKey: $"{AuditLogService.BuildSessionKey(normalized.SessionId)}|dept:{normalized.DeptName}",
+            userName: normalized.UserName,
+            details: new { sessionId = normalized.SessionId, deptRecordId = normalized.DeptRecordId, normalized.DeptName, normalized.DisplayName });
+
+        return result;
     }
 
     public AttachmentListResult RemoveAttachment(AttachmentRemoveRequest request)
@@ -72,8 +82,16 @@ public sealed class AttachmentService
             throw new InvalidOperationException("attachmentId is required.");
         }
 
-        // Stage 2D: metadata soft-delete only; per-user delete audit detail is deferred.
-        return _repository.RemoveAttachment(request.AttachmentId);
+        // Stage 2D: metadata soft-delete only; physical cleanup remains deferred.
+        var result = _repository.RemoveAttachment(request.AttachmentId);
+        _auditLogService.BestEffortLog(
+            actionType: "attachment.remove",
+            entityType: "Attachment",
+            entityKey: $"{AuditLogService.BuildSessionKey(result.SessionId)}|dept:{result.DeptName}",
+            userName: NormalizeUser(request.UserName),
+            details: new { attachmentId = request.AttachmentId, sessionId = result.SessionId, result.DeptRecordId, result.DeptName });
+
+        return result;
     }
 
     public AttachmentViewerPayload GetViewerPayload(AttachmentViewerRequest request)
