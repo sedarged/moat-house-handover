@@ -42,17 +42,17 @@ WHERE HandoverID = ?", connection);
             return null;
         }
 
-        var createdAt = reader["CreatedAt"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(reader["CreatedAt"]);
-        var updatedAt = reader["UpdatedAt"] == DBNull.Value ? createdAt : Convert.ToDateTime(reader["UpdatedAt"]);
+        var createdAt = reader["CreatedAt"] == DBNull.Value ? null : ToIso(reader["CreatedAt"]);
+        var updatedAt = reader["UpdatedAt"] == DBNull.Value ? null : ToIso(reader["UpdatedAt"]);
 
         return new PreviewSessionHeader(
             SessionId: Convert.ToInt64(reader["HandoverID"]),
             ShiftCode: Convert.ToString(reader["ShiftCode"]) ?? string.Empty,
             ShiftDate: Convert.ToDateTime(reader["ShiftDate"]).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             SessionStatus: Convert.ToString(reader["SessionStatus"]) ?? "Open",
-            CreatedAt: ToIso(createdAt),
+            CreatedAt: createdAt,
             CreatedBy: Convert.ToString(reader["CreatedBy"]) ?? string.Empty,
-            UpdatedAt: ToIso(updatedAt),
+            UpdatedAt: updatedAt,
             UpdatedBy: Convert.ToString(reader["UpdatedBy"]) ?? string.Empty);
     }
 

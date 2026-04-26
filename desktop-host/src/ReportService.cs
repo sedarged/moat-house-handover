@@ -213,9 +213,10 @@ public sealed class ReportService
         return Environment.UserName;
     }
 
-    private static string Encode(string value)
+    private static string Encode(string? value)
     {
-        return value
+        var input = value ?? string.Empty;
+        return input
             .Replace("&", "&amp;", StringComparison.Ordinal)
             .Replace("<", "&lt;", StringComparison.Ordinal)
             .Replace(">", "&gt;", StringComparison.Ordinal)

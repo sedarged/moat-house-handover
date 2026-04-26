@@ -16,9 +16,9 @@ public sealed record PreviewSessionHeader(
     string ShiftCode,
     string ShiftDate,
     string SessionStatus,
-    string CreatedAt,
+    string? CreatedAt,
     string CreatedBy,
-    string UpdatedAt,
+    string? UpdatedAt,
     string UpdatedBy);
 
 public sealed record PreviewDepartmentSummary(
