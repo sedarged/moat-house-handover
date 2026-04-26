@@ -262,12 +262,16 @@ export function renderPreviewScreen(root, state) {
   openFolderButton.className = 'secondary';
   openFolderButton.textContent = 'Open Reports Folder';
 
+  const sendButton = document.createElement('button');
+  sendButton.type = 'button';
+  sendButton.textContent = 'Go to Send';
+
   const backButton = document.createElement('button');
   backButton.type = 'button';
   backButton.className = 'secondary';
   backButton.textContent = 'Back to Dashboard';
 
-  actions.append(handoverButton, budgetButton, bothButton, openFolderButton, backButton);
+  actions.append(handoverButton, budgetButton, bothButton, openFolderButton, sendButton, backButton);
   panel.append(actions);
 
   const sessionSection = makeSection('Session header');
@@ -343,6 +347,10 @@ export function renderPreviewScreen(root, state) {
     } finally {
       setBusy(false);
     }
+  });
+
+  sendButton.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'send' } }));
   });
 
   backButton.addEventListener('click', () => {

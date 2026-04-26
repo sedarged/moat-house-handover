@@ -11,7 +11,8 @@ export const appState = {
   activeBudget: null,
   budgetSummary: null,
   preview: null,
-  generatedReports: []
+  generatedReports: [],
+  sendPackage: null
 };
 
 export function applySessionPayload(sessionPayload) {
@@ -24,6 +25,7 @@ export function applySessionPayload(sessionPayload) {
   appState.budgetSummary = null;
   appState.preview = null;
   appState.generatedReports = [];
+  appState.sendPackage = null;
 
   appState.session = {
     ...createInitialSessionState(),
@@ -103,4 +105,8 @@ export function appendGeneratedReport(result) {
 
   const existing = Array.isArray(appState.generatedReports) ? appState.generatedReports : [];
   appState.generatedReports = [result, ...existing].slice(0, 10);
+}
+
+export function applySendPackagePayload(payload) {
+  appState.sendPackage = payload || null;
 }

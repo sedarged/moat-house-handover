@@ -25,6 +25,8 @@ public sealed class HostWebBridge
     private readonly BudgetService _budgetService;
     private readonly PreviewService _previewService;
     private readonly ReportService _reportService;
+    private readonly EmailProfileService _emailProfileService;
+    private readonly SendPackageService _sendPackageService;
     private readonly FileDialogService _fileDialogService;
 
     public HostWebBridge(
@@ -36,6 +38,8 @@ public sealed class HostWebBridge
         BudgetService budgetService,
         PreviewService previewService,
         ReportService reportService,
+        EmailProfileService emailProfileService,
+        SendPackageService sendPackageService,
         FileDialogService fileDialogService)
     {
         _runtimeStatus = runtimeStatus;
@@ -46,6 +50,8 @@ public sealed class HostWebBridge
         _budgetService = budgetService;
         _previewService = previewService;
         _reportService = reportService;
+        _emailProfileService = emailProfileService;
+        _sendPackageService = sendPackageService;
         _fileDialogService = fileDialogService;
     }
 
@@ -241,6 +247,30 @@ public sealed class HostWebBridge
                 {
                     var payload = DeserializePayload<ReportGenerateRequest>(request.Payload);
                     var result = _reportService.GenerateAllReports(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "emailProfile.loadForShift":
+                {
+                    var payload = DeserializePayload<EmailProfileLoadRequest>(request.Payload);
+                    var result = _emailProfileService.LoadActiveForShift(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "send.preparePackage":
+                {
+                    var payload = DeserializePayload<SendPreparePackageRequest>(request.Payload);
+                    var result = _sendPackageService.PreparePackage(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "send.createOutlookDraft":
+                {
+                    var payload = DeserializePayload<SendCreateOutlookDraftRequest>(request.Payload);
+                    var result = _sendPackageService.CreateOutlookDraft(payload);
                     SendResponse(webView, request.RequestId, true, null, result);
                     break;
                 }
