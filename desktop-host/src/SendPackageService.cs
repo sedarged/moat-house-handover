@@ -60,7 +60,8 @@ public sealed class SendPackageService
         var validation = new List<string>();
         if (sessionId <= 0)
         {
-            throw new InvalidOperationException("SessionId is required.");
+            validation.Add("SessionId is required.");
+            return BuildFallbackInvalid(sessionId, userName, validation);
         }
 
         PreviewPayload? preview = null;
@@ -184,9 +185,7 @@ public sealed class SendPackageService
 
         foreach (var token in tokens)
         {
-            value = value
-                .Replace($"{{{token.Key}}}", token.Value ?? string.Empty, StringComparison.OrdinalIgnoreCase)
-                .Replace($"{{{token.Key.ToLowerInvariant()}}}", token.Value ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            value = value.Replace($"{{{token.Key}}}", token.Value ?? string.Empty, StringComparison.OrdinalIgnoreCase);
         }
 
         return value;
