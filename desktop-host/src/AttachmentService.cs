@@ -31,7 +31,7 @@ public sealed class AttachmentService
         var sourceFilePath = (request.SourceFilePath ?? string.Empty).Trim();
         if (!File.Exists(sourceFilePath))
         {
-            throw new InvalidOperationException("Source attachment file was not found.");
+            throw new InvalidOperationException($"Source attachment file was not found: {sourceFilePath}");
         }
 
         var safeDisplayName = NormalizeDisplayName(request.DisplayName, sourceFilePath);

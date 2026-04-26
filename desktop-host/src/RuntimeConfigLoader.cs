@@ -47,7 +47,8 @@ public sealed class RuntimeConfigLoader
         throw new InvalidOperationException(
             "Unable to load runtime config. Checked paths:\n"
             + string.Join("\n", candidates)
-            + (errors.Count == 0 ? string.Empty : "\nErrors:\n" + string.Join("\n", errors)));
+            + (errors.Count == 0 ? string.Empty : "\nErrors:\n" + string.Join("\n", errors))
+            + "\nSet MOAT_HANDOVER_CONFIG or place runtime.config.json in the packaged config folder.");
     }
 
     public IReadOnlyList<string> GetConfigCandidates()

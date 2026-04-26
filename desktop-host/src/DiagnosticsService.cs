@@ -52,7 +52,11 @@ public sealed class DiagnosticsService
                 return new DiagnosticsCheckResult("config.values.loaded", "failed", "Required runtime config values are missing.", string.Join(", ", missing));
             }
 
-            return new DiagnosticsCheckResult("config.values.loaded", "ok", "Runtime config values are loaded.", _runtimeStatus.ConfigPath);
+            return new DiagnosticsCheckResult(
+                "config.values.loaded",
+                "ok",
+                "Runtime config values are loaded.",
+                $"config={_runtimeStatus.ConfigPath} | db={_runtimeStatus.AccessDatabasePath} | attachments={_runtimeStatus.AttachmentsRoot} | reports={_runtimeStatus.ReportsOutputRoot} | logs={_runtimeStatus.LogRoot}");
         });
 
         AddCheck(checks, "access.database.path", () =>
@@ -67,9 +71,20 @@ public sealed class DiagnosticsService
 
         AddCheck(checks, "access.connection.open", () =>
         {
-            using var connection = new OleDbConnection(AccessBootstrapper.BuildConnectionString(_runtimeStatus.AccessDatabasePath));
-            connection.Open();
-            return new DiagnosticsCheckResult("access.connection.open", "ok", "Access connection opened successfully.", connection.DataSource ?? _runtimeStatus.AccessDatabasePath);
+            try
+            {
+                using var connection = new OleDbConnection(AccessBootstrapper.BuildConnectionString(_runtimeStatus.AccessDatabasePath));
+                connection.Open();
+                return new DiagnosticsCheckResult("access.connection.open", "ok", "Access connection opened successfully.", connection.DataSource ?? _runtimeStatus.AccessDatabasePath);
+            }
+            catch (Exception ex)
+            {
+                return new DiagnosticsCheckResult(
+                    "access.connection.open",
+                    "failed",
+                    "Access connection failed. Verify Access Database Engine (ACE/OLEDB) is installed and the DB path is reachable.",
+                    ex.Message);
+            }
         });
 
         AddCheck(checks, "access.config.seed", CheckConfigSeed);
@@ -87,7 +102,7 @@ public sealed class DiagnosticsService
         {
             if (!OperatingSystem.IsWindows())
             {
-                return new DiagnosticsCheckResult("outlook.com.available", "warning", "Outlook COM check requires Windows.", "Non-Windows environment");
+                return new DiagnosticsCheckResult("outlook.com.available", "warning", "Outlook draft creation requires Windows + Outlook desktop.", "Non-Windows environment");
             }
 
             var outlookType = Type.GetTypeFromProgID("Outlook.Application");
@@ -98,6 +113,26 @@ public sealed class DiagnosticsService
 
             return new DiagnosticsCheckResult("outlook.com.available", "ok", "Outlook COM type is available.", outlookType.FullName ?? "Outlook.Application");
         });
+
+        AddCheck(checks, "runtime.boundary", () =>
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return new DiagnosticsCheckResult(
+                    "runtime.boundary",
+                    "warning",
+                    "This app targets Windows workstation runtime (WebView2 + ACE/OLEDB + Outlook desktop draft flow).",
+                    "Current environment is non-Windows.");
+            }
+
+            return new DiagnosticsCheckResult(
+                "runtime.boundary",
+                "ok",
+                "Windows runtime detected. Continue with diagnostics and workstation checklist verification.",
+                "WebView2 runtime, ACE provider, and Outlook desktop still require local validation.");
+        });
+
+        AddCheck(checks, "logs.root.exists", () => EnsureDirectory("logs.root.exists", _runtimeStatus.LogRoot));
 
         var overall = ComputeOverallStatus(checks);
         return new DiagnosticsPayload(overall, DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), checks);

@@ -14,6 +14,7 @@ export function renderShiftScreen(root, state) {
     <section class="panel">
       <h2>Shift Session</h2>
       <p class="meta">Open existing AM/PM/NS session by date, or create a blank day when none exists.</p>
+      <p class="meta">First run on a workstation: open <strong>Diagnostics</strong> and confirm Windows/WebView2/Access/Outlook prerequisites.</p>
       <form id="shift-form" class="form-grid">
         <label>
           Shift
@@ -82,4 +83,3 @@ export function renderShiftScreen(root, state) {
     window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'diagnostics' } }));
   });
 }
-

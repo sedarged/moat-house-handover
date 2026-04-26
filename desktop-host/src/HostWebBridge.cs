@@ -137,6 +137,12 @@ public sealed class HostWebBridge
                     SendResponse(webView, request.RequestId, true, null, folder);
                     break;
                 }
+                case "shell.openLogsFolder":
+                {
+                    OpenFolder(_runtimeStatus.LogRoot);
+                    SendResponse(webView, request.RequestId, true, null, new { openedPath = _runtimeStatus.LogRoot });
+                    break;
+                }
 
                 case "session.open":
                 {
@@ -338,11 +344,26 @@ public sealed class HostWebBridge
 
     private void OpenFolder(string path)
     {
+        if (!System.IO.Directory.Exists(path))
+        {
+            throw new InvalidOperationException($"Folder does not exist: {path}");
+        }
+
         _logger.Log($"Bridge request open folder: {path}");
+        if (OperatingSystem.IsWindows())
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{path}\"",
+                UseShellExecute = true
+            });
+            return;
+        }
+
         Process.Start(new ProcessStartInfo
         {
-            FileName = "explorer.exe",
-            Arguments = $"\"{path}\"",
+            FileName = path,
             UseShellExecute = true
         });
     }
