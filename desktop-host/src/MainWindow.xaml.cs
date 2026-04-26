@@ -31,12 +31,15 @@ public partial class MainWindow : Window
             var departmentRepository = new DepartmentRepository(startup.RuntimeStatus.AccessDatabasePath);
             var attachmentRepository = new AttachmentRepository(startup.RuntimeStatus.AccessDatabasePath);
             var budgetRepository = new BudgetRepository(startup.RuntimeStatus.AccessDatabasePath);
+            var previewRepository = new PreviewRepository(startup.RuntimeStatus.AccessDatabasePath);
             var sessionService = new SessionService(sessionRepository);
             var departmentService = new DepartmentService(departmentRepository);
             var attachmentService = new AttachmentService(attachmentRepository, startup.Config);
             var budgetService = new BudgetService(budgetRepository);
+            var previewService = new PreviewService(previewRepository);
+            var reportService = new ReportService(previewService, startup.Config);
             var fileDialogService = new FileDialogService();
-            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService, attachmentService, budgetService, fileDialogService);
+            _hostWebBridge = new HostWebBridge(startup.RuntimeStatus, startup.Logger, sessionService, departmentService, attachmentService, budgetService, previewService, reportService, fileDialogService);
             _hostWebBridge.Attach(AppWebView.CoreWebView2);
 
             AppWebView.Source = new Uri(indexPath);

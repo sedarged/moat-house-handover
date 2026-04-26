@@ -1,6 +1,6 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 2E Extended baseline for a local-first Windows desktop handover application.
+Stage 2F + 3A combined baseline for a local-first Windows desktop handover application.
 
 ## Repository Structure
 
@@ -24,9 +24,12 @@ Stage 2E Extended baseline for a local-first Windows desktop handover applicatio
 - Budget header/row persistence (`budget.load`, `budget.save`, `budget.recalculate`) with per-session row seeding
 - Dashboard budget summary from persisted Access-backed totals (`dashboard.budgetSummary`)
 - Budget screen edit/recalculate/save/reload flow tied to active session
+- Real persisted Preview payload + screen rendering (`preview.load`)
+- Local HTML report generation foundation (`reports.generateHandover`, `reports.generateBudget`, `reports.generateAll`)
+- Session-scoped reports folder open action (`shell.openReportsFolder`)
 
 ## Still Deferred (by design)
-- Preview/report/send end-to-end runtime workflows
+- Send workflow (Outlook draft/email actions)
 - Windows runtime validation of WebView2 image rendering + ACE/OLEDB behavior
 
 ## Helper scripts
