@@ -15,6 +15,10 @@ if (-not (Test-Path -Path $IndexPath -PathType Leaf)) {
 Write-Host "[OK] Found web entrypoint: $IndexPath"
 
 $JsDir = Join-Path $WebAppDir 'js'
+if (-not (Test-Path -Path $JsDir -PathType Container)) {
+    Write-Error "[ERROR] JavaScript directory not found: $JsDir"
+}
+
 $JsFiles = Get-ChildItem -Path $JsDir -Filter '*.js' -File -Recurse | Sort-Object FullName
 
 if (-not $JsFiles -or $JsFiles.Count -eq 0) {
