@@ -1,0 +1,47 @@
+name: Windows Build & Package
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run web syntax checks
+        shell: pwsh
+        run: ./scripts/check-web.ps1
+
+      - name: Build desktop host
+        shell: pwsh
+        run: ./scripts/build-host.ps1
+
+      - name: Package local app
+        shell: pwsh
+        run: ./scripts/package-local.ps1
+
+      - name: Verify package assets
+        shell: pwsh
+        run: ./scripts/verify-package-assets.ps1
+
+      - name: Upload packaged artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moat-house-handover-windows-local-host
+          path: dist/local-host
+          if-no-files-found: error
