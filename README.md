@@ -1,6 +1,6 @@
 # MOAT HOUSE HANDOVER v2
 
-Stage 3B + 4A combined baseline for a local-first Windows desktop handover application.
+Stage 4B + 5A combined baseline for a local-first Windows desktop handover application.
 
 ## Repository Structure
 
@@ -31,6 +31,10 @@ Stage 3B + 4A combined baseline for a local-first Windows desktop handover appli
 - Send package preparation with validation (`send.preparePackage`)
 - Outlook draft-only creation boundary (`send.createOutlookDraft`) with graceful non-Windows/Outlook handling
 - Real Send screen for package preparation, validation display, and draft creation workflow
+- Host-side audit logging wired to key workflow actions (`tblAuditLog`) with best-effort/no-crash behavior
+- Runtime diagnostics service + bridge actions (`diagnostics.run`, `audit.listRecent`, `audit.listForSession`)
+- Diagnostics screen (run checks, view overall status, inspect recent audit entries)
+- Operational hardening of send/report validation and failure messaging
 
 ## Still Deferred (by design)
 - Actual email send action (auto/manual send remains intentionally deferred)

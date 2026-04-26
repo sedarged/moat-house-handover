@@ -12,22 +12,32 @@ public sealed class SendPackageService
     private readonly ReportService _reportService;
     private readonly EmailProfileService _emailProfileService;
     private readonly OutlookDraftService _outlookDraftService;
+    private readonly AuditLogService _auditLogService;
 
     public SendPackageService(
         PreviewService previewService,
         ReportService reportService,
         EmailProfileService emailProfileService,
-        OutlookDraftService outlookDraftService)
+        OutlookDraftService outlookDraftService,
+        AuditLogService auditLogService)
     {
         _previewService = previewService;
         _reportService = reportService;
         _emailProfileService = emailProfileService;
         _outlookDraftService = outlookDraftService;
+        _auditLogService = auditLogService;
     }
 
     public SendPreparePackageResult PreparePackage(SendPreparePackageRequest request)
     {
         var package = BuildPackage(request.SessionId, request.UserName);
+        _auditLogService.BestEffortLog(
+            actionType: "send.preparePackage",
+            entityType: "Send",
+            entityKey: AuditLogService.BuildSessionKey(request.SessionId),
+            userName: NormalizeUser(request.UserName),
+            details: new { sessionId = request.SessionId, readinessStatus = package.ReadinessStatus, validationCount = package.ValidationMessages.Count });
+
         return new SendPreparePackageResult(Success: package.IsReady, Package: package);
     }
 
@@ -36,10 +46,18 @@ public sealed class SendPackageService
         var package = BuildPackage(request.SessionId, request.UserName);
         if (!package.IsReady)
         {
+            var invalidResult = new OutlookDraftResult(false, "Send package validation failed. Draft was not created.", null, package.GeneratedAt, 0);
+            _auditLogService.BestEffortLog(
+                actionType: "send.createOutlookDraft result",
+                entityType: "Send",
+                entityKey: AuditLogService.BuildSessionKey(request.SessionId),
+                userName: NormalizeUser(request.UserName),
+                details: new { sessionId = request.SessionId, draftCreated = false, message = invalidResult.Message, validationCount = package.ValidationMessages.Count });
+
             return new SendCreateOutlookDraftResult(
                 Success: false,
                 Package: package,
-                Draft: new OutlookDraftResult(false, "Send package validation failed. Draft was not created.", null, package.GeneratedAt, 0));
+                Draft: invalidResult);
         }
 
         var draft = _outlookDraftService.CreateDraft(new OutlookDraftRequest(
@@ -48,6 +66,13 @@ public sealed class SendPackageService
             Subject: package.Subject,
             Body: package.Body,
             AttachmentPaths: package.AttachmentPaths));
+
+        _auditLogService.BestEffortLog(
+            actionType: "send.createOutlookDraft result",
+            entityType: "Send",
+            entityKey: AuditLogService.BuildSessionKey(request.SessionId),
+            userName: NormalizeUser(request.UserName),
+            details: new { sessionId = request.SessionId, draftCreated = draft.DraftCreated, message = draft.Message, attachmentCount = draft.AttachmentCount });
 
         return new SendCreateOutlookDraftResult(
             Success: draft.DraftCreated,
@@ -92,14 +117,14 @@ public sealed class SendPackageService
 
         if (reportPaths.Count == 0)
         {
-            validation.Add("No report output files were generated for send package attachments.");
+            validation.Add("No report files are available for attachment. Generate reports before creating a draft.");
         }
 
         foreach (var path in reportPaths)
         {
             if (!File.Exists(path))
             {
-                validation.Add($"Generated report file is missing on disk: {path}");
+                validation.Add($"A generated report file is missing on disk: {path}");
             }
         }
 
@@ -110,7 +135,7 @@ public sealed class SendPackageService
         }
         catch (Exception ex)
         {
-            validation.Add($"Email profile validation failed: {ex.Message}");
+            validation.Add($"Email profile is missing or inactive for shift {preview.Session.ShiftCode}: {ex.Message}");
         }
 
         var toList = profile?.ToList?.Trim() ?? string.Empty;

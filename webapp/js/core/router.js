@@ -5,6 +5,7 @@ import { renderBudgetScreen } from '../screens/BudgetScreen.js';
 import { renderPreviewScreen } from '../screens/PreviewScreen.js';
 import { renderImageViewerScreen } from '../screens/ImageViewer.js';
 import { renderSendScreen } from '../screens/SendScreen.js';
+import { renderDiagnosticsScreen } from '../screens/DiagnosticsScreen.js';
 
 export const routes = {
   shift: renderShiftScreen,
@@ -13,7 +14,8 @@ export const routes = {
   budget: renderBudgetScreen,
   preview: renderPreviewScreen,
   viewer: renderImageViewerScreen,
-  send: renderSendScreen
+  send: renderSendScreen,
+  diagnostics: renderDiagnosticsScreen
 };
 
 export function renderRoute(routeName, root, state) {

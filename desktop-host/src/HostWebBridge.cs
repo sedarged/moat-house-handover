@@ -27,6 +27,8 @@ public sealed class HostWebBridge
     private readonly ReportService _reportService;
     private readonly EmailProfileService _emailProfileService;
     private readonly SendPackageService _sendPackageService;
+    private readonly DiagnosticsService _diagnosticsService;
+    private readonly AuditLogService _auditLogService;
     private readonly FileDialogService _fileDialogService;
 
     public HostWebBridge(
@@ -40,6 +42,8 @@ public sealed class HostWebBridge
         ReportService reportService,
         EmailProfileService emailProfileService,
         SendPackageService sendPackageService,
+        DiagnosticsService diagnosticsService,
+        AuditLogService auditLogService,
         FileDialogService fileDialogService)
     {
         _runtimeStatus = runtimeStatus;
@@ -52,6 +56,8 @@ public sealed class HostWebBridge
         _reportService = reportService;
         _emailProfileService = emailProfileService;
         _sendPackageService = sendPackageService;
+        _diagnosticsService = diagnosticsService;
+        _auditLogService = auditLogService;
         _fileDialogService = fileDialogService;
     }
 
@@ -91,6 +97,34 @@ public sealed class HostWebBridge
                 case "runtime.getStatus":
                     SendResponse(webView, request.RequestId, true, null, _runtimeStatus);
                     break;
+
+                case "diagnostics.run":
+                {
+                    var payload = request.Payload is null
+                        ? new DiagnosticsRunRequest(null)
+                        : DeserializePayload<DiagnosticsRunRequest>(request.Payload);
+                    var result = _diagnosticsService.Run(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "audit.listRecent":
+                {
+                    var payload = request.Payload is null
+                        ? new AuditListRecentRequest(null)
+                        : DeserializePayload<AuditListRecentRequest>(request.Payload);
+                    var result = _auditLogService.ListRecent(payload);
+                    SendResponse(webView, request.RequestId, result.Success, result.Error, result);
+                    break;
+                }
+
+                case "audit.listForSession":
+                {
+                    var payload = DeserializePayload<AuditListForSessionRequest>(request.Payload);
+                    var result = _auditLogService.ListForSession(payload);
+                    SendResponse(webView, request.RequestId, result.Success, result.Error, result);
+                    break;
+                }
 
                 case "shell.openOutputFolder":
                 case "shell.openReportsFolder":
@@ -185,7 +219,6 @@ public sealed class HostWebBridge
                     SendResponse(webView, request.RequestId, true, null, result);
                     break;
                 }
-
 
                 case "budget.load":
                 {
@@ -283,7 +316,7 @@ public sealed class HostWebBridge
         catch (Exception ex)
         {
             _logger.Log($"Bridge request failed ({request.Type}): {ex}");
-            SendResponse(webView, request.RequestId, false, ex.Message, null);
+            SendResponse(webView, request.RequestId, false, ex.Message, new { errorType = ex.GetType().Name, action = request.Type });
         }
     }
 
@@ -319,8 +352,8 @@ public sealed class HostWebBridge
         var response = new BridgeResponse(requestId, success, error, payload);
         webView.PostWebMessageAsJson(JsonSerializer.Serialize(response, ResponseJsonOptions));
     }
+
+    private sealed record BridgeRequest(string? RequestId, string Type, JsonElement? Payload);
+
+    private sealed record BridgeResponse(string? RequestId, bool Success, string? Error, object? Payload);
 }
-
-public sealed record BridgeRequest(string? RequestId, string Type, JsonElement? Payload);
-
-public sealed record BridgeResponse(string? RequestId, bool Success, string? Error, object? Payload);

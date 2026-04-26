@@ -6,10 +6,12 @@ namespace MoatHouseHandover.Host;
 public sealed class BudgetService
 {
     private readonly BudgetRepository _repository;
+    private readonly AuditLogService _auditLogService;
 
-    public BudgetService(BudgetRepository repository)
+    public BudgetService(BudgetRepository repository, AuditLogService auditLogService)
     {
         _repository = repository;
+        _auditLogService = auditLogService;
     }
 
     public BudgetPayload LoadBudget(BudgetLoadRequest request)
@@ -31,7 +33,16 @@ public sealed class BudgetService
 
         var rows = request.Rows ?? Array.Empty<BudgetRowUpsertRequest>();
         ValidateRows(rows);
-        return _repository.SaveBudget(request.SessionId, rows, NormalizeUser(request.UserName));
+        var userName = NormalizeUser(request.UserName);
+        var payload = _repository.SaveBudget(request.SessionId, rows, userName);
+        _auditLogService.BestEffortLog(
+            actionType: "budget.save",
+            entityType: "Budget",
+            entityKey: AuditLogService.BuildSessionKey(request.SessionId),
+            userName: userName,
+            details: new { sessionId = request.SessionId, rowCount = rows.Count });
+
+        return payload;
     }
 
     public BudgetPayload Recalculate(BudgetRecalculateRequest request)

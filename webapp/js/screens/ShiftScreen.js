@@ -33,6 +33,7 @@ export function renderShiftScreen(root, state) {
         </label>
         <div class="actions-row">
           <button type="submit">Open Session</button>
+          <button id="open-diagnostics-btn" type="button" class="secondary">Diagnostics</button>
         </div>
       </form>
       <p id="shift-message" class="meta"></p>
@@ -41,6 +42,7 @@ export function renderShiftScreen(root, state) {
 
   const form = root.querySelector('#shift-form');
   const message = root.querySelector('#shift-message');
+  const diagnosticsButton = root.querySelector('#open-diagnostics-btn');
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -75,4 +77,9 @@ export function renderShiftScreen(root, state) {
       message.textContent = error instanceof Error ? error.message : 'Unexpected session error.';
     }
   });
+
+  diagnosticsButton?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'diagnostics' } }));
+  });
 }
+

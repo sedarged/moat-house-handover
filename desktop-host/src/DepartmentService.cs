@@ -5,10 +5,12 @@ namespace MoatHouseHandover.Host;
 public sealed class DepartmentService
 {
     private readonly DepartmentRepository _repository;
+    private readonly AuditLogService _auditLogService;
 
-    public DepartmentService(DepartmentRepository repository)
+    public DepartmentService(DepartmentRepository repository, AuditLogService auditLogService)
     {
         _repository = repository;
+        _auditLogService = auditLogService;
     }
 
     public DepartmentPayload LoadDepartment(DepartmentLoadRequest request)
@@ -38,7 +40,15 @@ public sealed class DepartmentService
         };
 
         ValidateMetrics(normalized);
-        return _repository.SaveDepartment(normalized, normalized.UserName);
+        var result = _repository.SaveDepartment(normalized, normalized.UserName);
+        _auditLogService.BestEffortLog(
+            actionType: "department.save",
+            entityType: "HandoverDept",
+            entityKey: $"{AuditLogService.BuildSessionKey(normalized.SessionId)}|dept:{normalized.DeptName}",
+            userName: normalized.UserName,
+            details: new { normalized.SessionId, normalized.DeptName, normalized.DeptStatus });
+
+        return result;
     }
 
     private static void ValidateMetrics(DepartmentSaveRequest request)
