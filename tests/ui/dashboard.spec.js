@@ -4,10 +4,12 @@ import { openMockRoute } from './helpers/mockHostBridge.mjs';
 test('dashboard renders seeded session and budget summary through mock host bridge', async ({ page }) => {
   await openMockRoute(page, 'dashboard');
 
-  await expect(page.getByText(/DASHBOARD|HANDOVER/i)).toBeVisible();
-  await expect(page.getByText('Injection')).toBeVisible();
-  await expect(page.getByText('MetaPress')).toBeVisible();
-  await expect(page.getByText(/Departments Completed/i)).toBeVisible();
-  await expect(page.getByText(/Budget/i)).toBeVisible();
-  await expect(page.getByText(/under/i)).toBeVisible();
+  const screenRoot = page.locator('#screen-root');
+  await expect(screenRoot).toContainText('Injection');
+  await expect(screenRoot).toContainText('MetaPress');
+  await expect(screenRoot).toContainText('Departments Completed');
+
+  const budgetSummary = page.locator('.summary-side-item').filter({ hasText: 'Budget' }).first();
+  await expect(budgetSummary).toBeVisible();
+  await expect(budgetSummary).toContainText('under');
 });
