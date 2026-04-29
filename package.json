@@ -1,0 +1,18 @@
+{
+  "name": "moat-house-handover-ui-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup:codex": "bash scripts/codex-setup.sh",
+    "serve:web-dev": "node scripts/serve-web-dev.mjs",
+    "check:web": "bash scripts/check-web.sh",
+    "test:ui": "playwright test",
+    "test:ui:headed": "playwright test --headed",
+    "screenshots": "node scripts/capture-screenshots.mjs",
+    "verify:screenshots": "node scripts/verify-screenshots.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0"
+  }
+}
