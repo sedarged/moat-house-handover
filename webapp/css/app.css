@@ -917,3 +917,17 @@ td textarea { min-width: 140px; min-height: 2.5rem; }
   opacity: 0.8;
   font-size: 0.75rem;
 }
+
+.budget-updated-line {
+  margin-top: 0.25rem;
+}
+
+.budget-dept-name {
+  font-weight: 500;
+}
+
+.budget-col-dept { min-width: 140px; }
+.budget-col-planned { min-width: 120px; }
+.budget-col-used { min-width: 90px; }
+.budget-col-variance { min-width: 80px; }
+.budget-col-reason { min-width: 160px; }

@@ -339,7 +339,11 @@ function renderSummarySide(container, totalAttach, budgetSummary) {
   register.textContent = `Register ${fmt(budgetSummary?.totalStaffOnRegister, '—')}`;
   const absent = document.createElement('span');
   absent.textContent = `Absent ${fmt(budgetSummary?.absentCount, '—')}`;
-  secondary.append(linesPlanned, register, absent);
+  const holiday = document.createElement('span');
+  holiday.textContent = `Holiday ${fmt(budgetSummary?.holidayCount, '—')}`;
+  const agency = document.createElement('span');
+  agency.textContent = `Agency ${fmt(budgetSummary?.agencyUsedCount, '—')}`;
+  secondary.append(linesPlanned, register, absent, holiday, agency);
 
   const updated = document.createElement('div');
   updated.className = 'summary-side-item summary-side-updated';

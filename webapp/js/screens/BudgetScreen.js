@@ -85,7 +85,7 @@ function buildRows(tableBody, rows) {
 
     const deptTd = document.createElement('td');
     deptTd.textContent = row.deptName || '';
-    deptTd.style.fontWeight = '500';
+    deptTd.className = 'budget-dept-name';
 
     const plannedTd = document.createElement('td');
     const plannedIn = document.createElement('input');
@@ -185,7 +185,7 @@ export function renderBudgetScreen(root, state) {
           <div><div class="form-label">Overall Status</div><div id="tot-status" class="budget-summary-value">—</div></div>
         </div>
         <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2" class="budget-comments"></textarea></div>
-        <p class="status-line" id="budget-updated" style="margin-top:0.25rem;"></p>
+        <p class="status-line budget-updated-line" id="budget-updated"></p>
       </div>
 
       <div class="section-block budget-section budget-rows-section">
@@ -197,11 +197,11 @@ export function renderBudgetScreen(root, state) {
           <table>
             <thead>
               <tr>
-                <th style="min-width:140px;">Department</th>
-                <th style="min-width:120px;">Budget Staff / Planned Staff</th>
-                <th style="min-width:90px;">Staff Used</th>
-                <th style="min-width:80px;">Variance</th>
-                <th style="min-width:160px;">Reason / note</th>
+                <th class="budget-col-dept">Department</th>
+                <th class="budget-col-planned">Budget Staff / Planned Staff</th>
+                <th class="budget-col-used">Staff Used</th>
+                <th class="budget-col-variance">Variance</th>
+                <th class="budget-col-reason">Reason / note</th>
               </tr>
             </thead>
             <tbody id="budget-rows"></tbody>
@@ -339,6 +339,8 @@ export function renderBudgetScreen(root, state) {
     }
     message.textContent = 'Saving budget…';
     message.className   = 'status-line';
+    recalcBtn.disabled = true;
+    saveBtn.disabled = true;
     try {
       const payload = await budgetService.saveBudget(session.sessionId, rows, meta, session.userName || '');
       refreshFromPayload(payload);
@@ -347,6 +349,9 @@ export function renderBudgetScreen(root, state) {
     } catch (e) {
       message.textContent = e instanceof Error ? e.message : 'Save failed.';
       message.className   = 'status-line error';
+    } finally {
+      recalcBtn.disabled = false;
+      saveBtn.disabled = false;
     }
   });
 
