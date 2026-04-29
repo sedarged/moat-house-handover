@@ -10,7 +10,7 @@ test('budget screen renders seeded labour budget data and validates negative sta
   await expect(page.locator('#sum-register-input')).toHaveValue('46');
   await expect(page.getByText('Injection')).toBeVisible();
   await expect(page.getByText('MP / MetaPress')).toBeVisible();
-  await expect(page.getByText('Agency Cover')).toBeVisible();
+  await expect(page.locator('tr[data-row-id="3"] textarea[name="reasonText"]')).toHaveValue('Agency Cover');
   await expect(page.locator('#budget-comments')).toHaveValue(/Short on FP/);
 
   await page.locator('tr[data-row-id="1"] input[name="usedQty"]').fill('-1');
