@@ -16,6 +16,11 @@ fi
 
 echo "[OK] Found web entrypoint: $WEBAPP_DIR/index.html"
 
+if [ ! -d "$WEBAPP_DIR/js" ]; then
+  echo "[ERROR] JavaScript directory not found: $WEBAPP_DIR/js"
+  exit 1
+fi
+
 mapfile -t js_files < <(find "$WEBAPP_DIR/js" -type f -name '*.js' | sort)
 
 if [ "${#js_files[@]}" -eq 0 ]; then

@@ -7,6 +7,10 @@ namespace MoatHouseHandover.Host;
 
 public sealed class AttachmentService
 {
+    // Virtual host name registered in WebView2 to serve attachment files.
+    // Must match the name passed to CoreWebView2.SetVirtualHostNameToFolderMapping in MainWindow.
+    public const string AttachmentsVirtualHostName = "moat-attachments.local";
+
     private readonly AttachmentRepository _repository;
     private readonly AuditLogService _auditLogService;
     private readonly string _attachmentsRootFullPath;
@@ -119,7 +123,19 @@ public sealed class AttachmentService
     private AttachmentPayload ValidateViewerAttachmentPath(AttachmentPayload attachment)
     {
         var normalizedPath = NormalizeAndValidateManagedPath(attachment.FilePath);
-        return attachment with { FilePath = normalizedPath };
+        var virtualUrl = BuildVirtualUrl(normalizedPath);
+        return attachment with { FilePath = normalizedPath, VirtualUrl = virtualUrl };
+    }
+
+    private string? BuildVirtualUrl(string fullPath)
+    {
+        if (!fullPath.StartsWith(_attachmentsRootFullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var relative = fullPath[_attachmentsRootFullPath.Length..].Replace('\\', '/').TrimStart('/');
+        return $"https://{AttachmentsVirtualHostName}/{relative}";
     }
 
     private string NormalizeAndValidateManagedPath(string path)

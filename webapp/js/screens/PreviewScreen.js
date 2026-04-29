@@ -136,6 +136,7 @@ function renderBudget(container, budgetSummary, budgetRows) {
   }
 
   const table = document.createElement('table');
+  table.className = 'budget-table';
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
   ['Dept', 'Planned', 'Used', 'Variance', 'Status', 'Reason'].forEach((label) => {

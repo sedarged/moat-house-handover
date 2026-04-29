@@ -45,7 +45,7 @@ getRuntimeStatus()
     appContext.textContent = `Runtime ready • DB: ${status.accessDatabasePath}`;
   })
   .catch(() => {
-    appContext.textContent = 'Stage 2D runtime bridge unavailable in browser mode';
+    appContext.textContent = 'Runtime bridge unavailable in browser/dev mode';
   });
 
 navigate('shift');

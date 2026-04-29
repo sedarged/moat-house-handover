@@ -29,7 +29,11 @@ public sealed record AttachmentPayload(
     string FilePath,
     string? CapturedOn,
     long SequenceNo,
-    bool IsDeleted);
+    bool IsDeleted)
+{
+    // Populated by AttachmentService for viewer payloads; use this URL for <img src> in WebView2.
+    public string? VirtualUrl { get; init; }
+}
 
 public sealed record AttachmentListResult(
     long SessionId,

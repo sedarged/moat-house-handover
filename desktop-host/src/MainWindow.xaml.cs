@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Windows;
+using Microsoft.Web.WebView2.Core;
 
 namespace MoatHouseHandover.Host;
 
@@ -27,6 +28,18 @@ public partial class MainWindow : Window
             }
 
             await AppWebView.EnsureCoreWebView2Async();
+
+            // Map a virtual hostname for the attachments folder so that WebView2 can load
+            // attachment images. Without this, WebView2 blocks cross-directory file:// requests
+            // (Chromium same-origin policy for file:// sources applies from WebView2 SDK 1.0.1343+).
+            if (Directory.Exists(startup.RuntimeStatus.AttachmentsRoot))
+            {
+                AppWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    AttachmentService.AttachmentsVirtualHostName,
+                    startup.RuntimeStatus.AttachmentsRoot,
+                    CoreWebView2HostResourceAccessKind.Allow);
+            }
+
             var sessionRepository = new SessionRepository(startup.RuntimeStatus.AccessDatabasePath);
             var departmentRepository = new DepartmentRepository(startup.RuntimeStatus.AccessDatabasePath);
             var attachmentRepository = new AttachmentRepository(startup.RuntimeStatus.AccessDatabasePath);

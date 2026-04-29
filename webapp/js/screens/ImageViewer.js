@@ -24,8 +24,14 @@ function renderViewerMeta(container, current) {
   container.append(name, dept, captured, path);
 }
 
-function toFileUrl(path) {
-  return `file:///${String(path).replaceAll('\\', '/')}`;
+function toImageUrl(attachment) {
+  // Prefer the virtual URL provided by the host bridge for cross-origin file access in WebView2.
+  // WebView2 (SDK 1.0.1343+) blocks cross-directory file:// requests; the host maps
+  // moat-attachments.local to the attachments root via SetVirtualHostNameToFolderMapping.
+  if (attachment.virtualUrl) {
+    return attachment.virtualUrl;
+  }
+  return `file:///${String(attachment.filePath).replaceAll('\\', '/')}`;
 }
 
 export function renderImageViewerScreen(root, state) {
@@ -79,7 +85,7 @@ export function renderImageViewerScreen(root, state) {
       viewerMessage.textContent = `Attachment ${payload.currentIndex + 1} of ${payload.totalCount}`;
       renderViewerMeta(viewerMeta, current);
 
-      viewerImage.src = toFileUrl(current.filePath);
+      viewerImage.src = toImageUrl(current);
       viewerImage.dataset.attachmentId = String(current.attachmentId);
 
       prevButton.disabled = !payload.previous;
