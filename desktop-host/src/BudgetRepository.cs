@@ -300,7 +300,7 @@ VALUES (?, ?, NULL, NULL, 0, '', ?, ?)", connection);
 FROM tblBudgetRows AS r
 LEFT JOIN tblDepartments AS d ON d.DeptName = r.DeptName
 WHERE r.BudgetHeaderID = ?
-ORDER BY d.DisplayOrder, r.DeptName, r.BudgetRowID";
+ORDER BY IIF(d.DisplayOrder IS NULL, 999, d.DisplayOrder), r.BudgetRowID, r.DeptName";
 
         using var cmd = new OleDbCommand(sql, connection);
         cmd.Parameters.AddWithValue("@p1", budgetHeaderId);

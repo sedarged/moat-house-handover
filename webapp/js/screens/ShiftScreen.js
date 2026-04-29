@@ -45,8 +45,6 @@ export function renderShiftScreen(root, state) {
           ${iconBell}
           <span class="header-dot"></span>
         </button>
-        <span class="header-divider"></span>
-
       </div>
     </header>
 
