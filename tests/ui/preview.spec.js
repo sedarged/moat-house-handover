@@ -9,5 +9,5 @@ test('preview renders persisted session, department and budget data through mock
   await expect(screenRoot).toContainText('Injection');
   await expect(screenRoot).toContainText('MetaPress');
   await expect(screenRoot).toContainText('Budget');
-  await expect(screenRoot).toContainText('Short on FP');
+  await expect(screenRoot).toContainText('Short one operative');
 });
