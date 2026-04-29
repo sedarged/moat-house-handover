@@ -1,9 +1,32 @@
-/**
- * Canonical application payload contracts for Stage 1.
- * These are intentionally plain JS objects so services can hydrate from Access-backed repositories later.
- */
+export const DEPARTMENTS = [
+  'Injection',
+  'MetaPress',
+  'Berks',
+  'Wilts',
+  'Racking',
+  'Butchery',
+  'Further Processing',
+  'Tumblers',
+  'Smoke Tumbler',
+  'Minimums & Samples',
+  'Goods In & Despatch',
+  'Dry Goods',
+  'Additional'
+];
 
 export const metricDepartments = ['Injection', 'MetaPress', 'Berks', 'Wilts'];
+
+export const DEPT_STATUSES = ['Not running', 'Complete', 'Incomplete'];
+
+export const SHIFT_TIMES = {
+  AM: '06:00 – 14:00',
+  PM: '14:00 – 22:00',
+  NS: '22:00 – 06:00'
+};
+
+export function isMetricDepartment(deptName) {
+  return metricDepartments.includes(deptName);
+}
 
 export function createInitialSessionState() {
   return {
@@ -30,6 +53,6 @@ export function createDepartmentModel(deptName) {
     yieldPct: null,
     deptNotes: '',
     versionNo: 0,
-    isMetricDept: metricDepartments.includes(deptName)
+    isMetricDept: isMetricDepartment(deptName)
   };
 }

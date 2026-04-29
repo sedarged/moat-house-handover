@@ -1,361 +1,392 @@
-import { previewService } from '../services/previewService.js';
-import { reportsService } from '../services/reportsService.js';
+import { previewService  } from '../services/previewService.js';
+import { reportsService  } from '../services/reportsService.js';
 import { applyPreviewPayload, appendGeneratedReport } from '../state/appState.js';
+import { metricDepartments } from '../models/contracts.js';
+import {
+  iconBrandSvg, iconArrowLeft, iconBell, iconUser, iconCalendar, iconClockSm,
+  iconClipboard, iconChart, iconPaperclip, iconSave, iconSend, iconExternalLink,
+  iconRefresh, iconFolder, iconSpeedometer, iconTarget, iconCheckCircle, iconAlertCircle, iconPause
+} from '../core/icons.js';
 
-function formatNumber(value) {
-  if (value == null || value === '') {
-    return '—';
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed.toFixed(2) : '—';
+function fmt(value, suffix = '') {
+  if (value == null || value === '') return '—';
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(1) + suffix : '—';
 }
 
-function makeMeta(label, value) {
-  const p = document.createElement('p');
-  p.className = 'meta';
-  p.textContent = `${label}: ${value || 'n/a'}`;
-  return p;
+function formatDate(iso) {
+  if (!iso) return '—';
+  try { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; } catch { return iso; }
 }
 
-function makeSection(title) {
-  const section = document.createElement('section');
-  section.className = 'panel';
-  const heading = document.createElement('h3');
-  heading.textContent = title;
-  section.append(heading);
-  return section;
+function statusIcon(s) {
+  const lc = (s || '').toLowerCase().replace(/\s+/g, '');
+  if (lc === 'complete')   return iconCheckCircle;
+  if (lc === 'incomplete') return iconAlertCircle;
+  if (lc === 'notrunning') return iconPause;
+  return iconClockSm;
 }
 
-function renderSessionHeader(container, session) {
-  container.textContent = '';
-  container.append(makeMeta('Session', String(session.sessionId || 'n/a')));
-  container.append(makeMeta('Shift', `${session.shiftCode || 'n/a'} • ${session.shiftDate || 'n/a'}`));
-  container.append(makeMeta('Status', session.sessionStatus || 'Open'));
-  container.append(makeMeta('Created', `${session.createdAt || 'n/a'} by ${session.createdBy || 'n/a'}`));
-  container.append(makeMeta('Updated', `${session.updatedAt || 'n/a'} by ${session.updatedBy || 'n/a'}`));
+function statusCls(s) {
+  const lc = (s || '').toLowerCase().replace(/\s+/g, '');
+  if (lc === 'complete')   return 'value-green';
+  if (lc === 'incomplete') return 'value-orange';
+  return 'value-muted';
 }
 
-function renderDepartments(container, departments) {
-  container.textContent = '';
-  if (!Array.isArray(departments) || departments.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'meta';
-    empty.textContent = 'No persisted department rows found.';
-    container.append(empty);
-    return;
-  }
-
-  const list = document.createElement('ul');
-  list.className = 'dept-list';
-
-  departments.forEach((dept) => {
-    const item = document.createElement('li');
-    const top = document.createElement('strong');
-    top.textContent = `${dept.deptName || ''} — ${dept.deptStatus || 'Not running'}`;
-    item.append(top);
-
-    const metrics = document.createElement('span');
-    metrics.className = 'meta';
-    metrics.textContent = `DT: ${dept.downtimeMin ?? '—'} • Eff: ${formatNumber(dept.efficiencyPct)} • Yield: ${formatNumber(dept.yieldPct)}`;
-    item.append(metrics);
-
-    const notes = document.createElement('span');
-    notes.className = 'meta';
-    notes.textContent = `Notes: ${dept.notes || ''}`;
-    item.append(notes);
-
-    const attachment = document.createElement('span');
-    attachment.className = 'meta';
-    attachment.textContent = `Attachments: ${Number(dept.attachmentCount || 0)}`;
-    item.append(attachment);
-
-    const updated = document.createElement('span');
-    updated.className = 'meta';
-    updated.textContent = `Updated: ${dept.updatedAt || 'n/a'} by ${dept.updatedBy || 'n/a'}`;
-    item.append(updated);
-
-    list.append(item);
-  });
-
-  container.append(list);
+function budgetStatusCls(s) {
+  const lc = (s || '').toLowerCase();
+  if (lc === 'over')      return 'value-orange';
+  if (lc === 'on target' || lc === 'under') return 'value-green';
+  return 'value-muted';
 }
 
-function renderAttachmentSummary(container, attachmentSummary) {
-  container.textContent = '';
-
-  if (!Array.isArray(attachmentSummary) || attachmentSummary.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'meta';
-    empty.textContent = 'No persisted attachment metadata found for this session.';
-    container.append(empty);
-    return;
-  }
-
-  const list = document.createElement('ul');
-  list.className = 'dept-list';
-  attachmentSummary.forEach((group) => {
-    const item = document.createElement('li');
-
-    const title = document.createElement('strong');
-    title.textContent = `${group.deptName || ''} (${Number(group.attachmentCount || 0)})`;
-    item.append(title);
-
-    const files = document.createElement('span');
-    files.className = 'meta';
-    const names = Array.isArray(group.attachments)
-      ? group.attachments.map((entry) => `#${entry.sequenceNo || 0} ${entry.displayName || ''}`)
-      : [];
-    files.textContent = names.length > 0 ? names.join(' • ') : 'No attachment file names.';
-    item.append(files);
-
-    list.append(item);
-  });
-
-  container.append(list);
-}
-
-function renderBudget(container, budgetSummary, budgetRows) {
-  container.textContent = '';
-  container.append(makeMeta('Planned total', formatNumber(budgetSummary?.plannedTotal)));
-  container.append(makeMeta('Used total', formatNumber(budgetSummary?.usedTotal)));
-  container.append(makeMeta('Variance total', formatNumber(budgetSummary?.varianceTotal)));
-  container.append(makeMeta('Status', budgetSummary?.status || 'not set'));
-  container.append(makeMeta('Last updated', `${budgetSummary?.lastUpdatedAt || 'n/a'} by ${budgetSummary?.lastUpdatedBy || 'n/a'}`));
-
-  const title = document.createElement('h4');
-  title.textContent = 'Budget rows';
-  container.append(title);
-
-  if (!Array.isArray(budgetRows) || budgetRows.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'meta';
-    empty.textContent = 'No persisted budget rows found.';
-    container.append(empty);
-    return;
-  }
-
-  const table = document.createElement('table');
-  const thead = document.createElement('thead');
-  const headerRow = document.createElement('tr');
-  ['Dept', 'Planned', 'Used', 'Variance', 'Status', 'Reason'].forEach((label) => {
-    const th = document.createElement('th');
-    th.textContent = label;
-    headerRow.append(th);
-  });
-  thead.append(headerRow);
-  table.append(thead);
-
-  const tbody = document.createElement('tbody');
-  budgetRows.forEach((row) => {
-    const tr = document.createElement('tr');
-
-    const cells = [
-      row.deptName || '',
-      formatNumber(row.plannedQty),
-      formatNumber(row.usedQty),
-      formatNumber(row.variance),
-      row.status || 'not set',
-      row.reasonText || ''
-    ];
-
-    cells.forEach((value) => {
-      const td = document.createElement('td');
-      td.textContent = value;
-      tr.append(td);
-    });
-
-    tbody.append(tr);
-  });
-
-  table.append(tbody);
-  container.append(table);
-}
-
-function renderReportResults(container, generatedReports) {
-  container.textContent = '';
-
-  if (!Array.isArray(generatedReports) || generatedReports.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'meta';
-    empty.textContent = 'No reports generated yet in this session context.';
-    container.append(empty);
-    return;
-  }
-
-  const list = document.createElement('ul');
-  list.className = 'dept-list';
-  generatedReports.forEach((result) => {
-    const item = document.createElement('li');
-    const head = document.createElement('strong');
-    head.textContent = `${result.reportType || 'report'} • ${result.generatedAt || ''}`;
-    item.append(head);
-
-    const by = document.createElement('span');
-    by.className = 'meta';
-    by.textContent = `Generated by: ${result.generatedBy || 'n/a'}`;
-    item.append(by);
-
-    (Array.isArray(result.filePaths) ? result.filePaths : []).forEach((path) => {
-      const pathLine = document.createElement('span');
-      pathLine.className = 'meta';
-      pathLine.textContent = path;
-      item.append(pathLine);
-    });
-
-    list.append(item);
-  });
-
-  container.append(list);
+function fieldRow(label, value, valueCls = '') {
+  return `<div class="field-row">
+    <span class="field-label">${label}</span>
+    <span class="field-value ${valueCls}">${value || '—'}</span>
+  </div>`;
 }
 
 export function renderPreviewScreen(root, state) {
   const sessionId = state?.session?.sessionId;
 
-  if (!sessionId) {
-    root.textContent = '';
-    const panel = document.createElement('section');
-    panel.className = 'panel';
-    const h2 = document.createElement('h2');
-    h2.textContent = 'Preview';
-    panel.append(h2);
-    panel.append(makeMeta('State', 'No active session loaded. Open a shift first.'));
-    root.append(panel);
-    return;
-  }
+  root.innerHTML = '';
+  const screen = document.createElement('div');
+  screen.className = 'screen';
 
-  root.textContent = '';
+  screen.innerHTML = `
+    <header class="screen-header">
+      <button class="header-back" id="prev-back-hdr" type="button">${iconArrowLeft}</button>
+      <div class="header-brand">
+        ${iconBrandSvg}
+        <div class="header-brand-text">
+          <span class="header-brand-sub">Moat House</span>
+          <span class="header-brand-name">Operations</span>
+        </div>
+      </div>
+      <div class="header-title">HANDOVER PREVIEW</div>
+      <div class="header-actions">
+        <button class="header-icon-btn" type="button">${iconBell}</button>
+        <span class="header-divider"></span>
+        <button class="header-icon-btn" type="button">${iconUser}</button>
+      </div>
+    </header>
 
-  const panel = document.createElement('section');
-  panel.className = 'panel';
+    <div class="screen-infobar">
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconCalendar}</span>
+        <span>Date: ${formatDate(state?.session?.shiftDate)}</span>
+      </div>
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconClockSm}</span>
+        <span>Shift: ${state?.session?.shiftCode || '—'}</span>
+      </div>
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconClipboard}</span>
+        <span>Read-only — saved state only</span>
+      </div>
+    </div>
 
-  const h2 = document.createElement('h2');
-  h2.textContent = 'Preview (read-only persisted state)';
-  panel.append(h2);
+    <div class="screen-content">
+      <p class="status-line" id="prev-message" style="margin-bottom:0.75rem;"></p>
 
-  const readonly = document.createElement('p');
-  readonly.className = 'meta';
-  readonly.textContent = 'This screen loads saved state from host persistence only. Unsaved UI edits are not shown here.';
-  panel.append(readonly);
+      ${!sessionId ? `<div class="section-block"><p class="status-line error">No active session loaded. Open a shift session first.</p></div>` : ''}
 
-  const message = document.createElement('p');
-  message.className = 'meta';
-  panel.append(message);
+      <!-- Session header -->
+      <div class="section-block" id="section-session" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconClipboard}</span>
+          <span class="section-title">Session Header</span>
+        </div>
+        <div id="session-fields"></div>
+      </div>
 
-  const actions = document.createElement('div');
-  actions.className = 'actions-row';
+      <!-- Departments Completed -->
+      <div class="section-block" id="section-depts-completed" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconCheckCircle}</span>
+          <span class="section-title">Departments Completed</span>
+        </div>
+        <div id="depts-completed-fields"></div>
+      </div>
 
-  const handoverButton = document.createElement('button');
-  handoverButton.type = 'button';
-  handoverButton.textContent = 'Generate Handover Report';
+      <!-- Department summaries -->
+      <div class="section-block" id="section-depts" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconClipboard}</span>
+          <span class="section-title">Department Summaries</span>
+        </div>
+        <div id="dept-rows"></div>
+      </div>
 
-  const budgetButton = document.createElement('button');
-  budgetButton.type = 'button';
-  budgetButton.textContent = 'Generate Budget Report';
+      <!-- Metric Summary (metric depts only) -->
+      <div class="section-block" id="section-metrics" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconSpeedometer}</span>
+          <span class="section-title">Metric Summary (Injection · MetaPress · Berks · Wilts)</span>
+        </div>
+        <div id="metric-fields"></div>
+      </div>
 
-  const bothButton = document.createElement('button');
-  bothButton.type = 'button';
-  bothButton.textContent = 'Generate Both Reports';
+      <!-- Budget Summary -->
+      <div class="section-block" id="section-budget" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconChart}</span>
+          <span class="section-title">Budget Summary</span>
+        </div>
+        <div id="budget-summary-fields"></div>
+        <div class="table-wrap" style="margin-top:0.75rem;" id="budget-rows-wrap"></div>
+      </div>
 
-  const openFolderButton = document.createElement('button');
-  openFolderButton.type = 'button';
-  openFolderButton.className = 'secondary';
-  openFolderButton.textContent = 'Open Reports Folder';
+      <!-- Attachment Summary -->
+      <div class="section-block" id="section-attachments" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconPaperclip}</span>
+          <span class="section-title">Attachment Summary</span>
+        </div>
+        <div id="attachment-fields"></div>
+      </div>
 
-  const sendButton = document.createElement('button');
-  sendButton.type = 'button';
-  sendButton.textContent = 'Go to Send';
+      <!-- Generated Reports -->
+      <div class="section-block" id="section-reports" ${!sessionId ? 'style="display:none"' : ''}>
+        <div class="section-header">
+          <span class="section-icon">${iconFolder}</span>
+          <span class="section-title">Generated Reports</span>
+        </div>
+        <div id="report-results"></div>
+      </div>
+    </div>
 
-  const backButton = document.createElement('button');
-  backButton.type = 'button';
-  backButton.className = 'secondary';
-  backButton.textContent = 'Back to Dashboard';
+    <footer class="screen-footer">
+      <button class="btn btn-ghost"    id="prev-back"         type="button">${iconArrowLeft}&nbsp; Dashboard</button>
+      <button class="btn"              id="prev-gen-handover"  type="button" ${!sessionId ? 'disabled' : ''}>${iconSave}&nbsp; Handover Report</button>
+      <button class="btn"              id="prev-gen-budget"    type="button" ${!sessionId ? 'disabled' : ''}>${iconChart}&nbsp; Budget Report</button>
+      <button class="btn"              id="prev-gen-both"      type="button" ${!sessionId ? 'disabled' : ''}>${iconRefresh}&nbsp; Both Reports</button>
+      <button class="btn btn-ghost"    id="prev-open-folder"   type="button" ${!sessionId ? 'disabled' : ''}>${iconExternalLink}&nbsp; Open Folder</button>
+      <button class="btn btn-primary"  id="prev-go-send"       type="button" ${!sessionId ? 'disabled' : ''}>${iconSend}&nbsp; Send</button>
+    </footer>
+  `;
 
-  actions.append(handoverButton, budgetButton, bothButton, openFolderButton, sendButton, backButton);
-  panel.append(actions);
+  root.append(screen);
 
-  const sessionSection = makeSection('Session header');
-  const deptSection = makeSection('Department summaries');
-  const attachmentSection = makeSection('Attachment summary');
-  const budgetSection = makeSection('Budget summary');
-  const reportSection = makeSection('Generated report outputs');
+  const msg             = screen.querySelector('#prev-message');
+  const sessionFields   = screen.querySelector('#session-fields');
+  const deptsCompleted  = screen.querySelector('#depts-completed-fields');
+  const deptRows        = screen.querySelector('#dept-rows');
+  const metricFields    = screen.querySelector('#metric-fields');
+  const budgetFields    = screen.querySelector('#budget-summary-fields');
+  const budgetRowsWrap  = screen.querySelector('#budget-rows-wrap');
+  const attachFields    = screen.querySelector('#attachment-fields');
+  const reportResults   = screen.querySelector('#report-results');
 
-  panel.append(sessionSection, deptSection, attachmentSection, budgetSection, reportSection);
-  root.append(panel);
-
-  const setBusy = (busy) => {
-    handoverButton.disabled = busy;
-    budgetButton.disabled = busy;
-    bothButton.disabled = busy;
-    openFolderButton.disabled = busy;
-  };
-
-  const refreshPreview = async () => {
-    message.textContent = 'Loading persisted preview...';
-    try {
-      const preview = await previewService.loadPreview(sessionId);
-      applyPreviewPayload(preview);
-      renderSessionHeader(sessionSection, preview.session || {});
-      renderDepartments(deptSection, preview.departments || []);
-      renderAttachmentSummary(attachmentSection, preview.attachmentSummary || []);
-      renderBudget(budgetSection, preview.budgetSummary || {}, preview.budgetRows || []);
-      renderReportResults(reportSection, state.generatedReports || []);
-      message.textContent = 'Preview loaded from saved state.';
-    } catch (error) {
-      message.textContent = error instanceof Error ? error.message : 'Failed to load preview payload.';
-    }
-  };
-
-  const runReport = async (runner, successLabel) => {
-    setBusy(true);
-    message.textContent = `${successLabel} in progress...`;
-    try {
-      const result = await runner();
-      appendGeneratedReport(result);
-      renderReportResults(reportSection, state.generatedReports || []);
-      message.textContent = `${successLabel} complete.`;
-    } catch (error) {
-      message.textContent = error instanceof Error ? error.message : `${successLabel} failed.`;
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  handoverButton.addEventListener('click', () => runReport(
-    () => reportsService.generateHandoverReport(sessionId, state.session?.userName || ''),
-    'Handover report generation'
-  ));
-
-  budgetButton.addEventListener('click', () => runReport(
-    () => reportsService.generateBudgetReport(sessionId, state.session?.userName || ''),
-    'Budget report generation'
-  ));
-
-  bothButton.addEventListener('click', () => runReport(
-    () => reportsService.generateAllReports(sessionId, state.session?.userName || ''),
-    'Combined report generation'
-  ));
-
-  openFolderButton.addEventListener('click', async () => {
-    setBusy(true);
-    message.textContent = 'Opening reports folder...';
-    try {
-      const result = await reportsService.openReportsFolder(sessionId);
-      message.textContent = `Opened reports folder: ${result.openedPath || 'n/a'}`;
-    } catch (error) {
-      message.textContent = error instanceof Error ? error.message : 'Failed to open reports folder.';
-    } finally {
-      setBusy(false);
-    }
-  });
-
-  sendButton.addEventListener('click', () => {
+  const goBack = () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
+  screen.querySelector('#prev-back')?.addEventListener('click', goBack);
+  screen.querySelector('#prev-back-hdr')?.addEventListener('click', goBack);
+  screen.querySelector('#prev-go-send')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'send' } }));
   });
 
-  backButton.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
+  if (!sessionId) return;
+
+  const setBusy = (busy) => {
+    ['#prev-gen-handover','#prev-gen-budget','#prev-gen-both','#prev-open-folder'].forEach((id) => {
+      const el = screen.querySelector(id);
+      if (el) el.disabled = busy;
+    });
+  };
+
+  /* ── render helpers ── */
+  function renderSessionFields(session) {
+    sessionFields.innerHTML =
+      fieldRow('Session #', session.sessionId) +
+      fieldRow('Shift', `${session.shiftCode || '—'} · ${session.shiftDate || '—'}`) +
+      fieldRow('Status', session.sessionStatus || 'Open') +
+      fieldRow('Created', `${session.createdAt || '—'} by ${session.createdBy || '—'}`) +
+      fieldRow('Updated', `${session.updatedAt || '—'} by ${session.updatedBy || '—'}`);
+  }
+
+  function renderDeptsCompleted(departments) {
+    const all = Array.isArray(departments) ? departments : [];
+    let complete = 0, incomplete = 0, notRunning = 0;
+    all.forEach((d) => {
+      const s = (d.deptStatus || '').toLowerCase().replace(/\s+/g, '');
+      if (s === 'complete')    complete++;
+      else if (s === 'incomplete') incomplete++;
+      else notRunning++;
+    });
+    deptsCompleted.innerHTML =
+      fieldRow('Total Departments', all.length) +
+      fieldRow('Complete', complete, 'value-green') +
+      fieldRow('Incomplete', incomplete, 'value-orange') +
+      fieldRow('Not Running', notRunning, 'value-muted') +
+      fieldRow('Completion', `${complete} / ${all.length} departments complete`);
+  }
+
+  function renderDeptRows(departments) {
+    deptRows.innerHTML = '';
+    if (!Array.isArray(departments) || !departments.length) {
+      deptRows.innerHTML = '<p class="status-line">No department rows found.</p>';
+      return;
+    }
+    departments.forEach((dept) => {
+      const isMetric = metricDepartments.includes(dept.deptName);
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:0.6rem 0;border-bottom:1px solid var(--border);';
+      row.innerHTML = `
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">
+          <strong style="font-size:0.9rem;">${dept.deptName}</strong>
+          <span class="${statusCls(dept.deptStatus)}" style="font-size:0.8rem;">${statusIcon(dept.deptStatus)} ${dept.deptStatus || '—'}</span>
+          ${isMetric ? `<span style="font-size:0.72rem;color:var(--muted);margin-left:auto;">Metric</span>` : ''}
+        </div>
+        ${isMetric ? `<div style="display:flex;gap:1.5rem;font-size:0.8rem;color:var(--muted);margin-bottom:0.25rem;">
+          <span>Downtime: <strong class="value-green">${dept.downtimeMin ?? '—'} min</strong></span>
+          <span>Efficiency: <strong class="value-green">${fmt(dept.efficiencyPct, '%')}</strong></span>
+          <span>Yield: <strong class="value-green">${fmt(dept.yieldPct, '%')}</strong></span>
+        </div>` : ''}
+        <div style="font-size:0.82rem;color:var(--muted);">
+          ${dept.notes || dept.deptNotes ? `<span>Notes: ${dept.notes || dept.deptNotes}</span> · ` : ''}
+          <span>Attachments: ${Number(dept.attachmentCount || 0)}</span>
+          · <span>Updated: ${dept.updatedAt || 'n/a'}</span>
+        </div>
+      `;
+      deptRows.append(row);
+    });
+  }
+
+  function renderMetricSummary(departments) {
+    const metric = (Array.isArray(departments) ? departments : [])
+      .filter((d) => metricDepartments.includes(d.deptName));
+    const totalDT    = metric.reduce((s, d) => s + (Number(d.downtimeMin) || 0), 0);
+    const effVals    = metric.map((d) => d.efficiencyPct).filter((v) => v != null && v !== '');
+    const yieldVals  = metric.map((d) => d.yieldPct).filter((v) => v != null && v !== '');
+    const avgEff     = effVals.length   ? effVals.reduce((a, b) => a + Number(b), 0) / effVals.length   : null;
+    const avgYield   = yieldVals.length ? yieldVals.reduce((a, b) => a + Number(b), 0) / yieldVals.length : null;
+    metricFields.innerHTML =
+      fieldRow('Total Downtime', `${totalDT} min`, 'value-green') +
+      fieldRow('Average Efficiency', avgEff != null ? `${avgEff.toFixed(1)}%` : '—', 'value-green') +
+      fieldRow('Average Yield',      avgYield != null ? `${avgYield.toFixed(1)}%` : '—', 'value-green');
+  }
+
+  function renderBudgetSummary(summary, rows) {
+    const status = summary?.status || 'Not set';
+    budgetFields.innerHTML =
+      fieldRow('Planned Total', fmt(summary?.plannedTotal)) +
+      fieldRow('Used Total', fmt(summary?.usedTotal)) +
+      fieldRow('Variance Total', fmt(summary?.varianceTotal)) +
+      fieldRow('Status', status, budgetStatusCls(status)) +
+      fieldRow('Last Updated', `${summary?.lastUpdatedAt || '—'} by ${summary?.lastUpdatedBy || '—'}`);
+
+    if (!Array.isArray(rows) || !rows.length) {
+      budgetRowsWrap.innerHTML = '<p class="status-line">No budget rows saved.</p>';
+      return;
+    }
+    budgetRowsWrap.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>Department</th><th>Planned</th><th>Used</th><th>Variance</th><th>Status</th><th>Reason</th>
+        </tr></thead>
+        <tbody>${rows.map((r) => `<tr>
+          <td>${r.deptName || ''}</td>
+          <td>${r.plannedQty ?? '—'}</td>
+          <td>${r.usedQty ?? '—'}</td>
+          <td>${r.variance != null ? (Number(r.variance) > 0 ? '+' : '') + fmt(r.variance) : '—'}</td>
+          <td>${r.status || 'Not set'}</td>
+          <td style="font-size:0.82rem;color:var(--muted);">${r.reasonText || ''}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+
+  function renderAttachmentSummary(summary) {
+    attachFields.innerHTML = '';
+    if (!Array.isArray(summary) || !summary.length) {
+      attachFields.innerHTML = '<p class="status-line">No attachments saved for this session.</p>';
+      return;
+    }
+    summary.forEach((group) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.85rem;';
+      const names = Array.isArray(group.attachments) ? group.attachments.map((a) => a.displayName).join(', ') : '';
+      div.innerHTML = `<strong>${group.deptName}</strong> — ${Number(group.attachmentCount || 0)} file(s)
+        <span style="color:var(--muted);margin-left:0.5rem;">${names}</span>`;
+      attachFields.append(div);
+    });
+  }
+
+  function renderReportResults(reports) {
+    reportResults.innerHTML = '';
+    if (!Array.isArray(reports) || !reports.length) {
+      reportResults.innerHTML = '<p class="status-line">No reports generated yet this session.</p>';
+      return;
+    }
+    reports.forEach((r) => {
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.85rem;';
+      div.innerHTML = `<strong>${r.reportType || 'report'}</strong> — ${r.generatedAt || '—'} by ${r.generatedBy || '—'}
+        ${(Array.isArray(r.filePaths) ? r.filePaths : []).map((p) => `<div style="color:var(--muted);font-size:0.78rem;">${p}</div>`).join('')}`;
+      reportResults.append(div);
+    });
+  }
+
+  /* ── load preview ── */
+  const loadPreview = async () => {
+    msg.textContent = 'Loading saved state…';
+    msg.className   = 'status-line';
+    try {
+      const preview = await previewService.loadPreview(sessionId);
+      applyPreviewPayload(preview);
+      renderSessionFields(preview.session || {});
+      renderDeptsCompleted(preview.departments || []);
+      renderDeptRows(preview.departments || []);
+      renderMetricSummary(preview.departments || []);
+      renderBudgetSummary(preview.budgetSummary || {}, preview.budgetRows || []);
+      renderAttachmentSummary(preview.attachmentSummary || []);
+      renderReportResults(state.generatedReports || []);
+      msg.textContent = 'Preview loaded from saved state.';
+      msg.className   = 'status-line success';
+    } catch (e) {
+      msg.textContent = e instanceof Error ? e.message : 'Failed to load preview.';
+      msg.className   = 'status-line error';
+    }
+  };
+
+  const runReport = async (runner, label) => {
+    setBusy(true);
+    msg.textContent = `${label}…`;
+    msg.className   = 'status-line';
+    try {
+      const result = await runner();
+      appendGeneratedReport(result);
+      renderReportResults(state.generatedReports || []);
+      msg.textContent = `${label} complete.`;
+      msg.className   = 'status-line success';
+    } catch (e) {
+      msg.textContent = e instanceof Error ? e.message : `${label} failed.`;
+      msg.className   = 'status-line error';
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  screen.querySelector('#prev-gen-handover')?.addEventListener('click', () =>
+    runReport(() => reportsService.generateHandoverReport(sessionId, state.session?.userName || ''), 'Handover report'));
+  screen.querySelector('#prev-gen-budget')?.addEventListener('click', () =>
+    runReport(() => reportsService.generateBudgetReport(sessionId, state.session?.userName || ''), 'Budget report'));
+  screen.querySelector('#prev-gen-both')?.addEventListener('click', () =>
+    runReport(() => reportsService.generateAllReports(sessionId, state.session?.userName || ''), 'Both reports'));
+
+  screen.querySelector('#prev-open-folder')?.addEventListener('click', async () => {
+    setBusy(true);
+    msg.textContent = 'Opening reports folder…';
+    try {
+      const result = await reportsService.openReportsFolder(sessionId);
+      msg.textContent = `Opened: ${result.openedPath || 'n/a'}`;
+      msg.className   = 'status-line success';
+    } catch (e) {
+      msg.textContent = e instanceof Error ? e.message : 'Failed to open folder.';
+      msg.className   = 'status-line error';
+    } finally { setBusy(false); }
   });
 
-  refreshPreview();
+  loadPreview();
 }
