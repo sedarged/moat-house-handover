@@ -127,6 +127,10 @@ public sealed class AccessBootstrapper
   CONSTRAINT FK_tblBudgetHeader_tblHandoverHeader FOREIGN KEY (HandoverID) REFERENCES tblHandoverHeader (HandoverID)
 )");
         ExecuteIfMissingIndex(connection, "UX_tblBudgetHeader_HandoverID", "CREATE UNIQUE INDEX UX_tblBudgetHeader_HandoverID ON tblBudgetHeader (HandoverID)");
+        ExecuteIfMissingColumn(connection, "tblBudgetHeader", "LinesPlanned", "ALTER TABLE tblBudgetHeader ADD COLUMN LinesPlanned DOUBLE");
+        ExecuteIfMissingColumn(connection, "tblBudgetHeader", "TotalStaffOnRegister", "ALTER TABLE tblBudgetHeader ADD COLUMN TotalStaffOnRegister DOUBLE");
+        ExecuteIfMissingColumn(connection, "tblBudgetHeader", "Comments", "ALTER TABLE tblBudgetHeader ADD COLUMN Comments LONGTEXT");
+
 
         ExecuteIfMissingTable(connection, "tblBudgetRows", @"CREATE TABLE tblBudgetRows (
   BudgetRowID AUTOINCREMENT CONSTRAINT PK_tblBudgetRows PRIMARY KEY,
@@ -227,6 +231,33 @@ public sealed class AccessBootstrapper
         using var cmd = new OleDbCommand(createStatement, connection);
         cmd.ExecuteNonQuery();
         _logger.Log($"Created index: {indexName}");
+    }
+
+    private void ExecuteIfMissingColumn(OleDbConnection connection, string tableName, string columnName, string alterStatement)
+    {
+        if (ColumnExists(connection, tableName, columnName))
+        {
+            _logger.Log($"Column exists: {tableName}.{columnName}");
+            return;
+        }
+
+        using var cmd = new OleDbCommand(alterStatement, connection);
+        cmd.ExecuteNonQuery();
+        _logger.Log($"Added column: {tableName}.{columnName}");
+    }
+
+    private static bool ColumnExists(OleDbConnection connection, string tableName, string columnName)
+    {
+        var schema = connection.GetSchema("Columns", new[] { null, null, tableName, null });
+        foreach (System.Data.DataRow row in schema.Rows)
+        {
+            if (string.Equals(Convert.ToString(row["COLUMN_NAME"]), columnName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void EnsureRecord(OleDbConnection connection, string table, string keyColumn, string keyValue, string insertSql)

@@ -169,7 +169,7 @@ export function renderBudgetScreen(root, state) {
           <div><div class="form-label">Agency used count</div><div id="sum-agency">—</div></div>
           <div><div class="form-label">Overall Status</div><div id="tot-status" style="font-size:1.1rem;font-weight:700;">—</div></div>
         </div>
-        <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2" readonly></textarea></div>
+        <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2"></textarea></div>
         <p class="status-line" id="budget-updated" style="margin-top:0.25rem;"></p>
       </div>
 
@@ -280,7 +280,7 @@ export function renderBudgetScreen(root, state) {
     message.textContent = 'Recalculating…';
     message.className   = 'status-line';
     try {
-      const payload = await budgetService.recalculate(session.sessionId, rows);
+      const payload = await budgetService.recalculate(session.sessionId, rows, collectMeta(screen));
       refreshFromPayload(payload);
       message.textContent = 'Recalculated.';
       message.className   = 'status-line success';
@@ -301,7 +301,7 @@ export function renderBudgetScreen(root, state) {
     message.textContent = 'Saving budget…';
     message.className   = 'status-line';
     try {
-      const payload = await budgetService.saveBudget(session.sessionId, rows, session.userName || '');
+      const payload = await budgetService.saveBudget(session.sessionId, rows, collectMeta(screen), session.userName || '');
       refreshFromPayload(payload);
       message.textContent = 'Budget saved.';
       message.className   = 'status-line success';

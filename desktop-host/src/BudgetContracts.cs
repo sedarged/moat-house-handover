@@ -4,10 +4,12 @@ namespace MoatHouseHandover.Host;
 
 public sealed record BudgetLoadRequest(long SessionId, string UserName);
 
-public sealed record BudgetSaveRequest(long SessionId, string UserName, IReadOnlyList<BudgetRowUpsertRequest> Rows);
+public sealed record BudgetSaveRequest(long SessionId, string UserName, IReadOnlyList<BudgetRowUpsertRequest> Rows, BudgetMetaUpsertRequest? Meta);
 
-public sealed record BudgetRecalculateRequest(long SessionId, IReadOnlyList<BudgetRowUpsertRequest> Rows);
+public sealed record BudgetRecalculateRequest(long SessionId, IReadOnlyList<BudgetRowUpsertRequest> Rows, BudgetMetaUpsertRequest? Meta);
 public sealed record DashboardBudgetSummaryRequest(long SessionId);
+
+public sealed record BudgetMetaUpsertRequest(double? LinesPlanned, double? TotalStaffOnRegister, string? Comments);
 
 public sealed record BudgetRowUpsertRequest(
     long? BudgetRowId,
@@ -55,4 +57,11 @@ public sealed record BudgetSummaryPayload(
     string Status,
     string? LastUpdatedAt,
     string? LastUpdatedBy,
-    int RowCount);
+    int RowCount,
+    double? LinesPlanned,
+    double? TotalStaffOnRegister,
+    int HolidayCount,
+    int AbsentCount,
+    int OtherReasonCount,
+    int AgencyUsedCount,
+    string Comments);

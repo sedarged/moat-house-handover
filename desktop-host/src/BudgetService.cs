@@ -34,7 +34,7 @@ public sealed class BudgetService
         var rows = request.Rows ?? Array.Empty<BudgetRowUpsertRequest>();
         ValidateRows(rows);
         var userName = NormalizeUser(request.UserName);
-        var payload = _repository.SaveBudget(request.SessionId, rows, userName);
+        var payload = _repository.SaveBudget(request.SessionId, rows, request.Meta, userName);
         _auditLogService.BestEffortLog(
             actionType: "budget.save",
             entityType: "Budget",
@@ -54,7 +54,7 @@ public sealed class BudgetService
 
         var rows = request.Rows ?? Array.Empty<BudgetRowUpsertRequest>();
         ValidateRows(rows);
-        return _repository.Recalculate(request.SessionId, rows);
+        return _repository.Recalculate(request.SessionId, rows, request.Meta);
     }
 
     public BudgetSummaryPayload LoadBudgetSummary(long sessionId)

@@ -21,6 +21,8 @@ public sealed class BudgetRepository
         var rows = LoadBudgetRows(connection, header.BudgetHeaderId, sessionId, header.ShiftCode, header.ShiftDateIso);
         var totals = CalculateTotals(rows);
         var rowUpdated = GetBudgetRowLastUpdated(connection, header.BudgetHeaderId);
+        var meta = LoadBudgetHeaderMeta(connection, header.BudgetHeaderId);
+        var counts = CountReasonBuckets(rows);
         var summary = new BudgetSummaryPayload(
             totals.PlannedTotal,
             totals.UsedTotal,
@@ -28,7 +30,14 @@ public sealed class BudgetRepository
             totals.Status,
             rowUpdated.UpdatedAt,
             rowUpdated.UpdatedBy,
-            rows.Count);
+            rows.Count,
+            meta.LinesPlanned,
+            meta.TotalStaffOnRegister,
+            counts.HolidayCount,
+            counts.AbsentCount,
+            counts.OtherReasonCount,
+            counts.AgencyUsedCount,
+            meta.Comments);
 
         return new BudgetPayload(
             header.BudgetHeaderId,
@@ -42,7 +51,7 @@ public sealed class BudgetRepository
             header.UpdatedBy);
     }
 
-    public BudgetPayload SaveBudget(long sessionId, IReadOnlyList<BudgetRowUpsertRequest> rows, string userName)
+    public BudgetPayload SaveBudget(long sessionId, IReadOnlyList<BudgetRowUpsertRequest> rows, BudgetMetaUpsertRequest? meta, string userName)
     {
         using var connection = OpenConnection();
         var header = EnsureBudgetHeaderAndRows(connection, sessionId, userName);
@@ -54,7 +63,7 @@ public sealed class BudgetRepository
         {
             var planned = row.PlannedQty;
             var used = row.UsedQty;
-            var variance = (planned ?? 0) - (used ?? 0);
+            var variance = (used ?? 0) - (planned ?? 0);
             var reason = row.ReasonText?.Trim() ?? string.Empty;
             var deptName = row.DeptName?.Trim() ?? string.Empty;
 
@@ -104,6 +113,16 @@ WHERE BudgetHeaderID = ?", connection, tx))
             updateHeader.ExecuteNonQuery();
         }
 
+        if (meta is not null)
+        {
+            using var updateMeta = new OleDbCommand(@"UPDATE tblBudgetHeader SET LinesPlanned = ?, TotalStaffOnRegister = ?, Comments = ? WHERE BudgetHeaderID = ?", connection, tx);
+            updateMeta.Parameters.AddWithValue("@p1", ToDbNullable(meta.LinesPlanned));
+            updateMeta.Parameters.AddWithValue("@p2", ToDbNullable(meta.TotalStaffOnRegister));
+            updateMeta.Parameters.AddWithValue("@p3", meta.Comments?.Trim() ?? string.Empty);
+            updateMeta.Parameters.AddWithValue("@p4", header.BudgetHeaderId);
+            updateMeta.ExecuteNonQuery();
+        }
+
         tx.Commit();
         return LoadBudget(sessionId, userName);
     }
@@ -117,13 +136,13 @@ WHERE BudgetHeaderID = ?", connection, tx))
         var budgetHeaderId = FindBudgetHeaderId(connection, sessionId);
         if (budgetHeaderId is null)
         {
-            return new BudgetSummaryPayload(0, 0, 0, "not set", null, null, 0);
+            return new BudgetSummaryPayload(0, 0, 0, "not set", null, null, 0, null, null, 0, 0, 0, 0, string.Empty);
         }
 
         const string sql = @"SELECT
 SUM(IIF(PlannedQty IS NULL, 0, PlannedQty)) AS PlannedTotal,
 SUM(IIF(UsedQty IS NULL, 0, UsedQty)) AS UsedTotal,
-SUM(IIF(VarianceQty IS NULL, IIF(PlannedQty IS NULL, 0, PlannedQty) - IIF(UsedQty IS NULL, 0, UsedQty), VarianceQty)) AS VarianceTotal,
+SUM(IIF(VarianceQty IS NULL, IIF(UsedQty IS NULL, 0, UsedQty) - IIF(PlannedQty IS NULL, 0, PlannedQty), VarianceQty)) AS VarianceTotal,
 COUNT(*) AS RowCount
 FROM tblBudgetRows
 WHERE BudgetHeaderID = ?";
@@ -133,20 +152,23 @@ WHERE BudgetHeaderID = ?";
         using var reader = cmd.ExecuteReader();
         if (!reader!.Read())
         {
-            return new BudgetSummaryPayload(0, 0, 0, "not set", null, null, 0);
+            return new BudgetSummaryPayload(0, 0, 0, "not set", null, null, 0, null, null, 0, 0, 0, 0, string.Empty);
         }
 
         var planned = reader["PlannedTotal"] == DBNull.Value ? 0 : Convert.ToDouble(reader["PlannedTotal"]);
         var used = reader["UsedTotal"] == DBNull.Value ? 0 : Convert.ToDouble(reader["UsedTotal"]);
-        var variance = reader["VarianceTotal"] == DBNull.Value ? planned - used : Convert.ToDouble(reader["VarianceTotal"]);
+        var variance = reader["VarianceTotal"] == DBNull.Value ? used - planned : Convert.ToDouble(reader["VarianceTotal"]);
         var status = ResolveBudgetStatus(planned, used, variance);
         var updated = GetBudgetRowLastUpdated(connection, budgetHeaderId.Value);
         var rowCount = reader["RowCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["RowCount"]);
 
-        return new BudgetSummaryPayload(planned, used, variance, status, updated.UpdatedAt, updated.UpdatedBy, rowCount);
+        var meta = LoadBudgetHeaderMeta(connection, budgetHeaderId.Value);
+        var rows = LoadBudgetRows(connection, budgetHeaderId.Value, sessionId, "", "");
+        var counts = CountReasonBuckets(rows);
+        return new BudgetSummaryPayload(planned, used, variance, status, updated.UpdatedAt, updated.UpdatedBy, rowCount, meta.LinesPlanned, meta.TotalStaffOnRegister, counts.HolidayCount, counts.AbsentCount, counts.OtherReasonCount, counts.AgencyUsedCount, meta.Comments);
     }
 
-    public BudgetPayload Recalculate(long sessionId, IReadOnlyList<BudgetRowUpsertRequest> rows)
+    public BudgetPayload Recalculate(long sessionId, IReadOnlyList<BudgetRowUpsertRequest> rows, BudgetMetaUpsertRequest? meta)
     {
         using var connection = OpenConnection();
         var context = GetSessionContext(connection, sessionId)
@@ -158,7 +180,7 @@ WHERE BudgetHeaderID = ?";
         {
             var planned = row.PlannedQty;
             var used = row.UsedQty;
-            var variance = (planned ?? 0) - (used ?? 0);
+            var variance = (used ?? 0) - (planned ?? 0);
             projectedRows.Add(new BudgetRowPayload(
                 BudgetRowId: row.BudgetRowId ?? 0,
                 BudgetHeaderId: headerId,
@@ -176,7 +198,8 @@ WHERE BudgetHeaderID = ?";
         }
 
         var totals = CalculateTotals(projectedRows);
-        var summary = new BudgetSummaryPayload(totals.PlannedTotal, totals.UsedTotal, totals.VarianceTotal, totals.Status, null, null, projectedRows.Count);
+        var counts = CountReasonBuckets(projectedRows);
+        var summary = new BudgetSummaryPayload(totals.PlannedTotal, totals.UsedTotal, totals.VarianceTotal, totals.Status, null, null, projectedRows.Count, meta?.LinesPlanned, meta?.TotalStaffOnRegister, counts.HolidayCount, counts.AbsentCount, counts.OtherReasonCount, counts.AgencyUsedCount, meta?.Comments?.Trim() ?? string.Empty);
 
         return new BudgetPayload(
             headerId,
@@ -200,15 +223,18 @@ WHERE BudgetHeaderID = ?";
         {
             var now = DateTime.Now;
             using var insertHeader = new OleDbCommand(@"INSERT INTO tblBudgetHeader
-(HandoverID, ShiftDate, ShiftCode, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy)
-VALUES (?, ?, ?, ?, ?, ?, ?)", connection);
+(HandoverID, ShiftDate, ShiftCode, LinesPlanned, TotalStaffOnRegister, Comments, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", connection);
             insertHeader.Parameters.AddWithValue("@p1", sessionId);
             insertHeader.Parameters.AddWithValue("@p2", context.ShiftDate);
             insertHeader.Parameters.AddWithValue("@p3", context.ShiftCode);
-            insertHeader.Parameters.AddWithValue("@p4", now);
-            insertHeader.Parameters.AddWithValue("@p5", userName);
-            insertHeader.Parameters.AddWithValue("@p6", now);
-            insertHeader.Parameters.AddWithValue("@p7", userName);
+            insertHeader.Parameters.AddWithValue("@p4", DBNull.Value);
+            insertHeader.Parameters.AddWithValue("@p5", DBNull.Value);
+            insertHeader.Parameters.AddWithValue("@p6", string.Empty);
+            insertHeader.Parameters.AddWithValue("@p7", now);
+            insertHeader.Parameters.AddWithValue("@p8", userName);
+            insertHeader.Parameters.AddWithValue("@p9", now);
+            insertHeader.Parameters.AddWithValue("@p10", userName);
             insertHeader.ExecuteNonQuery();
 
             budgetHeaderId = FindBudgetHeaderId(connection, sessionId);
@@ -292,7 +318,7 @@ ORDER BY d.DisplayOrder, r.DeptName, r.BudgetRowID";
             double? planned = reader["PlannedQty"] == DBNull.Value ? null : Convert.ToDouble(reader["PlannedQty"]);
             double? used = reader["UsedQty"] == DBNull.Value ? null : Convert.ToDouble(reader["UsedQty"]);
             var variance = reader["VarianceQty"] == DBNull.Value
-                ? (planned ?? 0) - (used ?? 0)
+                ? (used ?? 0) - (planned ?? 0)
                 : Convert.ToDouble(reader["VarianceQty"]);
 
             rows.Add(new BudgetRowPayload(
@@ -405,6 +431,42 @@ ORDER BY UpdatedAt DESC, BudgetRowID DESC", connection);
         var updatedBy = reader["UpdatedBy"] == DBNull.Value ? null : Convert.ToString(reader["UpdatedBy"]);
         return (updatedAt, updatedBy);
     }
+
+    private static (double? LinesPlanned, double? TotalStaffOnRegister, string Comments) LoadBudgetHeaderMeta(OleDbConnection connection, long budgetHeaderId)
+    {
+        using var cmd = new OleDbCommand("SELECT TOP 1 LinesPlanned, TotalStaffOnRegister, Comments FROM tblBudgetHeader WHERE BudgetHeaderID = ?", connection);
+        cmd.Parameters.AddWithValue("@p1", budgetHeaderId);
+        using var reader = cmd.ExecuteReader();
+        if (reader != null && reader.Read())
+        {
+            double? lines = reader["LinesPlanned"] == DBNull.Value ? null : Convert.ToDouble(reader["LinesPlanned"]);
+            double? reg = reader["TotalStaffOnRegister"] == DBNull.Value ? null : Convert.ToDouble(reader["TotalStaffOnRegister"]);
+            var comments = reader["Comments"] == DBNull.Value ? string.Empty : (Convert.ToString(reader["Comments"]) ?? string.Empty);
+            return (lines, reg, comments);
+        }
+        return (null, null, string.Empty);
+    }
+
+    private static (int HolidayCount, int AbsentCount, int OtherReasonCount, int AgencyUsedCount) CountReasonBuckets(IReadOnlyList<BudgetRowPayload> rows)
+    {
+        var holiday = 0; var absent = 0; var other = 0; var agency = 0;
+        foreach (var row in rows)
+        {
+            var t = (row.ReasonText ?? string.Empty).ToLowerInvariant();
+            if (t.Contains("holiday")) holiday++;
+            if (t.Contains("absent")) absent++;
+            if (t.Contains("agency")) agency++;
+            if (t.Contains("other")) other++;
+        }
+        return (holiday, absent, other, agency);
+    }
+
+    private static readonly string[] BudgetLabourAreas = new[]
+    {
+        "Injection", "MP / MetaPress", "Berks", "Wilts", "FP / Further Processing", "Brine operative",
+        "Rack cleaner / domestic", "Goods in", "Dry Goods", "Supervisors", "Admin", "Cleaners",
+        "Slam", "OH/MH Yard cleaner", "Stock controller", "Training", "Trolley Porter T1/T2", "Oak House", "Butchery"
+    };
 
     private OleDbConnection OpenConnection()
     {
