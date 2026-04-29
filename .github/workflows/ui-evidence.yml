@@ -1,0 +1,59 @@
+name: UI Evidence
+
+on:
+  pull_request:
+    paths:
+      - 'webapp/**'
+      - 'tests/ui/**'
+      - 'scripts/serve-web-dev.mjs'
+      - 'scripts/capture-screenshots.mjs'
+      - 'scripts/verify-screenshots.mjs'
+      - 'scripts/codex-setup.sh'
+      - 'playwright.config.mjs'
+      - 'package.json'
+      - '.nvmrc'
+      - '.github/workflows/ui-evidence.yml'
+  workflow_dispatch:
+
+jobs:
+  ui-evidence:
+    name: Browser UI smoke tests and screenshots
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install UI dependencies
+        run: npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Web syntax check
+        run: npm run check:web
+
+      - name: Run UI smoke tests
+        run: npm run test:ui
+
+      - name: Capture UI screenshots
+        run: npm run screenshots
+
+      - name: Verify screenshot evidence
+        run: npm run verify:screenshots
+
+      - name: Upload UI evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-evidence
+          path: |
+            playwright-report/
+            test-results/
+            test-evidence/screenshots/
+          if-no-files-found: warn
