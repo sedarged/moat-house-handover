@@ -1,110 +1,109 @@
 import { budgetService } from '../services/budgetService.js';
 import { applyBudgetPayload, applyBudgetSummaryPayload } from '../state/appState.js';
+import {
+  iconBrandSvg, iconArrowLeft, iconBell, iconUser, iconCalendar,
+  iconClockSm, iconSave, iconRefresh, iconChart
+} from '../core/icons.js';
 
 function toNumberOrNull(value) {
-  if (value === '' || value == null) {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? null : parsed;
+  if (value === '' || value == null) return null;
+  const n = Number(value);
+  return Number.isNaN(n) ? null : n;
 }
 
-function formatNumber(value) {
-  const n = Number(value || 0);
-  return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+function fmt(value) {
+  if (value == null || value === '') return '—';
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(0) : '—';
 }
 
-function createCellInput(type, value, name, options = {}) {
-  const input = document.createElement('input');
-  input.type = type;
-  input.name = name;
-  input.value = value ?? '';
-  if (options.min != null) {
-    input.min = String(options.min);
-  }
-  if (options.step != null) {
-    input.step = String(options.step);
-  }
-  if (options.rows != null) {
-    input.rows = options.rows;
-  }
-
-  return input;
+function formatDate(iso) {
+  if (!iso) return '—';
+  try { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; } catch { return iso; }
 }
 
-function collectRowsFromTable(tableBody) {
+function varianceClass(v) {
+  if (v == null) return '';
+  const n = Number(v);
+  if (n > 0)  return 'variance-over';
+  if (n < 0)  return 'variance-under';
+  return 'variance-target';
+}
+
+function budgetStatusClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'over')      return 'value-orange';
+  if (s === 'under')     return 'value-green';
+  if (s === 'on target') return 'value-green';
+  return 'value-muted';
+}
+
+function collectRows(tableBody) {
   const rows = [];
-  const trList = tableBody.querySelectorAll('tr[data-row-id]');
-  trList.forEach((tr) => {
+  tableBody.querySelectorAll('tr[data-row-id]').forEach((tr) => {
     rows.push({
       budgetRowId: Number(tr.dataset.rowId),
-      deptName: tr.dataset.deptName || '',
-      plannedQty: toNumberOrNull(tr.querySelector('input[name="plannedQty"]')?.value),
-      usedQty: toNumberOrNull(tr.querySelector('input[name="usedQty"]')?.value),
-      reasonText: tr.querySelector('textarea[name="reasonText"]')?.value || ''
+      deptName:    tr.dataset.deptName || '',
+      plannedQty:  toNumberOrNull(tr.querySelector('input[name="plannedQty"]')?.value),
+      usedQty:     toNumberOrNull(tr.querySelector('input[name="usedQty"]')?.value),
+      reasonText:  tr.querySelector('textarea[name="reasonText"]')?.value || ''
     });
   });
-
   return rows;
 }
 
 function validateRows(rows) {
   const errors = [];
-  rows.forEach((row) => {
-    if (!row.deptName?.trim()) {
-      errors.push('Every budget row must have a department name.');
-    }
-
-    if (row.plannedQty != null && row.plannedQty < 0) {
-      errors.push(`${row.deptName || 'Row'} planned value cannot be negative.`);
-    }
-
-    if (row.usedQty != null && row.usedQty < 0) {
-      errors.push(`${row.deptName || 'Row'} used value cannot be negative.`);
-    }
+  rows.forEach((r) => {
+    if (r.plannedQty != null && r.plannedQty < 0) errors.push(`${r.deptName || 'Row'}: planned cannot be negative.`);
+    if (r.usedQty   != null && r.usedQty   < 0) errors.push(`${r.deptName || 'Row'}: used cannot be negative.`);
   });
-
   return { ok: errors.length === 0, errors };
 }
 
-function renderTotals(summaryLine, totals) {
-  summaryLine.textContent = `Planned: ${formatNumber(totals.plannedTotal)} • Used: ${formatNumber(totals.usedTotal)} • Variance: ${formatNumber(totals.varianceTotal)} • Status: ${totals.status || 'not set'}`;
-}
-
-function createBudgetTableRows(tableBody, rows) {
-  tableBody.textContent = '';
-
+function buildRows(tableBody, rows) {
+  tableBody.innerHTML = '';
   rows.forEach((row) => {
     const tr = document.createElement('tr');
-    tr.dataset.rowId = String(row.budgetRowId);
+    tr.dataset.rowId   = String(row.budgetRowId);
     tr.dataset.deptName = row.deptName || '';
 
     const deptTd = document.createElement('td');
     deptTd.textContent = row.deptName || '';
+    deptTd.style.fontWeight = '500';
 
     const plannedTd = document.createElement('td');
-    plannedTd.append(createCellInput('number', row.plannedQty ?? '', 'plannedQty', { min: 0, step: 0.01 }));
+    const plannedIn = document.createElement('input');
+    plannedIn.type = 'number'; plannedIn.name = 'plannedQty';
+    plannedIn.min = '0'; plannedIn.step = '1';
+    plannedIn.value = row.plannedQty ?? '';
+    plannedIn.placeholder = '0';
+    plannedTd.append(plannedIn);
 
     const usedTd = document.createElement('td');
-    usedTd.append(createCellInput('number', row.usedQty ?? '', 'usedQty', { min: 0, step: 0.01 }));
+    const usedIn = document.createElement('input');
+    usedIn.type = 'number'; usedIn.name = 'usedQty';
+    usedIn.min = '0'; usedIn.step = '1';
+    usedIn.value = row.usedQty ?? '';
+    usedIn.placeholder = '0';
+    usedTd.append(usedIn);
 
-    const varianceTd = document.createElement('td');
-    varianceTd.className = 'meta';
-    varianceTd.textContent = formatNumber(row.variance);
+    const varTd = document.createElement('td');
+    varTd.className = varianceClass(row.variance);
+    varTd.textContent = row.variance != null ? (Number(row.variance) > 0 ? '+' : '') + fmt(row.variance) : '—';
 
     const statusTd = document.createElement('td');
-    statusTd.className = 'meta';
-    statusTd.textContent = row.status || 'not set';
+    statusTd.className = budgetStatusClass(row.status);
+    statusTd.textContent = row.status || 'Not set';
 
     const reasonTd = document.createElement('td');
-    const reasonText = document.createElement('textarea');
-    reasonText.name = 'reasonText';
-    reasonText.rows = 2;
-    reasonText.value = row.reasonText || '';
-    reasonTd.append(reasonText);
+    const reasonTa = document.createElement('textarea');
+    reasonTa.name = 'reasonText'; reasonTa.rows = 1;
+    reasonTa.value = row.reasonText || '';
+    reasonTa.placeholder = 'Reason…';
+    reasonTd.append(reasonTa);
 
-    tr.append(deptTd, plannedTd, usedTd, varianceTd, statusTd, reasonTd);
+    tr.append(deptTd, plannedTd, usedTd, varTd, statusTd, reasonTd);
     tableBody.append(tr);
   });
 }
@@ -112,108 +111,186 @@ function createBudgetTableRows(tableBody, rows) {
 export function renderBudgetScreen(root, state) {
   const session = state.session;
   if (!session?.sessionId) {
-    root.innerHTML = '<section class="panel"><h2>Budget</h2><p class="meta">Open a session first.</p></section>';
+    root.innerHTML = `<div class="screen"><div class="screen-content" style="display:flex;align-items:center;justify-content:center;"><p class="status-line">Open a session first.</p></div></div>`;
     return;
   }
 
-  root.innerHTML = `
-    <section class="panel">
-      <h2>Budget</h2>
-      <p id="budget-session" class="meta"></p>
-      <p id="budget-message" class="meta">Loading budget from persisted storage...</p>
-      <div class="table-wrap">
-        <table class="budget-table">
-          <thead>
-            <tr>
-              <th>Department</th>
-              <th>Planned</th>
-              <th>Used</th>
-              <th>Variance</th>
-              <th>Status</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody id="budget-rows"></tbody>
-        </table>
+  root.innerHTML = '';
+  const screen = document.createElement('div');
+  screen.className = 'screen';
+
+  screen.innerHTML = `
+    <header class="screen-header">
+      <button class="header-back" id="budget-back-hdr" type="button">${iconArrowLeft}</button>
+      <div class="header-brand">
+        ${iconBrandSvg}
+        <div class="header-brand-text">
+          <span class="header-brand-sub">Moat House</span>
+          <span class="header-brand-name">Operations</span>
+        </div>
       </div>
-      <p id="budget-totals" class="meta"></p>
-      <p id="budget-updated" class="meta"></p>
-      <div class="actions-row">
-        <button id="budget-recalc" type="button" class="secondary">Recalculate</button>
-        <button id="budget-save" type="button">Save Budget</button>
-        <button id="budget-back" type="button" class="secondary">Return to Dashboard</button>
+      <div class="header-title">LABOUR BUDGET</div>
+      <div class="header-actions">
+        <button class="header-icon-btn" type="button">${iconBell}</button>
+        <span class="header-divider"></span>
+        <button class="header-icon-btn" type="button">${iconUser}</button>
       </div>
-    </section>
+    </header>
+
+    <div class="screen-infobar">
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconCalendar}</span>
+        <span>Date: ${formatDate(session.shiftDate)}</span>
+      </div>
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconClockSm}</span>
+        <span>Shift: ${session.shiftCode}</span>
+      </div>
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconUser}</span>
+        <span>Session #${session.sessionId}</span>
+      </div>
+      <div class="infobar-item" id="budget-status-badge"></div>
+    </div>
+
+    <div class="screen-content">
+      <div class="section-block">
+        <div class="section-header">
+          <span class="section-icon">${iconChart}</span>
+          <span class="section-title">Budget Summary</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:0.5rem;" id="budget-totals-grid">
+          <div><div class="form-label">Planned Total</div><div id="tot-planned" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Used Total</div><div id="tot-used" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Variance Total</div><div id="tot-variance" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Overall Status</div><div id="tot-status" style="font-size:1.1rem;font-weight:700;">—</div></div>
+        </div>
+        <p class="status-line" id="budget-updated" style="margin-top:0.25rem;"></p>
+      </div>
+
+      <div class="section-block">
+        <div class="section-header">
+          <span class="section-title">Department Rows</span>
+        </div>
+        <p class="status-line" id="budget-message">Loading budget…</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:140px;">Department</th>
+                <th style="min-width:80px;">Planned</th>
+                <th style="min-width:80px;">Used</th>
+                <th style="min-width:80px;">Variance</th>
+                <th style="min-width:90px;">Status</th>
+                <th style="min-width:160px;">Reason / Notes</th>
+              </tr>
+            </thead>
+            <tbody id="budget-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <footer class="screen-footer">
+      <button class="btn btn-ghost" id="budget-back-footer" type="button">${iconArrowLeft}&nbsp; Dashboard</button>
+      <button class="btn" id="budget-recalc" type="button">${iconRefresh}&nbsp; Recalculate</button>
+      <button class="btn btn-primary" id="budget-save" type="button">${iconSave}&nbsp; Save Budget</button>
+    </footer>
   `;
 
-  const sessionLine = root.querySelector('#budget-session');
-  const message = root.querySelector('#budget-message');
-  const tableBody = root.querySelector('#budget-rows');
-  const totalsLine = root.querySelector('#budget-totals');
-  const updatedLine = root.querySelector('#budget-updated');
-  const recalcButton = root.querySelector('#budget-recalc');
-  const saveButton = root.querySelector('#budget-save');
-  const backButton = root.querySelector('#budget-back');
+  root.append(screen);
 
-  sessionLine.textContent = `Session #${session.sessionId} • ${session.shiftCode} • ${session.shiftDate}`;
+  const message      = screen.querySelector('#budget-message');
+  const tableBody    = screen.querySelector('#budget-rows');
+  const updatedLine  = screen.querySelector('#budget-updated');
+  const statusBadge  = screen.querySelector('#budget-status-badge');
+  const totPlanned   = screen.querySelector('#tot-planned');
+  const totUsed      = screen.querySelector('#tot-used');
+  const totVariance  = screen.querySelector('#tot-variance');
+  const totStatus    = screen.querySelector('#tot-status');
+
+  const goBack = () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
+  screen.querySelector('#budget-back-hdr')?.addEventListener('click', goBack);
+  screen.querySelector('#budget-back-footer')?.addEventListener('click', goBack);
+
+  function renderTotals(totals, summary) {
+    const variance = totals?.varianceTotal ?? 0;
+    const status   = totals?.status || summary?.status || 'Not set';
+
+    totPlanned.textContent  = fmt(totals?.plannedTotal);
+    totUsed.textContent     = fmt(totals?.usedTotal);
+    totVariance.textContent = (Number(variance) > 0 ? '+' : '') + fmt(variance);
+    totVariance.className   = varianceClass(variance);
+    totStatus.textContent   = status;
+    totStatus.className     = budgetStatusClass(status);
+
+    statusBadge.innerHTML = `<span style="font-size:0.76rem;padding:0.2rem 0.55rem;border-radius:4px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);">Budget: <strong class="${budgetStatusClass(status)}">${status}</strong></span>`;
+    updatedLine.textContent = summary?.lastUpdatedAt
+      ? `Last saved: ${summary.lastUpdatedAt} by ${summary.lastUpdatedBy || 'n/a'}`
+      : '';
+  }
 
   function refreshFromPayload(payload) {
     applyBudgetPayload(payload);
-    createBudgetTableRows(tableBody, payload.rows || []);
-    renderTotals(totalsLine, payload.totals || { plannedTotal: 0, usedTotal: 0, varianceTotal: 0, status: 'not set' });
-    updatedLine.textContent = `Last updated: ${payload.summary?.lastUpdatedAt || payload.updatedAt || 'n/a'} by ${payload.summary?.lastUpdatedBy || payload.updatedBy || 'n/a'}`;
+    buildRows(tableBody, payload.rows || []);
+    renderTotals(payload.totals, payload.summary);
+    applyBudgetSummaryPayload(payload.summary || null);
   }
 
   async function loadBudget() {
+    message.textContent = 'Loading budget from storage…';
+    message.className   = 'status-line';
     try {
       const payload = await budgetService.loadBudget(session.sessionId, session.userName || '');
       refreshFromPayload(payload);
-      applyBudgetSummaryPayload(payload.summary || null);
-      message.textContent = `Loaded ${payload.rows?.length || 0} budget row(s).`;
-    } catch (error) {
-      message.textContent = error instanceof Error ? error.message : 'Failed to load budget.';
+      message.textContent = `Loaded ${payload.rows?.length || 0} row(s).`;
+      message.className   = 'status-line success';
+    } catch (e) {
+      message.textContent = e instanceof Error ? e.message : 'Failed to load budget.';
+      message.className   = 'status-line error';
     }
   }
 
-  recalcButton?.addEventListener('click', async () => {
-    const rows = collectRowsFromTable(tableBody);
+  screen.querySelector('#budget-recalc')?.addEventListener('click', async () => {
+    const rows = collectRows(tableBody);
     const validation = validateRows(rows);
     if (!validation.ok) {
       message.textContent = validation.errors.join(' ');
+      message.className   = 'status-line error';
       return;
     }
-
+    message.textContent = 'Recalculating…';
+    message.className   = 'status-line';
     try {
-      message.textContent = 'Recalculating totals...';
       const payload = await budgetService.recalculate(session.sessionId, rows);
       refreshFromPayload(payload);
-      message.textContent = 'Recalculated totals from current values.';
-    } catch (error) {
-      message.textContent = error instanceof Error ? error.message : 'Failed to recalculate budget.';
+      message.textContent = 'Recalculated.';
+      message.className   = 'status-line success';
+    } catch (e) {
+      message.textContent = e instanceof Error ? e.message : 'Recalculate failed.';
+      message.className   = 'status-line error';
     }
   });
 
-  saveButton?.addEventListener('click', async () => {
-    const rows = collectRowsFromTable(tableBody);
+  screen.querySelector('#budget-save')?.addEventListener('click', async () => {
+    const rows = collectRows(tableBody);
     const validation = validateRows(rows);
     if (!validation.ok) {
       message.textContent = validation.errors.join(' ');
+      message.className   = 'status-line error';
       return;
     }
-
+    message.textContent = 'Saving budget…';
+    message.className   = 'status-line';
     try {
-      message.textContent = 'Saving budget rows...';
       const payload = await budgetService.saveBudget(session.sessionId, rows, session.userName || '');
       refreshFromPayload(payload);
-      applyBudgetSummaryPayload(payload.summary || null);
-      message.textContent = 'Budget saved to Access-backed storage.';
-    } catch (error) {
-      message.textContent = error instanceof Error ? error.message : 'Failed to save budget.';
+      message.textContent = 'Budget saved.';
+      message.className   = 'status-line success';
+    } catch (e) {
+      message.textContent = e instanceof Error ? e.message : 'Save failed.';
+      message.className   = 'status-line error';
     }
-  });
-
-  backButton?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
   });
 
   loadBudget();

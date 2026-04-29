@@ -1,243 +1,253 @@
 import { diagnosticsService } from '../services/diagnosticsService.js';
-import { auditService } from '../services/auditService.js';
-import { getRuntimeStatus } from '../core/hostBridge.js';
+import { auditService        } from '../services/auditService.js';
+import { getRuntimeStatus    } from '../core/hostBridge.js';
+import {
+  iconBrandSvg, iconArrowLeft, iconBell, iconUser, iconCalendar,
+  iconClockSm, iconRefresh, iconExternalLink, iconFolder
+} from '../core/icons.js';
 
-function makeMeta(label, value) {
-  const row = document.createElement('p');
-  row.className = 'meta';
-  row.textContent = `${label}: ${value || 'n/a'}`;
-  return row;
+function formatDate(iso) {
+  if (!iso) return '—';
+  try { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; } catch { return iso; }
 }
 
-function renderChecks(container, checks) {
-  container.textContent = '';
-
-  if (!Array.isArray(checks) || checks.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'meta';
-    empty.textContent = 'No diagnostic checks have run yet.';
-    container.append(empty);
-    return;
-  }
-
-  const list = document.createElement('ul');
-  list.className = 'dept-list';
-
-  checks.forEach((check) => {
-    const item = document.createElement('li');
-    const head = document.createElement('strong');
-    head.textContent = `${check.checkName || 'check'} — ${(check.status || 'unknown').toUpperCase()}`;
-    item.append(head);
-
-    item.append(makeMeta('Message', check.message || ''));
-    item.append(makeMeta('Details', check.details || ''));
-
-    list.append(item);
-  });
-
-  container.append(list);
+function checkBadgeClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'ok')      return 'check-ok';
+  if (s === 'warning') return 'check-warning';
+  if (s === 'failed')  return 'check-failed';
+  return 'check-unknown';
 }
 
-function renderAudit(container, entries) {
-  container.textContent = '';
-
-  if (!Array.isArray(entries) || entries.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'meta';
-    empty.textContent = 'No recent audit entries found.';
-    container.append(empty);
-    return;
-  }
-
-  const list = document.createElement('ul');
-  list.className = 'dept-list';
-
-  entries.forEach((entry) => {
-    const item = document.createElement('li');
-
-    const head = document.createElement('strong');
-    head.textContent = `${entry.actionType || 'action'} @ ${entry.eventAt || 'n/a'}`;
-    item.append(head);
-
-    item.append(makeMeta('Entity', `${entry.entityType || ''} • ${entry.entityKey || ''}`));
-    item.append(makeMeta('User', entry.userName || 'n/a'));
-    item.append(makeMeta('Details', entry.details || ''));
-
-    list.append(item);
-  });
-
-  container.append(list);
+function overallClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'ok')      return 'value-green';
+  if (s === 'warning') return 'value-orange';
+  if (s === 'failed')  return 'value-red';
+  return 'value-muted';
 }
 
 export function renderDiagnosticsScreen(root, state) {
-  root.textContent = '';
+  root.innerHTML = '';
+  const screen = document.createElement('div');
+  screen.className = 'screen';
 
-  const panel = document.createElement('section');
-  panel.className = 'panel';
+  screen.innerHTML = `
+    <header class="screen-header">
+      <button class="header-back" id="diag-back-hdr" type="button">${iconArrowLeft}</button>
+      <div class="header-brand">
+        ${iconBrandSvg}
+        <div class="header-brand-text">
+          <span class="header-brand-sub">Moat House</span>
+          <span class="header-brand-name">Operations</span>
+        </div>
+      </div>
+      <div class="header-title">RUNTIME DIAGNOSTICS</div>
+      <div class="header-actions">
+        <button class="header-icon-btn" type="button">${iconBell}</button>
+        <span class="header-divider"></span>
+        <button class="header-icon-btn" type="button">${iconUser}</button>
+      </div>
+    </header>
 
-  const title = document.createElement('h2');
-  title.textContent = 'Runtime Diagnostics + Audit';
-  panel.append(title);
+    <div class="screen-infobar">
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconCalendar}</span>
+        <span>Date: ${formatDate(state?.session?.shiftDate) || 'No session'}</span>
+      </div>
+      <div class="infobar-item">
+        <span class="infobar-icon">${iconClockSm}</span>
+        <span id="diag-overall-badge">Overall: —</span>
+      </div>
+      <div class="infobar-item">
+        <span style="font-size:0.78rem;color:var(--muted);">Run diagnostics before first session on each workstation</span>
+      </div>
+    </div>
 
-  const hint = document.createElement('p');
-  hint.className = 'meta';
-  hint.textContent = 'Run Diagnostics first on each workstation before session testing. No email is sent here.';
-  panel.append(hint);
-  const boundary = document.createElement('p');
-  boundary.className = 'meta';
-  boundary.textContent = 'Outlook draft creation requires Windows + Outlook desktop. Access checks require local ACE/OLEDB runtime support.';
-  panel.append(boundary);
+    <div class="screen-content">
+      <p class="status-line" id="diag-message" style="margin-bottom:0.75rem;">
+        Run Diagnostics to check Windows · WebView2 · Access · Outlook environment.
+      </p>
 
-  const msg = document.createElement('p');
-  msg.className = 'meta';
-  panel.append(msg);
+      <div class="two-col">
+        <!-- LEFT: checks + paths -->
+        <div>
+          <div class="section-block">
+            <div class="section-header">
+              <span class="section-title">Diagnostic Checks</span>
+              <span id="checked-at" style="margin-left:auto;font-size:0.75rem;color:var(--muted);"></span>
+            </div>
+            <ul class="checks-list" id="checks-list">
+              <li style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">Press Run Diagnostics to start.</li>
+            </ul>
+          </div>
 
-  const actions = document.createElement('div');
-  actions.className = 'actions-row';
+          <div class="section-block">
+            <div class="section-header">
+              <span class="section-title">Runtime Paths</span>
+            </div>
+            <div class="paths-grid" id="paths-grid">
+              <span class="paths-label">Config file</span><span class="paths-value" id="path-config">—</span>
+              <span class="paths-label">Access DB</span><span class="paths-value"   id="path-db">—</span>
+              <span class="paths-label">Attachments</span><span class="paths-value" id="path-attach">—</span>
+              <span class="paths-label">Reports</span><span class="paths-value"     id="path-reports">—</span>
+              <span class="paths-label">Logs</span><span class="paths-value"        id="path-logs">—</span>
+              <span class="paths-label">Assets</span><span class="paths-value"      id="path-assets">—</span>
+            </div>
+          </div>
+        </div>
 
-  const runButton = document.createElement('button');
-  runButton.type = 'button';
-  runButton.textContent = 'Run Diagnostics';
+        <!-- RIGHT: audit -->
+        <div>
+          <div class="section-block" style="height:100%;">
+            <div class="section-header">
+              <span class="section-title">Recent Audit Log</span>
+            </div>
+            <ul class="audit-list" id="audit-list">
+              <li style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">Loading audit entries…</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  const auditButton = document.createElement('button');
-  auditButton.type = 'button';
-  auditButton.textContent = 'Refresh Audit';
+    <footer class="screen-footer">
+      <button class="btn btn-ghost" id="diag-back-shift"     type="button">${iconArrowLeft}&nbsp; Shift</button>
+      <button class="btn btn-ghost" id="diag-back-dashboard" type="button">${iconArrowLeft}&nbsp; Dashboard</button>
+      <button class="btn btn-primary" id="diag-run"          type="button">${iconRefresh}&nbsp; Run Diagnostics</button>
+      <button class="btn" id="diag-refresh-audit"            type="button">${iconRefresh}&nbsp; Refresh Audit</button>
+      <button class="btn btn-ghost" id="diag-open-logs"      type="button">${iconExternalLink}&nbsp; Open Logs Folder</button>
+    </footer>
+  `;
 
-  const logsButton = document.createElement('button');
-  logsButton.type = 'button';
-  logsButton.className = 'secondary';
-  logsButton.textContent = 'Open Logs Folder';
+  root.append(screen);
 
-  const backDashboard = document.createElement('button');
-  backDashboard.type = 'button';
-  backDashboard.className = 'secondary';
-  backDashboard.textContent = 'Back to Dashboard';
+  const msg          = screen.querySelector('#diag-message');
+  const checksList   = screen.querySelector('#checks-list');
+  const auditList    = screen.querySelector('#audit-list');
+  const overallBadge = screen.querySelector('#diag-overall-badge');
+  const checkedAt    = screen.querySelector('#checked-at');
 
-  const backShift = document.createElement('button');
-  backShift.type = 'button';
-  backShift.className = 'secondary';
-  backShift.textContent = 'Back to Shift';
-
-  actions.append(runButton, auditButton, logsButton, backDashboard, backShift);
-  panel.append(actions);
-
-  const overall = document.createElement('div');
-  panel.append(overall);
-
-  const checksTitle = document.createElement('h3');
-  checksTitle.textContent = 'Checks';
-  panel.append(checksTitle);
-
-  const checksWrap = document.createElement('div');
-  panel.append(checksWrap);
-
-  const auditTitle = document.createElement('h3');
-  auditTitle.textContent = 'Recent Audit Log';
-  panel.append(auditTitle);
-
-  const auditWrap = document.createElement('div');
-  panel.append(auditWrap);
-
-  const pathsTitle = document.createElement('h3');
-  pathsTitle.textContent = 'Runtime Paths';
-  panel.append(pathsTitle);
-  const pathsWrap = document.createElement('div');
-  panel.append(pathsWrap);
-
-  root.append(panel);
+  const nav = (route) => () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route } }));
+  screen.querySelector('#diag-back-hdr')?.addEventListener('click', nav('shift'));
+  screen.querySelector('#diag-back-shift')?.addEventListener('click', nav('shift'));
+  screen.querySelector('#diag-back-dashboard')?.addEventListener('click', nav('dashboard'));
 
   const setBusy = (busy) => {
-    runButton.disabled = busy;
-    auditButton.disabled = busy;
-    logsButton.disabled = busy;
+    screen.querySelector('#diag-run').disabled            = busy;
+    screen.querySelector('#diag-refresh-audit').disabled  = busy;
+    screen.querySelector('#diag-open-logs').disabled      = busy;
   };
 
-  const renderOverall = (payload) => {
-    overall.textContent = '';
-    overall.append(makeMeta('Overall status', (payload?.overallStatus || 'not-run').toUpperCase()));
-    overall.append(makeMeta('Checked at', payload?.checkedAt || 'n/a'));
-
-    const checks = Array.isArray(payload?.checks) ? payload.checks : [];
-    const getStatus = (name) => checks.find((item) => item?.checkName === name)?.status || 'n/a';
-
-    overall.append(makeMeta('Access database path', getStatus('access.database.path')));
-    overall.append(makeMeta('Attachments root', getStatus('attachments.root.exists')));
-    overall.append(makeMeta('Reports root', getStatus('reports.root.exists')));
-    overall.append(makeMeta('Logs root', getStatus('logs.root.exists')));
-    overall.append(makeMeta('Email profiles AM/PM/NS', getStatus('email.profiles.exist')));
-    overall.append(makeMeta('Outlook availability', getStatus('outlook.com.available')));
-  };
-
-  const renderRuntimePaths = (status) => {
-    pathsWrap.textContent = '';
-    pathsWrap.append(makeMeta('Config file', status?.configPath || 'n/a'));
-    pathsWrap.append(makeMeta('Access DB', status?.accessDatabasePath || 'n/a'));
-    pathsWrap.append(makeMeta('Attachments root', status?.attachmentsRoot || 'n/a'));
-    pathsWrap.append(makeMeta('Reports root', status?.reportsOutputRoot || 'n/a'));
-    pathsWrap.append(makeMeta('Logs root', status?.logRoot || 'n/a'));
-    pathsWrap.append(makeMeta('Asset root', status?.assetRoot || 'n/a'));
-  };
-
-  async function runDiagnostics() {
-    setBusy(true);
-    msg.textContent = 'Running diagnostics...';
-    try {
-      const payload = await diagnosticsService.run(state?.session?.userName || '');
-      renderOverall(payload);
-      renderChecks(checksWrap, payload?.checks || []);
-      msg.textContent = `Diagnostics completed with status: ${(payload?.overallStatus || 'unknown').toUpperCase()}.`;
-    } catch (error) {
-      msg.textContent = error instanceof Error ? error.message : 'Diagnostics failed.';
-      renderOverall(null);
-      renderChecks(checksWrap, []);
-    } finally {
-      setBusy(false);
+  /* ── render checks ── */
+  function renderChecks(checks) {
+    checksList.innerHTML = '';
+    if (!Array.isArray(checks) || !checks.length) {
+      checksList.innerHTML = '<li style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No checks run yet.</li>';
+      return;
     }
+    checks.forEach((c) => {
+      const li = document.createElement('li');
+      li.className = 'check-row';
+      li.innerHTML = `
+        <span class="check-badge ${checkBadgeClass(c.status)}">${c.status || '?'}</span>
+        <div class="check-content">
+          <div class="check-name">${c.checkName || 'check'}</div>
+          ${c.message ? `<div class="check-msg">${c.message}</div>` : ''}
+          ${c.details  ? `<div class="check-msg" style="font-size:0.73rem;">${c.details}</div>` : ''}
+        </div>
+      `;
+      checksList.append(li);
+    });
   }
 
+  /* ── render audit ── */
+  function renderAudit(entries) {
+    auditList.innerHTML = '';
+    if (!Array.isArray(entries) || !entries.length) {
+      auditList.innerHTML = '<li style="color:var(--muted);font-size:0.85rem;padding:0.5rem 0;">No recent audit entries.</li>';
+      return;
+    }
+    entries.slice(0, 30).forEach((entry) => {
+      const li = document.createElement('li');
+      li.className = 'audit-row';
+      li.innerHTML = `
+        <div class="audit-action">${entry.actionType || 'action'}</div>
+        <div class="audit-meta">
+          ${entry.eventAt || '—'} · ${entry.entityType || ''} ${entry.entityKey ? `#${entry.entityKey}` : ''} · ${entry.userName || 'n/a'}
+          ${entry.details ? `<br><span style="font-size:0.73rem;">${entry.details}</span>` : ''}
+        </div>
+      `;
+      auditList.append(li);
+    });
+  }
+
+  /* ── render runtime paths ── */
+  function renderPaths(status) {
+    screen.querySelector('#path-config').textContent  = status?.configPath          || '—';
+    screen.querySelector('#path-db').textContent      = status?.accessDatabasePath  || '—';
+    screen.querySelector('#path-attach').textContent  = status?.attachmentsRoot     || '—';
+    screen.querySelector('#path-reports').textContent = status?.reportsOutputRoot   || '—';
+    screen.querySelector('#path-logs').textContent    = status?.logRoot             || '—';
+    screen.querySelector('#path-assets').textContent  = status?.assetRoot           || '—';
+  }
+
+  /* ── run diagnostics ── */
+  screen.querySelector('#diag-run')?.addEventListener('click', async () => {
+    setBusy(true);
+    msg.textContent = 'Running diagnostics…';
+    msg.className   = 'status-line';
+    try {
+      const payload = await diagnosticsService.run(state?.session?.userName || '');
+      renderChecks(payload?.checks || []);
+      const overall = (payload?.overallStatus || 'unknown').toUpperCase();
+      overallBadge.innerHTML = `Overall: <strong class="${overallClass(payload?.overallStatus)}">${overall}</strong>`;
+      checkedAt.textContent  = payload?.checkedAt ? `Checked: ${payload.checkedAt}` : '';
+      msg.textContent = `Diagnostics complete — ${overall}.`;
+      msg.className   = overall === 'OK' ? 'status-line success' : overall === 'WARNING' ? 'status-line warn' : 'status-line error';
+    } catch (e) {
+      msg.textContent = e instanceof Error ? e.message : 'Diagnostics failed.';
+      msg.className   = 'status-line error';
+      renderChecks([]);
+    } finally { setBusy(false); }
+  });
+
+  /* ── refresh audit ── */
   async function loadAudit() {
     setBusy(true);
-    msg.textContent = 'Loading recent audit entries...';
+    msg.textContent = 'Loading audit entries…';
+    msg.className   = 'status-line';
     try {
       const sessionId = Number(state?.session?.sessionId || 0);
       const result = sessionId > 0
         ? await auditService.listForSession(sessionId, 25)
         : await auditService.listRecent(25);
-      renderAudit(auditWrap, result?.entries || []);
-      msg.textContent = `Loaded ${Number(result?.entries?.length || 0)} audit entries.`;
-    } catch (error) {
-      msg.textContent = error instanceof Error ? error.message : 'Failed to load audit entries.';
-      renderAudit(auditWrap, []);
-    } finally {
-      setBusy(false);
-    }
+      renderAudit(result?.entries || []);
+      msg.textContent = `Loaded ${result?.entries?.length || 0} audit entries.`;
+      msg.className   = 'status-line success';
+    } catch (e) {
+      msg.textContent = e instanceof Error ? e.message : 'Failed to load audit.';
+      msg.className   = 'status-line error';
+      renderAudit([]);
+    } finally { setBusy(false); }
   }
 
-  runButton.addEventListener('click', runDiagnostics);
-  auditButton.addEventListener('click', loadAudit);
-  logsButton.addEventListener('click', async () => {
+  screen.querySelector('#diag-refresh-audit')?.addEventListener('click', loadAudit);
+
+  screen.querySelector('#diag-open-logs')?.addEventListener('click', async () => {
     setBusy(true);
+    msg.textContent = 'Opening logs folder…';
     try {
       const result = await diagnosticsService.openLogsFolder();
-      msg.textContent = `Opened logs folder: ${result?.openedPath || 'n/a'}`;
-    } catch (error) {
-      msg.textContent = error instanceof Error ? error.message : 'Failed to open logs folder.';
-    } finally {
-      setBusy(false);
-    }
+      msg.textContent = `Opened: ${result?.openedPath || 'n/a'}`;
+      msg.className   = 'status-line success';
+    } catch (e) {
+      msg.textContent = e instanceof Error ? e.message : 'Failed to open logs folder.';
+      msg.className   = 'status-line error';
+    } finally { setBusy(false); }
   });
 
-  backDashboard.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
-  });
-
-  backShift.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'shift' } }));
-  });
-
-  renderOverall(null);
-  getRuntimeStatus().then(renderRuntimePaths).catch(() => renderRuntimePaths(null));
-  renderChecks(checksWrap, []);
-  renderAudit(auditWrap, []);
+  /* initial load */
+  getRuntimeStatus().then(renderPaths).catch(() => renderPaths(null));
   loadAudit();
 }
