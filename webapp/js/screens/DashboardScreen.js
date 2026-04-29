@@ -296,17 +296,64 @@ function buildSummaryMetrics(metricsGroup, summarySide, deptComp, metricSumm, to
 
 function renderSummarySide(container, totalAttach, budgetSummary) {
   const budgetStatus = budgetSummary?.status || 'Not set';
-  const budgetClass  = budgetStatus.toLowerCase() === 'over' ? 'value-orange' :
-                       budgetStatus.toLowerCase() === 'on target' ? 'value-green' : 'badge-draft';
+  const lcStatus = budgetStatus.toLowerCase();
+  const budgetClass = lcStatus === 'over'
+    ? 'value-orange'
+    : (lcStatus === 'on target' || lcStatus === 'under')
+      ? 'value-green'
+      : 'badge-draft';
 
-  container.innerHTML = `
-    <div class="summary-side-item">
-      ${iconPaperclip} Attachments<strong>${totalAttach}</strong>
-    </div>
-    <div class="summary-side-item">
-      ${iconChart} Budget<strong class="${budgetClass}">${budgetStatus}</strong>
-    </div>
-  `;
+  container.textContent = '';
+
+  const attachmentItem = document.createElement('div');
+  attachmentItem.className = 'summary-side-item';
+  attachmentItem.innerHTML = `${iconPaperclip} Attachments`;
+  const attachmentStrong = document.createElement('strong');
+  attachmentStrong.textContent = String(totalAttach ?? 0);
+  attachmentItem.append(attachmentStrong);
+
+  const budgetItem = document.createElement('div');
+  budgetItem.className = 'summary-side-item';
+  budgetItem.innerHTML = `${iconChart} Budget`;
+  const budgetStrong = document.createElement('strong');
+  budgetStrong.className = budgetClass;
+  budgetStrong.textContent = budgetStatus;
+  budgetItem.append(budgetStrong);
+
+  const compact = document.createElement('div');
+  compact.className = 'summary-side-item summary-side-budget-values';
+  const required = document.createElement('span');
+  required.textContent = `Req ${fmt(budgetSummary?.plannedTotal, '—')}`;
+  const used = document.createElement('span');
+  used.textContent = `Used ${fmt(budgetSummary?.usedTotal, '—')}`;
+  const variance = document.createElement('span');
+  const v = Number(budgetSummary?.varianceTotal ?? NaN);
+  variance.textContent = Number.isFinite(v) ? `Var ${v > 0 ? '+' : ''}${v.toFixed(0)}` : 'Var —';
+  compact.append(required, used, variance);
+
+  const secondary = document.createElement('div');
+  secondary.className = 'summary-side-item summary-side-budget-values';
+  const linesPlanned = document.createElement('span');
+  linesPlanned.textContent = `Lines ${fmt(budgetSummary?.linesPlanned, '—')}`;
+  const register = document.createElement('span');
+  register.textContent = `Register ${fmt(budgetSummary?.totalStaffOnRegister, '—')}`;
+  const absent = document.createElement('span');
+  absent.textContent = `Absent ${fmt(budgetSummary?.absentCount, '—')}`;
+  const holiday = document.createElement('span');
+  holiday.textContent = `Holiday ${fmt(budgetSummary?.holidayCount, '—')}`;
+  const agency = document.createElement('span');
+  agency.textContent = `Agency ${fmt(budgetSummary?.agencyUsedCount, '—')}`;
+  secondary.append(linesPlanned, register, absent, holiday, agency);
+
+  const updated = document.createElement('div');
+  updated.className = 'summary-side-item summary-side-updated';
+  if (budgetSummary?.lastUpdatedAt) {
+    updated.textContent = `Updated ${budgetSummary.lastUpdatedAt}`;
+  } else {
+    updated.textContent = 'Updated —';
+  }
+
+  container.append(attachmentItem, budgetItem, compact, secondary, updated);
 }
 
 async function loadBudgetSummary(sessionId, summarySide, totalAttach, deptComp, metricSumm, state) {
