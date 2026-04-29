@@ -72,7 +72,121 @@ Do not introduce architecture drift such as cloud-first dependencies, a local we
 
 ---
 
-## 5. Repository boundaries
+## 5. Codex execution contract
+
+When operating in Codex Code Mode, advice-only responses are not acceptable unless the task is explicitly an Ask/analysis task.
+
+For implementation tasks, Codex must either:
+
+1. modify the repository and commit/push the actual changes, or
+2. stop and report `BLOCKED` with the exact blocker.
+
+Do not claim a change was made unless it is visible in at least one of these places:
+
+- changed file diff
+- new commit
+- updated pull request metadata verified after update
+- generated artifact path
+- command output
+
+Words are not evidence.
+
+### No fake completion
+
+Never say:
+
+- done
+- fixed
+- updated
+- completed
+- ready
+- PR body updated
+- screenshots regenerated
+- tests passed
+
+unless the repo, PR metadata, screenshots, or command output proves it.
+
+If asked to update a PR description/body, verify the PR body after updating it. If GitHub PR metadata cannot be updated from the environment, say:
+
+`BLOCKED: I cannot update PR metadata from this environment.`
+
+Do not claim PR metadata was updated unless a fresh PR read confirms the new text.
+
+### Task scope discipline
+
+Do not attempt the whole app unless the task explicitly allows a broad final pass.
+
+Default behaviour:
+
+- one task = one phase
+- one phase = one PR
+- one PR = one clear scope
+
+If the requested task is too large, do not create a tiny fake patch. Instead report:
+
+- inspected files
+- exact scope that is too large
+- proposed phase breakdown
+- first safe phase to implement
+
+### Before editing
+
+For every non-trivial task, first identify:
+
+- active branch
+- source-of-truth file read
+- relevant files inspected
+- intended files to change
+- exact acceptance criteria
+- exact verification commands
+
+### During editing
+
+Make changes only inside the requested phase.
+
+Do not silently skip required acceptance criteria.
+
+Do not leave placeholder-only work unless the task explicitly asks for scaffold only.
+
+Do not preserve old contracts if the source of truth requires contract/schema/service changes.
+
+Do not hardcode demo-only values as real persistence.
+
+### After editing
+
+Before final response:
+
+1. Check `git status`.
+2. Confirm files changed.
+3. Run required verification commands or mark them `BLOCKED` with exact reason.
+4. If screenshots were required, list exact screenshot paths.
+5. If PR metadata was changed, re-read PR metadata and confirm it actually changed.
+6. If no commit or file change was made, state `NO CODE CHANGES MADE`.
+
+### Required final status
+
+End every implementation task with exactly one of:
+
+- `PHASE READY FOR REVIEW`
+- `PHASE NOT READY — BLOCKERS REMAIN`
+- `NO CODE CHANGES MADE — BLOCKED`
+- `NO CODE CHANGES MADE — ANALYSIS ONLY`
+
+Do not use `READY TO MERGE` unless the user explicitly asked for merge readiness and all required checks/evidence pass.
+
+### Pull request body rule
+
+The PR body must accurately describe the actual changed files and scope.
+
+If implementation changed backend/schema/contracts/services, the PR body must say so.
+
+Do not leave stale PR descriptions such as `preserved existing contracts` when contracts were changed.
+
+PR metadata must not contradict the diff.
+
+---
+
+## 6. Repository boundaries
 
 Use the repository structure intentionally:
 
@@ -87,7 +201,7 @@ Do not move responsibilities across these boundaries without a clear reason and 
 
 ---
 
-## 6. Required task lifecycle
+## 7. Required task lifecycle
 
 For every non-trivial task:
 
@@ -136,7 +250,7 @@ End with a clear summary of:
 
 ---
 
-## 7. Preferred verification commands
+## 8. Preferred verification commands
 
 Prefer existing helper scripts over ad hoc commands.
 
@@ -155,6 +269,7 @@ If `.NET` is missing and the repository provides a bootstrap helper, attempt:
 ```bash
 bash scripts/bootstrap-dotnet.sh
 bash scripts/check-prereqs.sh
+bash scripts/check-web.sh
 bash scripts/build-host.sh
 bash scripts/package-local.sh
 bash scripts/verify-package-assets.sh
@@ -183,7 +298,7 @@ Do not invent unavailable commands.
 
 ---
 
-## 8. Verification honesty rules
+## 9. Verification honesty rules
 
 Every final response must separate these categories:
 
@@ -209,7 +324,26 @@ Use evidence instead:
 
 ---
 
-## 9. Windows runtime constraints
+## 10. Evidence rules
+
+Final reports must include evidence, not just claims.
+
+Required evidence examples:
+
+- commit SHA
+- changed file list
+- command output summary
+- screenshot paths
+- PR metadata confirmation after update
+- exact blocker message
+
+If evidence is missing, mark the item as not verified.
+
+If a task required a PR body/description update, the final response must include a fresh read-back confirmation that the PR metadata actually contains the requested text.
+
+---
+
+## 11. Windows runtime constraints
 
 The real runtime target is Windows with:
 
@@ -235,7 +369,7 @@ If these were not actually tested on Windows, mark them as **Partially verified*
 
 ---
 
-## 10. Screenshot evidence rules
+## 12. Screenshot evidence rules
 
 When changing UI, regenerate screenshot evidence where relevant.
 
@@ -253,7 +387,7 @@ Do not claim full Windows runtime verification from browser/mock screenshots.
 
 ---
 
-## 11. Documentation rules
+## 13. Documentation rules
 
 Documentation must match implementation reality.
 
@@ -271,7 +405,7 @@ Do not document scaffold-only features as complete.
 
 ---
 
-## 12. Security and safety rules
+## 14. Security and safety rules
 
 Always check for:
 
@@ -289,7 +423,7 @@ Use safe defaults and clear validation.
 
 ---
 
-## 13. Final report format
+## 15. Final report format
 
 End substantial tasks with this structure:
 
@@ -314,6 +448,11 @@ End substantial tasks with this structure:
 - Not verified:
 - Blocked:
 
+## Evidence
+- Commit SHA:
+- Changed files:
+- PR metadata confirmed after update: yes/no/not applicable
+
 ## Remaining risks
 - Real remaining risks only
 
@@ -325,7 +464,7 @@ Do not bury failures. Put blockers and unverified runtime areas in the final rep
 
 ---
 
-## 14. Definition of done
+## 16. Definition of done
 
 A task is done only when:
 
