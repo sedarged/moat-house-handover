@@ -331,7 +331,25 @@ function renderSummarySide(container, totalAttach, budgetSummary) {
   variance.textContent = Number.isFinite(v) ? `Var ${v > 0 ? '+' : ''}${v.toFixed(0)}` : 'Var —';
   compact.append(required, used, variance);
 
-  container.append(attachmentItem, budgetItem, compact);
+  const secondary = document.createElement('div');
+  secondary.className = 'summary-side-item summary-side-budget-values';
+  const linesPlanned = document.createElement('span');
+  linesPlanned.textContent = `Lines ${fmt(budgetSummary?.linesPlanned, '—')}`;
+  const register = document.createElement('span');
+  register.textContent = `Register ${fmt(budgetSummary?.totalStaffOnRegister, '—')}`;
+  const absent = document.createElement('span');
+  absent.textContent = `Absent ${fmt(budgetSummary?.absentCount, '—')}`;
+  secondary.append(linesPlanned, register, absent);
+
+  const updated = document.createElement('div');
+  updated.className = 'summary-side-item summary-side-updated';
+  if (budgetSummary?.lastUpdatedAt) {
+    updated.textContent = `Updated ${budgetSummary.lastUpdatedAt}`;
+  } else {
+    updated.textContent = 'Updated —';
+  }
+
+  container.append(attachmentItem, budgetItem, compact, secondary, updated);
 }
 
 async function loadBudgetSummary(sessionId, summarySide, totalAttach, deptComp, metricSumm, state) {

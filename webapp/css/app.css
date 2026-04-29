@@ -912,3 +912,8 @@ td textarea { min-width: 140px; min-height: 2.5rem; }
   gap: 0.55rem;
   flex-wrap: wrap;
 }
+
+.summary-side-updated {
+  opacity: 0.8;
+  font-size: 0.75rem;
+}

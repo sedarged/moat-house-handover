@@ -69,6 +69,13 @@ function validateRows(rows) {
   return { ok: errors.length === 0, errors };
 }
 
+function validateMeta(meta) {
+  const errors = [];
+  if (meta.linesPlanned != null && meta.linesPlanned < 0) errors.push('Lines planned cannot be negative.');
+  if (meta.totalStaffOnRegister != null && meta.totalStaffOnRegister < 0) errors.push('Total staff on register cannot be negative.');
+  return { ok: errors.length === 0, errors };
+}
+
 function buildRows(tableBody, rows) {
   tableBody.innerHTML = '';
   rows.forEach((row) => {
@@ -227,6 +234,8 @@ export function renderBudgetScreen(root, state) {
   const sumOther = screen.querySelector('#sum-other');
   const sumAgency = screen.querySelector('#sum-agency');
   const comments = screen.querySelector('#budget-comments');
+  const recalcBtn = screen.querySelector('#budget-recalc');
+  const saveBtn = screen.querySelector('#budget-save');
 
   const goBack = () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
   screen.querySelector('#budget-back-hdr')?.addEventListener('click', goBack);
@@ -271,6 +280,37 @@ export function renderBudgetScreen(root, state) {
     applyBudgetSummaryPayload(payload.summary || null);
   }
 
+  async function runRecalculate() {
+    const rows = collectRows(tableBody);
+    const meta = collectMeta(screen);
+    const rowValidation = validateRows(rows);
+    const metaValidation = validateMeta(meta);
+    if (!rowValidation.ok || !metaValidation.ok) {
+      message.textContent = [...rowValidation.errors, ...metaValidation.errors].join(' ');
+      message.className = 'status-line error';
+      return false;
+    }
+
+    message.textContent = 'Recalculating…';
+    message.className = 'status-line';
+    recalcBtn.disabled = true;
+    saveBtn.disabled = true;
+    try {
+      const payload = await budgetService.recalculate(session.sessionId, rows, meta);
+      refreshFromPayload(payload);
+      message.textContent = 'Recalculated.';
+      message.className = 'status-line success';
+      return true;
+    } catch (e) {
+      message.textContent = e instanceof Error ? e.message : 'Recalculate failed.';
+      message.className = 'status-line error';
+      return false;
+    } finally {
+      recalcBtn.disabled = false;
+      saveBtn.disabled = false;
+    }
+  }
+
   async function loadBudget() {
     message.textContent = 'Loading budget from storage…';
     message.className   = 'status-line';
@@ -285,39 +325,22 @@ export function renderBudgetScreen(root, state) {
     }
   }
 
-  screen.querySelector('#budget-recalc')?.addEventListener('click', async () => {
-    const rows = collectRows(tableBody);
-    const validation = validateRows(rows);
-    if (!validation.ok) {
-      message.textContent = validation.errors.join(' ');
-      message.className   = 'status-line error';
-      return;
-    }
-    message.textContent = 'Recalculating…';
-    message.className   = 'status-line';
-    try {
-      const payload = await budgetService.recalculate(session.sessionId, rows, collectMeta(screen));
-      refreshFromPayload(payload);
-      message.textContent = 'Recalculated.';
-      message.className   = 'status-line success';
-    } catch (e) {
-      message.textContent = e instanceof Error ? e.message : 'Recalculate failed.';
-      message.className   = 'status-line error';
-    }
-  });
+  screen.querySelector('#budget-recalc')?.addEventListener('click', runRecalculate);
 
   screen.querySelector('#budget-save')?.addEventListener('click', async () => {
     const rows = collectRows(tableBody);
-    const validation = validateRows(rows);
-    if (!validation.ok) {
-      message.textContent = validation.errors.join(' ');
+    const meta = collectMeta(screen);
+    const rowValidation = validateRows(rows);
+    const metaValidation = validateMeta(meta);
+    if (!rowValidation.ok || !metaValidation.ok) {
+      message.textContent = [...rowValidation.errors, ...metaValidation.errors].join(' ');
       message.className   = 'status-line error';
       return;
     }
     message.textContent = 'Saving budget…';
     message.className   = 'status-line';
     try {
-      const payload = await budgetService.saveBudget(session.sessionId, rows, collectMeta(screen), session.userName || '');
+      const payload = await budgetService.saveBudget(session.sessionId, rows, meta, session.userName || '');
       refreshFromPayload(payload);
       message.textContent = 'Budget saved.';
       message.className   = 'status-line success';
@@ -325,6 +348,24 @@ export function renderBudgetScreen(root, state) {
       message.textContent = e instanceof Error ? e.message : 'Save failed.';
       message.className   = 'status-line error';
     }
+  });
+
+  tableBody.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.matches('input[name="plannedQty"], input[name="usedQty"], textarea[name="reasonText"]')) {
+      message.textContent = 'Unsaved changes. Recalculate to refresh totals.';
+      message.className = 'status-line warn';
+    }
+  });
+
+  sumLines?.addEventListener('input', () => {
+    message.textContent = 'Unsaved changes. Recalculate to refresh totals.';
+    message.className = 'status-line warn';
+  });
+  sumRegister?.addEventListener('input', () => {
+    message.textContent = 'Unsaved changes. Recalculate to refresh totals.';
+    message.className = 'status-line warn';
   });
 
   loadBudget();
