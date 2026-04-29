@@ -16,9 +16,13 @@ Before planning or editing code, read these files first and treat them as author
 4. `BUILD_NOTES.md`
 5. `docs/*` when runtime/deployment/manual testing details are relevant
 
+`HANDOVER_APP_V2_SOURCE_OF_TRUTH.md` is the single canonical location for business rules, workflow rules, UI behaviour, role/access rules, Budget View requirements, screenshot requirements, and never-do rules.
+
+This file deliberately does **not** duplicate those business rules. Agents must read and follow the source-of-truth file directly to avoid drift.
+
 The old fragmented plan/spec files have been retired. Do not use deleted `01_*` to `07_*` documents as source of truth.
 
-If any older note, PR comment, screenshot, or generated artifact conflicts with `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`, the source-of-truth file wins.
+If any older note, PR comment, screenshot, generated artifact, or agent instruction conflicts with `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`, the source-of-truth file wins.
 
 ---
 
@@ -32,28 +36,21 @@ This is an operational handover tool, not a demo app. Reliability, clear user-fa
 
 ## 3. Locked architecture
 
-Keep this architecture unchanged unless explicitly directed by the human maintainer:
+Keep the architecture defined in `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md` unless explicitly directed by the human maintainer.
+
+At a high level this means:
 
 - Local-first Windows desktop application
 - WPF desktop host
 - WebView2 UI surface
 - HTML/CSS/JS frontend assets
 - Access-oriented backend
-- Attachments and reports stored as files/folders, not embedded database binaries
+- Attachments and reports stored as files/folders
 - Outlook draft-only workflow
 - End-user workflow must not require terminal usage on work machines
 - Packaging must support a practical Windows workstation deployment path
 
-Do **not** replace this with:
-
-- cloud-first architecture
-- local web server requirement
-- mobile app architecture
-- Electron rewrite
-- random framework migration
-- hosted database dependency
-- SMTP/cloud email sending
-- terminal-dependent user workflow
+Do not introduce architecture drift such as cloud-first dependencies, a local web server requirement, SMTP/cloud sending, Electron rewrite, browser-only deployment, or terminal-dependent user workflow unless the human maintainer explicitly changes the source of truth.
 
 ---
 
@@ -75,23 +72,7 @@ Do **not** replace this with:
 
 ---
 
-## 5. Business rules that must not drift
-
-Always preserve the rules in `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`, especially:
-
-- User identity is read-only and comes from Windows/current runtime user.
-- Settings is admin-only, not supervisor/operator.
-- Diagnostics is admin-only, not supervisor/operator.
-- Normal workflow must not expose Settings/Diagnostics.
-- `Departments Completed` replaces old `Work Order Closure` wording.
-- Total Efficiency / Total Yield / Total Downtime labels must remain exactly as written.
-- Handover departments and Budget labour rows are different concepts.
-- Budget View must include full operational staffing information, not just a simple variance table.
-- Send workflow is Outlook draft-only and must never auto-send.
-
----
-
-## 6. Repository boundaries
+## 5. Repository boundaries
 
 Use the repository structure intentionally:
 
@@ -106,7 +87,7 @@ Do not move responsibilities across these boundaries without a clear reason and 
 
 ---
 
-## 7. Required task lifecycle
+## 6. Required task lifecycle
 
 For every non-trivial task:
 
@@ -155,7 +136,7 @@ End with a clear summary of:
 
 ---
 
-## 8. Preferred verification commands
+## 7. Preferred verification commands
 
 Prefer existing helper scripts over ad hoc commands.
 
@@ -202,7 +183,7 @@ Do not invent unavailable commands.
 
 ---
 
-## 9. Verification honesty rules
+## 8. Verification honesty rules
 
 Every final response must separate these categories:
 
@@ -228,7 +209,7 @@ Use evidence instead:
 
 ---
 
-## 10. Windows runtime constraints
+## 9. Windows runtime constraints
 
 The real runtime target is Windows with:
 
@@ -254,7 +235,7 @@ If these were not actually tested on Windows, mark them as **Partially verified*
 
 ---
 
-## 11. Screenshot evidence rules
+## 10. Screenshot evidence rules
 
 When changing UI, regenerate screenshot evidence where relevant.
 
@@ -272,7 +253,7 @@ Do not claim full Windows runtime verification from browser/mock screenshots.
 
 ---
 
-## 12. Documentation rules
+## 11. Documentation rules
 
 Documentation must match implementation reality.
 
@@ -290,7 +271,7 @@ Do not document scaffold-only features as complete.
 
 ---
 
-## 13. Security and safety rules
+## 12. Security and safety rules
 
 Always check for:
 
@@ -308,7 +289,7 @@ Use safe defaults and clear validation.
 
 ---
 
-## 14. Final report format
+## 13. Final report format
 
 End substantial tasks with this structure:
 
@@ -344,7 +325,7 @@ Do not bury failures. Put blockers and unverified runtime areas in the final rep
 
 ---
 
-## 15. Definition of done
+## 14. Definition of done
 
 A task is done only when:
 
