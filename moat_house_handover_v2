@@ -1,0 +1,1120 @@
+
+MOAT HOUSE HANDOVER v2 — In-Depth App Behaviour Overview
+Use this as the current business/design reference for Claude/Codex.
+MOAT HOUSE HANDOVER v2 — APP BEHAVIOUR OVERVIEW
+
+Purpose:
+MOAT HOUSE HANDOVER is a local-first Windows desktop handover app for shift operations.
+
+The app is used to:
+- open a shift/date session
+- record department handover status and notes
+- record production metrics for selected metric departments
+- add department attachments/evidence
+- record labour budget planned vs used
+- preview saved handover data
+- generate local handover and budget reports
+- prepare an Outlook draft package
+- run diagnostics and audit checks
+
+Architecture:
+- WPF desktop host
+- WebView2 HTML/CSS/JS frontend
+- Access-oriented backend
+- attachments stored as files/folders
+- reports stored as files/folders
+- Outlook draft-only workflow
+- no automatic email sending
+- no local web server
+- no cloud database
+- no SMTP/cloud email
+
+Global data rule:
+Everything belongs to an active shift/date/session.
+
+Session identity:
+- SessionId
+- ShiftCode: AM / PM / NS
+- ShiftDate
+- UserName
+
+All saved data must link back to the active session.
+Preview, reports, dashboard summaries, and send package must read from saved/persisted state, not unsaved UI state.
+
+
+==================================================
+1. FINAL HANDOVER DEPARTMENT LIST
+==================================================
+
+The handover department list is:
+
+1. Injection
+2. MetaPress
+3. Berks
+4. Wilts
+5. Racking
+6. Butchery
+7. Further Processing
+8. Tumblers
+9. Smoke Tumbler
+10. Minimums & Samples
+11. Goods In & Despatch
+12. Dry Goods
+13. Additional
+
+This list should be used consistently in:
+- Dashboard
+- Department View
+- Budget View, unless future budget-specific template overrides it
+- Preview
+- Reports
+- Departments Completed summary
+- Attachment counts by department
+
+
+==================================================
+2. METRIC VS NON-METRIC DEPARTMENTS
+==================================================
+
+Metric departments:
+- Injection
+- MetaPress
+- Berks
+- Wilts
+
+Only these four use production metric fields:
+- Downtime minutes
+- Efficiency %
+- Yield %
+
+Metric departments should show and save:
+- Status
+- Downtime
+- Efficiency %
+- Yield %
+- Notes
+- Attachments
+
+Non-metric departments:
+- Racking
+- Butchery
+- Further Processing
+- Tumblers
+- Smoke Tumbler
+- Minimums & Samples
+- Goods In & Despatch
+- Dry Goods
+- Additional
+
+Non-metric departments should show and save only:
+- Status
+- Notes
+- Attachments
+
+Non-metric departments must not show:
+- Downtime
+- Efficiency %
+- Yield %
+
+Simple rule:
+Metric department = needs production performance numbers.
+Non-metric department = handover status/notes/attachments only.
+
+
+==================================================
+3. DEPARTMENTS COMPLETED SUMMARY
+==================================================
+
+Important wording:
+Use “Departments Completed”, not “Work Order Closure”.
+
+Do not use:
+- Work Order Closure
+- Work Order Closure totals
+- Work Order Closure summary
+- Work Order Closure performance summary
+
+Use:
+- Departments Completed
+- Departments Completed totals
+- Departments Completed summary
+
+Purpose:
+Departments Completed is the dashboard completion/status summary for all handover departments.
+
+It answers:
+“How many handover sections are Complete, Incomplete, or Not running?”
+
+Departments Completed uses all departments:
+1. Injection
+2. MetaPress
+3. Berks
+4. Wilts
+5. Racking
+6. Butchery
+7. Further Processing
+8. Tumblers
+9. Smoke Tumbler
+10. Minimums & Samples
+11. Goods In & Despatch
+12. Dry Goods
+13. Additional
+
+Status values:
+- Complete
+- Incomplete
+- Not running
+
+Example display:
+
+Departments Completed
+- Complete: 8
+- Incomplete: 2
+- Not running: 3
+- Total departments: 13
+
+Optional display:
+- Completion: 8 / 13 departments complete
+
+Important:
+Departments Completed is separate from metric performance.
+
+Departments Completed:
+- uses all departments
+- based only on department status
+
+Metric Summary:
+- uses only Injection, MetaPress, Berks, Wilts
+- based on downtime, efficiency, yield
+
+
+==================================================
+4. SHIFT / SESSION SCREEN
+==================================================
+
+Purpose:
+The Shift / Session screen is the entry point into the app.
+
+It lets the user choose:
+- shift
+- date
+- user
+
+It then opens an existing session or creates a blank session after confirmation.
+
+Must show:
+- app title: MOAT HOUSE HANDOVER
+- instruction text
+- shift selector:
+  - AM
+  - PM
+  - NS
+- date selector:
+  - default to today
+  - allow past/future dates
+- user name field:
+  - default to current Windows/user where possible
+  - editable if needed
+- Open Session button
+- Diagnostics button
+- message/status area
+
+Open Session behaviour:
+- read ShiftCode, ShiftDate, UserName
+- call session.open
+- if session exists:
+  - load session
+  - set active session in app state
+  - navigate to Dashboard
+- if session does not exist:
+  - show confirmation:
+    “No session exists for this shift/date. Create a blank session?”
+  - if confirmed:
+    - call session.createBlank
+    - navigate to Dashboard
+  - if cancelled:
+    - stay on Shift screen
+
+Diagnostics button:
+- opens Diagnostics screen
+- Diagnostics must work before any active session exists
+
+Validation:
+- shift is required
+- date is required
+- user name should not crash if blank; use fallback where possible
+
+Must not:
+- create session without user confirmation
+- clear/delete session
+- open Dashboard without valid active session
+
+
+==================================================
+5. DASHBOARD SCREEN
+==================================================
+
+Purpose:
+Dashboard is the main operational overview for the active shift/date/session.
+
+It should show:
+- session information
+- department status overview
+- Departments Completed summary
+- metric summary for metric departments
+- attachment summary
+- budget summary
+- navigation to main workflows
+
+Header/session area should show:
+- ShiftCode
+- ShiftDate
+- SessionId
+- SessionStatus
+- Last updated date/time
+- Updated by user if available
+
+Department cards/rows should show:
+- Department name
+- Status:
+  - Not running
+  - Complete
+  - Incomplete
+- Attachment count
+- Last updated / updated by if available
+
+For metric departments only, cards may also show compact metric values:
+- Downtime
+- Efficiency
+- Yield
+
+Dashboard summary sections:
+
+A. Departments Completed
+
+Uses all 13 departments.
+
+Shows:
+- Total departments
+- Complete count
+- Incomplete count
+- Not running count
+- optional completion ratio
+
+Example:
+Departments Completed
+Complete: 8
+Incomplete: 2
+Not running: 3
+Total: 13
+
+B. Metric Summary
+
+Uses only:
+- Injection
+- MetaPress
+- Berks
+- Wilts
+
+Shows:
+- Total downtime minutes
+- Average efficiency where values exist
+- Average yield where values exist
+- Metric department status counts if useful
+
+Important:
+Metric Summary must not include:
+- Racking
+- Butchery
+- Further Processing
+- Tumblers
+- Smoke Tumbler
+- Minimums & Samples
+- Goods In & Despatch
+- Dry Goods
+- Additional
+
+C. Attachment Summary
+
+Shows:
+- total attachments for session
+- attachment count per department
+
+D. Budget Summary
+
+Shows:
+- planned total
+- used total
+- variance total
+- budget status:
+  - On target
+  - Over
+  - Under
+  - Not set
+- last updated if available
+
+Dashboard actions:
+- Open Department
+- Open Budget
+- Open Preview
+- Open Send
+- Clear Day
+- Diagnostics
+- Back to Shift
+
+Open Department:
+- selected department is passed to Department View
+- Department View loads saved data for session + department
+
+Open Budget:
+- opens Budget View for active session
+
+Open Preview:
+- opens read-only Preview from saved data
+
+Open Send:
+- opens Send View / package preparation
+
+Clear Day:
+- must show strong confirmation
+- resets current shift/date session data only
+- resets department status/notes/metric values according to clear-day rules
+- should refresh Dashboard after completion
+- should write audit entry
+
+Diagnostics:
+- opens Diagnostics screen
+
+Must not:
+- edit detailed department data directly on Dashboard
+- use “Work Order Closure” wording
+- calculate Departments Completed from only metric departments
+- calculate Metric Summary from non-metric departments
+- generate reports automatically
+- send email automatically
+
+
+==================================================
+6. DEPARTMENT HANDOVER VIEW
+==================================================
+
+Purpose:
+Department View is where the user enters handover information for one selected department.
+
+Header should show:
+- Department name
+- ShiftCode
+- ShiftDate
+- SessionId
+- whether department is metric or non-metric
+
+Common fields for all departments:
+- Status:
+  - Not running
+  - Complete
+  - Incomplete
+- Notes
+- Attachments
+
+Metric fields only for:
+- Injection
+- MetaPress
+- Berks
+- Wilts
+
+Metric fields:
+- Downtime minutes
+- Efficiency %
+- Yield %
+
+Metric department form should show:
+- Status
+- Downtime
+- Efficiency %
+- Yield %
+- Notes
+- Attachments
+
+Non-metric department form should show:
+- Status
+- Notes
+- Attachments
+
+Non-metric department form must hide:
+- Downtime
+- Efficiency %
+- Yield %
+
+Default values:
+- Status: Not running
+- Notes: blank
+- Metric values: blank
+- Attachments: existing saved list or empty
+
+Buttons:
+- Save
+- Add Attachment
+- Remove Attachment
+- View Attachment
+- Previous Attachment
+- Next Attachment
+- Back to Dashboard
+
+Save behaviour:
+- save department status
+- save notes
+- save metrics only for metric departments
+- save updated at/by
+- audit: department.save
+- refresh dashboard when returning
+
+Validation:
+- status required
+- downtime numeric and not negative if entered
+- efficiency numeric if entered
+- yield numeric if entered
+- blank metrics allowed where appropriate
+- notes can be blank
+- invalid input shows clear message, not crash
+
+Attachment panel:
+Must show:
+- attachment list
+- selected attachment metadata
+- attachment count
+- thumbnail/preview if supported
+- clear message if preview cannot load
+
+Add Attachment:
+- open file picker
+- copy selected file to managed AttachmentsRoot
+- save metadata in Access
+- preserve original display name
+- refresh list/count
+- audit: attachment.add
+
+Remove Attachment:
+- soft-delete metadata
+- do not physically delete file by default
+- clear stale preview
+- refresh list/count
+- audit: attachment.remove
+
+Previous/Next Attachment:
+- changes selected attachment
+- updates preview
+- updates metadata
+- must not leave old image shown
+
+View Attachment:
+- opens selected attachment in Image Viewer
+- viewer uses managed path only
+
+Must not:
+- show metric fields for non-metric departments
+- save metrics for non-metric departments
+- embed attachments in Access
+- use unmanaged original path as permanent storage
+- leave stale thumbnail after removal/navigation
+
+
+==================================================
+7. IMAGE VIEWER
+==================================================
+
+Purpose:
+Image Viewer shows selected department attachment larger than the Department View thumbnail.
+
+Must show:
+- selected attachment display name
+- department name
+- captured/uploaded date
+- current index, e.g. 1 of 3
+- image/file preview
+- Previous
+- Next
+- Close/Back
+
+Data source:
+- active session
+- selected department
+- selected attachment
+- managed attachment list
+
+Behaviour:
+- Previous changes selected attachment
+- Next changes selected attachment
+- image updates
+- metadata updates
+- missing file shows clear message
+- unsupported preview shows clear message
+
+Image display:
+- maintain aspect ratio
+- fit to viewer area
+- be larger than Department thumbnail
+- readable quality
+- do not stretch badly
+
+Security:
+- only open managed files under AttachmentsRoot
+- do not open arbitrary local file paths
+
+Must not:
+- show stale image
+- pretend file loaded if it failed
+- send/export anything
+
+
+==================================================
+8. BUDGET VIEW
+==================================================
+
+Purpose:
+Budget View tracks planned staff vs used staff for the active shift/date/session.
+
+Budget is about labour/headcount, not production metrics.
+
+Budget is separate from:
+- downtime
+- efficiency
+- yield
+- metric summary
+
+Budget applies to all departments/areas, not only metric departments.
+
+Budget should load by:
+- SessionId
+- ShiftCode
+- ShiftDate
+
+Budget row departments should follow the department list unless future budget templates override it:
+1. Injection
+2. MetaPress
+3. Berks
+4. Wilts
+5. Racking
+6. Butchery
+7. Further Processing
+8. Tumblers
+9. Smoke Tumbler
+10. Minimums & Samples
+11. Goods In & Despatch
+12. Dry Goods
+13. Additional
+
+Budget row fields:
+- Department / area
+- Planned staff
+- Used staff
+- Variance
+- Reason / notes
+- Status
+
+Variance:
+Variance = Used - Planned
+
+Examples:
+Planned 10, Used 12 = +2 Over
+Planned 10, Used 8 = -2 Under
+Planned 10, Used 10 = 0 On target
+
+Budget status:
+- On target
+- Over
+- Under
+- Not set
+
+Budget summary should show:
+- planned total
+- used total
+- variance total
+- overall status
+- row count
+- last updated
+
+Buttons:
+- Save Budget
+- Recalculate
+- Back to Dashboard
+- optionally Preview
+
+Save Budget:
+- save rows to Access
+- save updated at/by
+- recalculate totals
+- refresh Dashboard Budget Summary
+- audit: budget.save
+
+Recalculate:
+- recalculates row variance
+- recalculates totals
+- should work before save
+- should not corrupt data
+
+Validation:
+- planned cannot be negative
+- used cannot be negative
+- blank numeric values handled consistently
+- variance is calculated, not manually typed
+- reason/notes can be blank
+- invalid row shows clear message
+
+Must not:
+- mix budget variance with efficiency/yield/downtime
+- show budget only for metric departments
+- generate reports automatically
+- send email
+- use fake hardcoded values when persistence exists
+
+
+==================================================
+9. PREVIEW VIEW
+==================================================
+
+Purpose:
+Preview is a read-only consolidated view of saved session data before report generation/send.
+
+Preview must load from persisted saved state.
+
+It must not use unsaved UI state.
+
+Must show session header:
+- ShiftCode
+- ShiftDate
+- SessionId
+- SessionStatus
+- Created at/by
+- Updated at/by
+
+Must show Departments Completed:
+- Complete count
+- Incomplete count
+- Not running count
+- Total departments
+- completion ratio if useful
+
+Must show department summary:
+For each department:
+- Department name
+- Status
+- Notes
+- Attachment count
+- Updated at/by
+
+For metric departments only:
+- Downtime
+- Efficiency %
+- Yield %
+
+Must show Metric Summary:
+- downtime total
+- average efficiency
+- average yield
+- based only on Injection, MetaPress, Berks, Wilts
+
+Must show Budget Summary:
+- planned total
+- used total
+- variance total
+- budget status
+
+Must show Budget Rows:
+- department
+- planned
+- used
+- variance
+- reason
+
+Must show attachment summary:
+- attachment counts by department
+- optionally display names
+
+Buttons:
+- Back to Dashboard
+- Generate Handover Report
+- Generate Budget Report
+- Generate Both Reports
+- Open Reports Folder
+- Go to Send / Prepare Send Package
+
+Preview is read-only:
+- no editing department
+- no editing budget
+- no attachment add/remove
+- no automatic send
+
+Must not:
+- modify data while loading
+- generate from unsaved UI state
+- send email
+- create Outlook draft automatically
+
+
+==================================================
+10. REPORTS
+==================================================
+
+Purpose:
+Reports are generated local files created from saved session data.
+
+Reports are not the same as Preview.
+
+Preview = on-screen read-only view.
+Reports = output files.
+
+Report types:
+1. Handover report
+2. Budget report
+3. Optional combined report if implemented
+
+Reports are saved under:
+- ReportsRoot
+
+Handover report should include:
+- shift/date/session header
+- Departments Completed summary
+- department statuses
+- department notes
+- metric values for Injection, MetaPress, Berks, Wilts
+- Metric Summary
+- attachment counts
+- generated at/by
+
+Budget report should include:
+- shift/date/session header
+- planned total
+- used total
+- variance total
+- budget status
+- budget rows
+- generated at/by
+
+File naming examples:
+- Handover_AM_2026-04-29_Session123.html
+- Budget_AM_2026-04-29_Session123.html
+
+Rules:
+- use persisted saved state
+- escape user-entered text
+- no unsafe raw HTML from notes/reasons
+- return generated file paths to UI
+- audit report generation
+
+Audit:
+- reports.generateHandover
+- reports.generateBudget
+- reports.generateAll
+
+Must not:
+- generate from unsaved UI state
+- require Office automation
+- require cloud service
+- require local web server
+- send email automatically
+
+
+==================================================
+11. SEND / OUTLOOK DRAFT VIEW
+==================================================
+
+Purpose:
+Send View prepares an email package and creates an Outlook draft only.
+
+It must never automatically send an email.
+
+Must show:
+- session info
+- email profile key
+- To recipients
+- CC recipients
+- subject preview
+- body preview
+- report attachment paths
+- validation messages
+- readiness status
+
+Buttons:
+- Prepare Package
+- Create Outlook Draft
+- Back to Preview
+- Back to Dashboard
+
+Prepare Package:
+- load active session
+- load email profile by shift
+- generate or reuse handover report
+- generate or reuse budget report
+- confirm report paths exist
+- build subject from template
+- build body from template
+- return package payload
+- audit: send.preparePackage
+
+Create Outlook Draft:
+- requires prepared package
+- attempts Outlook COM draft creation
+- sets To / CC / Subject / Body
+- attaches reports
+- does not send
+- returns success/failure
+- audit: send.createOutlookDraft
+
+Validation messages:
+- session missing
+- reports missing
+- report generation failed
+- email profile missing
+- email profile inactive
+- no recipients
+- Outlook unavailable
+- file path missing
+- attachment/report path not found
+
+Must not:
+- send automatically
+- include Send Now button
+- use SMTP
+- use cloud email
+- hide validation errors
+- claim draft success unless host confirms it
+
+
+==================================================
+12. DIAGNOSTICS SCREEN
+==================================================
+
+Purpose:
+Diagnostics checks whether the app can run correctly on the current machine.
+
+It must work before a shift session is opened.
+
+Must show:
+- Runtime Diagnostics title
+- Run Diagnostics first guidance
+- Windows/WebView2/ACE/Outlook boundary message
+
+Buttons:
+- Run Diagnostics
+- Refresh Audit
+- Open Logs Folder
+- Back to Dashboard
+- Back to Shift
+
+Must show overall status:
+- OK
+- Warning
+- Failed
+
+Must show runtime paths:
+- Config file
+- Access DB path
+- Attachments root
+- Reports root
+- Logs root
+- Asset root
+
+Diagnostics checks:
+- OS / Windows runtime
+- config loaded
+- Access DB path exists
+- Access connection opens
+- tblConfig seed
+- Attachments folder exists/can be created
+- Attachments folder write access
+- Reports folder exists/can be created
+- Reports folder write access
+- Logs folder exists
+- Email profile mappings exist for AM/PM/NS
+- Active email profiles valid
+- Outlook COM availability
+- Runtime boundary check
+
+Each check row should show:
+- check name
+- status
+- message
+- details
+
+Open Logs Folder:
+- host opens log folder if possible
+- failure shown clearly
+
+Refresh Audit:
+- if session exists, show audit for session
+- if no session exists, show recent audit entries
+
+Must not:
+- require active session
+- create Outlook draft
+- send email
+- modify business data
+- crash because one diagnostic check failed
+
+
+==================================================
+13. AUDIT LOG
+==================================================
+
+Purpose:
+Audit log records important workflow actions.
+
+Audit logging must be best-effort:
+- if audit fails, workflow continues
+- audit failure is logged where possible
+- audit failure does not block save/report/send operations
+
+Audit row fields:
+- AuditId
+- EventAt
+- UserName
+- EntityType
+- EntityKey
+- ActionType
+- Details
+
+Actions to audit:
+- session.open
+- session.createBlank
+- session.clearDay
+- department.save
+- attachment.add
+- attachment.remove
+- budget.save
+- reports.generateHandover
+- reports.generateBudget
+- reports.generateAll
+- send.preparePackage
+- send.createOutlookDraft result
+
+Audit display:
+- Diagnostics screen shows recent entries
+- Entries show action/time/entity/user/details
+
+Must not:
+- store huge sensitive email body text unnecessarily
+- crash main workflow if audit fails
+
+
+==================================================
+14. ATTACHMENT STORAGE RULES
+==================================================
+
+Purpose:
+Attachments are evidence/files/images linked to department handover.
+
+Storage:
+- files copied to managed AttachmentsRoot
+- Access stores metadata only
+- original display name preserved
+- managed file path stored
+- linked to session + department
+
+Metadata:
+- AttachmentId
+- SessionId
+- DeptRecordId
+- DeptName
+- DisplayName
+- ManagedFilePath
+- CapturedOn
+- SequenceNo
+- IsDeleted
+
+Remove:
+- soft-delete metadata
+- physical delete deferred unless approved later
+
+Viewer:
+- only managed files under AttachmentsRoot
+- no arbitrary file paths
+
+Must not:
+- embed files in Access
+- rely on original source file path permanently
+- delete physical files by default
+- show stale preview
+
+
+==================================================
+15. DATA STORAGE RULES
+==================================================
+
+Structured data:
+- Access database
+
+File data:
+- AttachmentsRoot
+- ReportsRoot
+- LogsRoot
+
+Runtime config:
+- defines database path
+- defines attachments path
+- defines reports path
+- supports logs/config path where applicable
+
+Do not:
+- replace Access
+- add local web server
+- store attachments in Access
+- store reports in Access
+
+
+==================================================
+16. STATUS RULES
+==================================================
+
+Department statuses:
+- Not running
+- Complete
+- Incomplete
+
+Default department status:
+- Not running
+
+Department status meaning:
+- Not running = department/line did not run
+- Complete = section completed
+- Incomplete = issue/open item remains
+
+Budget statuses:
+- On target
+- Over
+- Under
+- Not set
+
+Diagnostics statuses:
+- ok
+- warning
+- failed
+
+Send package statuses:
+- ready
+- not ready
+- warning where useful
+
+
+==================================================
+17. NEVER-DO RULES
+==================================================
+
+Never:
+- do not use “Work Order Closure” wording
+- do not send email automatically
+- do not add Send Now
+- do not use SMTP/cloud email
+- do not replace Access
+- do not add local web server
+- do not store attachments inside database
+- do not show downtime/efficiency/yield for non-metric departments
+- do not calculate Departments Completed from metric departments only
+- do not calculate Metric Summary from non-metric departments
+- do not generate reports from unsaved UI state
+- do not create Outlook draft without user action
+- do not claim Windows runtime is verified unless tested on real Windows
+- do not hide validation failures
+- do not mark failed bridge calls as success
+- do not overbuild future stages early
+Key updated concept:
+Departments Completed = status summary for all 13 departments. Metric Summary = downtime / efficiency / yield only for Injection, MetaPress, Berks, Wilts.
