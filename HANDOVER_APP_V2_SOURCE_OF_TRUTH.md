@@ -4,6 +4,32 @@ This file is the single business/product source of truth for MOAT HOUSE HANDOVER
 
 It replaces older fragmented plan/spec/reference files. If another document conflicts with this file, this file wins.
 
+## Section index
+
+1. [Product purpose](#1-product-purpose)
+2. [Locked architecture](#2-locked-architecture)
+3. [Global data rule](#3-global-data-rule)
+4. [Roles and access](#4-roles-and-access)
+5. [UI direction](#5-ui-direction)
+6. [Handover department list](#6-handover-department-list)
+7. [Metric vs non-metric handover departments](#7-metric-vs-non-metric-handover-departments)
+8. [Departments Completed summary](#8-departments-completed-summary)
+9. [Shift / Session screen](#9-shift--session-screen)
+10. [Dashboard screen](#10-dashboard-screen)
+11. [Department Handover View](#11-department-handover-view)
+12. [Image Viewer](#12-image-viewer)
+13. [Budget View — business requirement](#13-budget-view--business-requirement)
+14. [Preview View](#14-preview-view)
+15. [Reports](#15-reports)
+16. [Send / Outlook Draft View](#16-send--outlook-draft-view)
+17. [Diagnostics — admin only](#17-diagnostics--admin-only)
+18. [Audit Log](#18-audit-log)
+19. [Status rules](#19-status-rules)
+20. [Never-do rules](#20-never-do-rules)
+21. [Security / escaping](#21-security--escaping)
+22. [Verification expectations](#22-verification-expectations)
+23. [Screenshot evidence expectations](#23-screenshot-evidence-expectations)
+
 ## 1. Product purpose
 
 MOAT HOUSE HANDOVER v2 is a local-first Windows desktop handover app for shift operations.
