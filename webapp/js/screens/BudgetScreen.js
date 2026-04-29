@@ -38,6 +38,14 @@ function budgetStatusClass(status) {
   return 'value-muted';
 }
 
+function collectMeta(screen) {
+  return {
+    linesPlanned: toNumberOrNull(screen.querySelector('#sum-lines-input')?.value),
+    totalStaffOnRegister: toNumberOrNull(screen.querySelector('#sum-register-input')?.value),
+    comments: screen.querySelector('#budget-comments')?.value || ""
+  };
+}
+
 function collectRows(tableBody) {
   const rows = [];
   tableBody.querySelectorAll('tr[data-row-id]').forEach((tr) => {
@@ -92,10 +100,6 @@ function buildRows(tableBody, rows) {
     varTd.className = varianceClass(row.variance);
     varTd.textContent = row.variance != null ? (Number(row.variance) > 0 ? '+' : '') + fmt(row.variance) : '—';
 
-    const statusTd = document.createElement('td');
-    statusTd.className = budgetStatusClass(row.status);
-    statusTd.textContent = row.status || 'Not set';
-
     const reasonTd = document.createElement('td');
     const reasonTa = document.createElement('textarea');
     reasonTa.name = 'reasonText'; reasonTa.rows = 1;
@@ -103,7 +107,7 @@ function buildRows(tableBody, rows) {
     reasonTa.placeholder = 'Reason…';
     reasonTd.append(reasonTa);
 
-    tr.append(deptTd, plannedTd, usedTd, varTd, statusTd, reasonTd);
+    tr.append(deptTd, plannedTd, usedTd, varTd, reasonTd);
     tableBody.append(tr);
   });
 }
@@ -159,12 +163,21 @@ export function renderBudgetScreen(root, state) {
           <span class="section-icon">${iconChart}</span>
           <span class="section-title">Budget Summary</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:0.5rem;" id="budget-totals-grid">
-          <div><div class="form-label">Planned Total</div><div id="tot-planned" style="font-size:1.1rem;font-weight:700;">—</div></div>
-          <div><div class="form-label">Used Total</div><div id="tot-used" style="font-size:1.1rem;font-weight:700;">—</div></div>
-          <div><div class="form-label">Variance Total</div><div id="tot-variance" style="font-size:1.1rem;font-weight:700;">—</div></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:0.5rem;" id="budget-totals-grid">
+          <div><div class="form-label">Lines planned</div><input id="sum-lines-input" type="number" min="0" step="1" placeholder="0" /></div>
+          <div><div class="form-label">Total staff required</div><div id="tot-planned" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Total staff used</div><div id="tot-used" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Total staff on register</div><input id="sum-register-input" type="number" min="0" step="1" placeholder="0" /></div>
+          <div><div class="form-label">Variance (Used - Required)</div><div id="tot-variance" style="font-size:1.1rem;font-weight:700;">—</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:0.5rem;">
+          <div><div class="form-label">Holiday count</div><div id="sum-holiday">—</div></div>
+          <div><div class="form-label">Absent count</div><div id="sum-absent">—</div></div>
+          <div><div class="form-label">Other reason count</div><div id="sum-other">—</div></div>
+          <div><div class="form-label">Agency used count</div><div id="sum-agency">—</div></div>
           <div><div class="form-label">Overall Status</div><div id="tot-status" style="font-size:1.1rem;font-weight:700;">—</div></div>
         </div>
+        <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2"></textarea></div>
         <p class="status-line" id="budget-updated" style="margin-top:0.25rem;"></p>
       </div>
 
@@ -178,11 +191,10 @@ export function renderBudgetScreen(root, state) {
             <thead>
               <tr>
                 <th style="min-width:140px;">Department</th>
-                <th style="min-width:80px;">Planned</th>
-                <th style="min-width:80px;">Used</th>
+                <th style="min-width:120px;">Budget Staff / Planned Staff</th>
+                <th style="min-width:90px;">Staff Used</th>
                 <th style="min-width:80px;">Variance</th>
-                <th style="min-width:90px;">Status</th>
-                <th style="min-width:160px;">Reason / Notes</th>
+                <th style="min-width:160px;">Reason / note</th>
               </tr>
             </thead>
             <tbody id="budget-rows"></tbody>
@@ -208,6 +220,13 @@ export function renderBudgetScreen(root, state) {
   const totUsed      = screen.querySelector('#tot-used');
   const totVariance  = screen.querySelector('#tot-variance');
   const totStatus    = screen.querySelector('#tot-status');
+  const sumLines = screen.querySelector('#sum-lines-input');
+  const sumRegister = screen.querySelector('#sum-register-input');
+  const sumHoliday = screen.querySelector('#sum-holiday');
+  const sumAbsent = screen.querySelector('#sum-absent');
+  const sumOther = screen.querySelector('#sum-other');
+  const sumAgency = screen.querySelector('#sum-agency');
+  const comments = screen.querySelector('#budget-comments');
 
   const goBack = () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
   screen.querySelector('#budget-back-hdr')?.addEventListener('click', goBack);
@@ -222,9 +241,29 @@ export function renderBudgetScreen(root, state) {
     totVariance.textContent = (Number(variance) > 0 ? '+' : '') + fmt(variance);
     totVariance.className   = varianceClass(variance);
     totStatus.textContent   = status;
+    sumLines.value = summary?.linesPlanned ?? summary?.linesCount ?? "";
+    sumRegister.value = summary?.totalStaffOnRegister ?? "";
+    sumHoliday.textContent = fmt(summary?.holidayCount);
+    sumAbsent.textContent = fmt(summary?.absentCount);
+    sumOther.textContent = fmt(summary?.otherReasonCount);
+    sumAgency.textContent = fmt(summary?.agencyUsedCount);
+    comments.value = summary?.comments || '';
     totStatus.className     = budgetStatusClass(status);
 
-    statusBadge.innerHTML = `<span style="font-size:0.76rem;padding:0.2rem 0.55rem;border-radius:4px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);">Budget: <strong class="${budgetStatusClass(status)}">${status}</strong></span>`;
+    statusBadge.textContent = '';
+    const badge = document.createElement('span');
+    badge.style.fontSize = '0.76rem';
+    badge.style.padding = '0.2rem 0.55rem';
+    badge.style.borderRadius = '4px';
+    badge.style.border = '1px solid var(--border)';
+    badge.style.background = 'var(--surface-2)';
+    badge.style.color = 'var(--muted)';
+    badge.append('Budget: ');
+    const strong = document.createElement('strong');
+    strong.className = budgetStatusClass(status);
+    strong.textContent = status;
+    badge.append(strong);
+    statusBadge.append(badge);
     updatedLine.textContent = summary?.lastUpdatedAt
       ? `Last saved: ${summary.lastUpdatedAt} by ${summary.lastUpdatedBy || 'n/a'}`
       : '';
@@ -262,7 +301,7 @@ export function renderBudgetScreen(root, state) {
     message.textContent = 'Recalculating…';
     message.className   = 'status-line';
     try {
-      const payload = await budgetService.recalculate(session.sessionId, rows);
+      const payload = await budgetService.recalculate(session.sessionId, rows, collectMeta(screen));
       refreshFromPayload(payload);
       message.textContent = 'Recalculated.';
       message.className   = 'status-line success';
@@ -283,7 +322,7 @@ export function renderBudgetScreen(root, state) {
     message.textContent = 'Saving budget…';
     message.className   = 'status-line';
     try {
-      const payload = await budgetService.saveBudget(session.sessionId, rows, session.userName || '');
+      const payload = await budgetService.saveBudget(session.sessionId, rows, collectMeta(screen), session.userName || '');
       refreshFromPayload(payload);
       message.textContent = 'Budget saved.';
       message.className   = 'status-line success';

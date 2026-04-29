@@ -24,18 +24,20 @@ export const budgetService = {
     return hostRequest('budget.load', { sessionId, userName });
   },
 
-  async saveBudget(sessionId, rows, userName = '') {
+  async saveBudget(sessionId, rows, meta = null, userName = '') {
     return hostRequest('budget.save', {
       sessionId,
       userName,
-      rows: normalizeRows(rows)
+      rows: normalizeRows(rows),
+      meta
     });
   },
 
-  async recalculate(sessionId, rows) {
+  async recalculate(sessionId, rows, meta = null) {
     return hostRequest('budget.recalculate', {
       sessionId,
-      rows: normalizeRows(rows)
+      rows: normalizeRows(rows),
+      meta
     });
   },
 

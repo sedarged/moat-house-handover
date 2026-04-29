@@ -1,7 +1,7 @@
 import { sessionService } from '../services/sessionService.js';
 import { applySessionPayload } from '../state/appState.js';
 import { SHIFT_TIMES } from '../models/contracts.js';
-import { iconBrandSvg, iconBell, iconSettings, iconClock, iconCalendar, iconUser, iconHistory, iconFolder, iconChart, iconChevron } from '../core/icons.js';
+import { iconBrandSvg, iconBell, iconClock, iconCalendar, iconUser, iconHistory, iconFolder, iconChart, iconChevron } from '../core/icons.js';
 
 function todayIsoDate() {
   const now = new Date();
@@ -44,10 +44,6 @@ export function renderShiftScreen(root, state) {
         <button class="header-icon-btn" id="hdr-bell" title="Notifications" type="button">
           ${iconBell}
           <span class="header-dot"></span>
-        </button>
-        <span class="header-divider"></span>
-        <button class="header-icon-btn" id="hdr-diag" title="Settings / Diagnostics" type="button">
-          ${iconSettings}
         </button>
       </div>
     </header>
@@ -140,7 +136,6 @@ export function renderShiftScreen(root, state) {
     </div>
 
     <footer class="screen-footer">
-      <button class="btn btn-ghost" id="footer-settings" type="button">${iconSettings}&nbsp; Settings</button>
       <button class="btn btn-ghost" id="footer-help"     type="button">? &nbsp;Help</button>
       <button class="btn btn-ghost" id="footer-exit"     type="button">Exit</button>
     </footer>
@@ -207,18 +202,11 @@ export function renderShiftScreen(root, state) {
   });
 
   /* ── header buttons ── */
-  screen.querySelector('#hdr-diag')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'diagnostics' } }));
-  });
-
   screen.querySelector('#hdr-bell')?.addEventListener('click', () => {
     message.textContent = 'No new notifications.';
   });
 
   /* ── footer ── */
-  screen.querySelector('#footer-settings')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'diagnostics' } }));
-  });
   screen.querySelector('#footer-help')?.addEventListener('click', () => {
     message.textContent = 'Run Diagnostics first on a new workstation. Select a shift, confirm the date, and press Open.';
   });
