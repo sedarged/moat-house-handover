@@ -863,3 +863,52 @@ td textarea { min-width: 140px; min-height: 2.5rem; }
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
+
+/* === BUDGET SCREEN === */
+.budget-section {
+  margin-bottom: 0.8rem;
+}
+
+.budget-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.budget-summary-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  min-height: 1.35rem;
+}
+
+.budget-comments {
+  min-height: 64px;
+}
+
+.budget-rows-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+
+.budget-table-wrap {
+  flex: 1;
+  min-height: 220px;
+  max-height: 45vh;
+  overflow: auto;
+}
+
+.budget-status-badge {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.76rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.summary-side-budget-values {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}

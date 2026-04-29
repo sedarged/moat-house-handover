@@ -158,35 +158,35 @@ export function renderBudgetScreen(root, state) {
     </div>
 
     <div class="screen-content">
-      <div class="section-block">
+      <div class="section-block budget-section">
         <div class="section-header">
           <span class="section-icon">${iconChart}</span>
           <span class="section-title">Budget Summary</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:0.5rem;" id="budget-totals-grid">
+        <div class="budget-summary-grid" id="budget-totals-grid">
           <div><div class="form-label">Lines planned</div><input id="sum-lines-input" type="number" min="0" step="1" placeholder="0" /></div>
-          <div><div class="form-label">Total staff required</div><div id="tot-planned" style="font-size:1.1rem;font-weight:700;">—</div></div>
-          <div><div class="form-label">Total staff used</div><div id="tot-used" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Total staff required</div><div id="tot-planned" class="budget-summary-value">—</div></div>
+          <div><div class="form-label">Total staff used</div><div id="tot-used" class="budget-summary-value">—</div></div>
           <div><div class="form-label">Total staff on register</div><input id="sum-register-input" type="number" min="0" step="1" placeholder="0" /></div>
-          <div><div class="form-label">Variance (Used - Required)</div><div id="tot-variance" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Variance (Used - Required)</div><div id="tot-variance" class="budget-summary-value">—</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:0.5rem;">
+        <div class="budget-summary-grid">
           <div><div class="form-label">Holiday count</div><div id="sum-holiday">—</div></div>
           <div><div class="form-label">Absent count</div><div id="sum-absent">—</div></div>
           <div><div class="form-label">Other reason count</div><div id="sum-other">—</div></div>
           <div><div class="form-label">Agency used count</div><div id="sum-agency">—</div></div>
-          <div><div class="form-label">Overall Status</div><div id="tot-status" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Overall Status</div><div id="tot-status" class="budget-summary-value">—</div></div>
         </div>
-        <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2"></textarea></div>
+        <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2" class="budget-comments"></textarea></div>
         <p class="status-line" id="budget-updated" style="margin-top:0.25rem;"></p>
       </div>
 
-      <div class="section-block">
+      <div class="section-block budget-section budget-rows-section">
         <div class="section-header">
-          <span class="section-title">Department Rows</span>
+          <span class="section-title">Labour Rows</span>
         </div>
         <p class="status-line" id="budget-message">Loading budget…</p>
-        <div class="table-wrap">
+        <div class="table-wrap budget-table-wrap">
           <table>
             <thead>
               <tr>
@@ -252,12 +252,7 @@ export function renderBudgetScreen(root, state) {
 
     statusBadge.textContent = '';
     const badge = document.createElement('span');
-    badge.style.fontSize = '0.76rem';
-    badge.style.padding = '0.2rem 0.55rem';
-    badge.style.borderRadius = '4px';
-    badge.style.border = '1px solid var(--border)';
-    badge.style.background = 'var(--surface-2)';
-    badge.style.color = 'var(--muted)';
+    badge.className = 'status-badge budget-status-badge';
     badge.append('Budget: ');
     const strong = document.createElement('strong');
     strong.className = budgetStatusClass(status);
