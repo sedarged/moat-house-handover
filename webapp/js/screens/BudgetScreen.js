@@ -100,7 +100,7 @@ function buildRows(tableBody, rows) {
     varTd.className = varianceClass(row.variance);
     varTd.textContent = row.variance != null ? (Number(row.variance) > 0 ? '+' : '') + fmt(row.variance) : '—';
 
-        const reasonTd = document.createElement('td');
+    const reasonTd = document.createElement('td');
     const reasonTa = document.createElement('textarea');
     reasonTa.name = 'reasonText'; reasonTa.rows = 1;
     reasonTa.value = row.reasonText || '';
@@ -250,7 +250,20 @@ export function renderBudgetScreen(root, state) {
     comments.value = summary?.comments || '';
     totStatus.className     = budgetStatusClass(status);
 
-    statusBadge.innerHTML = `<span style="font-size:0.76rem;padding:0.2rem 0.55rem;border-radius:4px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted);">Budget: <strong class="${budgetStatusClass(status)}">${status}</strong></span>`;
+    statusBadge.textContent = '';
+    const badge = document.createElement('span');
+    badge.style.fontSize = '0.76rem';
+    badge.style.padding = '0.2rem 0.55rem';
+    badge.style.borderRadius = '4px';
+    badge.style.border = '1px solid var(--border)';
+    badge.style.background = 'var(--surface-2)';
+    badge.style.color = 'var(--muted)';
+    badge.append('Budget: ');
+    const strong = document.createElement('strong');
+    strong.className = budgetStatusClass(status);
+    strong.textContent = status;
+    badge.append(strong);
+    statusBadge.append(badge);
     updatedLine.textContent = summary?.lastUpdatedAt
       ? `Last saved: ${summary.lastUpdatedAt} by ${summary.lastUpdatedBy || 'n/a'}`
       : '';
