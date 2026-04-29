@@ -38,6 +38,14 @@ function budgetStatusClass(status) {
   return 'value-muted';
 }
 
+function collectMeta(screen) {
+  return {
+    linesPlanned: toNumberOrNull(screen.querySelector('#sum-lines-input')?.value),
+    totalStaffOnRegister: toNumberOrNull(screen.querySelector('#sum-register-input')?.value),
+    comments: screen.querySelector('#budget-comments')?.value || ""
+  };
+}
+
 function collectRows(tableBody) {
   const rows = [];
   tableBody.querySelectorAll('tr[data-row-id]').forEach((tr) => {
@@ -156,10 +164,10 @@ export function renderBudgetScreen(root, state) {
           <span class="section-title">Budget Summary</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:0.5rem;" id="budget-totals-grid">
-          <div><div class="form-label">Lines planned</div><div id="sum-lines" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Lines planned</div><input id="sum-lines-input" type="number" min="0" step="1" placeholder="0" /></div>
           <div><div class="form-label">Total staff required</div><div id="tot-planned" style="font-size:1.1rem;font-weight:700;">—</div></div>
           <div><div class="form-label">Total staff used</div><div id="tot-used" style="font-size:1.1rem;font-weight:700;">—</div></div>
-          <div><div class="form-label">Total staff on register</div><div id="sum-register" style="font-size:1.1rem;font-weight:700;">—</div></div>
+          <div><div class="form-label">Total staff on register</div><input id="sum-register-input" type="number" min="0" step="1" placeholder="0" /></div>
           <div><div class="form-label">Variance (Used - Required)</div><div id="tot-variance" style="font-size:1.1rem;font-weight:700;">—</div></div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:0.5rem;">
@@ -212,8 +220,8 @@ export function renderBudgetScreen(root, state) {
   const totUsed      = screen.querySelector('#tot-used');
   const totVariance  = screen.querySelector('#tot-variance');
   const totStatus    = screen.querySelector('#tot-status');
-  const sumLines = screen.querySelector('#sum-lines');
-  const sumRegister = screen.querySelector('#sum-register');
+  const sumLines = screen.querySelector('#sum-lines-input');
+  const sumRegister = screen.querySelector('#sum-register-input');
   const sumHoliday = screen.querySelector('#sum-holiday');
   const sumAbsent = screen.querySelector('#sum-absent');
   const sumOther = screen.querySelector('#sum-other');
@@ -233,8 +241,8 @@ export function renderBudgetScreen(root, state) {
     totVariance.textContent = (Number(variance) > 0 ? '+' : '') + fmt(variance);
     totVariance.className   = varianceClass(variance);
     totStatus.textContent   = status;
-    sumLines.textContent = fmt(summary?.linesPlanned ?? summary?.linesCount);
-    sumRegister.textContent = fmt(summary?.totalStaffOnRegister);
+    sumLines.value = summary?.linesPlanned ?? summary?.linesCount ?? "";
+    sumRegister.value = summary?.totalStaffOnRegister ?? "";
     sumHoliday.textContent = fmt(summary?.holidayCount);
     sumAbsent.textContent = fmt(summary?.absentCount);
     sumOther.textContent = fmt(summary?.otherReasonCount);

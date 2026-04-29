@@ -277,15 +277,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", connection);
             return;
         }
 
-        var departments = new List<string>();
-        using (var deptCmd = new OleDbCommand("SELECT DeptName FROM tblDepartments WHERE IsActive = TRUE ORDER BY DisplayOrder, DeptName", connection))
-        using (var reader = deptCmd.ExecuteReader())
-        {
-            while (reader!.Read())
-            {
-                departments.Add(Convert.ToString(reader["DeptName"]) ?? string.Empty);
-            }
-        }
+        var departments = new List<string>(BudgetLabourAreas);
 
         var now = DateTime.Now;
         foreach (var dept in departments)
@@ -350,7 +342,7 @@ ORDER BY d.DisplayOrder, r.DeptName, r.BudgetRowID";
             used += row.UsedQty ?? 0;
         }
 
-        var variance = planned - used;
+        var variance = used - planned;
         var status = ResolveBudgetStatus(planned, used, variance);
 
         return new BudgetTotalsPayload(planned, used, variance, status);
@@ -368,7 +360,7 @@ ORDER BY d.DisplayOrder, r.DeptName, r.BudgetRowID";
             return "on target";
         }
 
-        return variance < 0 ? "over" : "under";
+        return variance > 0 ? "over" : "under";
     }
 
     private static string ResolveRowStatus(double? planned, double? used, double variance)
@@ -383,7 +375,7 @@ ORDER BY d.DisplayOrder, r.DeptName, r.BudgetRowID";
             return "on target";
         }
 
-        return variance < 0 ? "over" : "under";
+        return variance > 0 ? "over" : "under";
     }
 
     private static (string ShiftCode, DateTime ShiftDate)? GetSessionContext(OleDbConnection connection, long sessionId)
