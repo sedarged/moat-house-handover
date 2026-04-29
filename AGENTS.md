@@ -1,47 +1,36 @@
 # AGENTS.md — MOAT HOUSE HANDOVER v2
 
-This file defines how Codex and other coding agents must work in this repository.
+This file defines how Codex, Claude Code, and other coding agents must work in this repository.
 
 The goal is simple: protect the project architecture, avoid fake progress, make changes safely, and always report verification honestly.
 
 ---
 
-## 1. Project goal
-
-Maintain and extend **MOAT HOUSE HANDOVER v2** as a **local-first Windows desktop handover application** while preserving the existing business workflow and stage plan from the spec set.
-
-This is an operational handover tool, not a demo app. Reliability, clear user-facing errors, repeatable packaging, and honest Windows runtime validation are more important than cosmetic changes.
-
----
-
-## 2. Read-first rule — source of truth
+## 1. Active source of truth
 
 Before planning or editing code, read these files first and treat them as authoritative:
 
-1. `01_MASTER_SPEC.md`
-2. `02_SCREEN_BLUEPRINT.md`
-3. `03_DATA_MODEL.md`
-4. `04_SERVICE_MAP.md`
-5. `05_BUILD_ORDER.md`
-6. `06_ACCEPTANCE_TESTS.md`
-7. `07_CLAUDE_CODE_PROMPTS.md`
+1. `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`
+2. `MASTER_TASK_DEEP_REVIEW_UI_UX.md` when doing review/correction work
+3. `README.md`
+4. `BUILD_NOTES.md`
+5. `docs/*` when runtime/deployment/manual testing details are relevant
 
-Then read the current implementation context:
+The old fragmented plan/spec files have been retired. Do not use deleted `01_*` to `07_*` documents as source of truth.
 
-- `README.md`
-- `BUILD_NOTES.md`
-- `docs/*`
-- `desktop-host/*`
-- `webapp/*`
-- `backend/access/*`
-- `scripts/*`
-- `.github/workflows/*`
-
-Do not make architectural decisions until these have been inspected.
+If any older note, PR comment, screenshot, or generated artifact conflicts with `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`, the source-of-truth file wins.
 
 ---
 
-## 3. Locked architecture — must not drift
+## 2. Project goal
+
+Maintain and extend **MOAT HOUSE HANDOVER v2** as a **local-first Windows desktop handover application**.
+
+This is an operational handover tool, not a demo app. Reliability, clear user-facing errors, repeatable packaging, realistic screenshot evidence, and honest Windows runtime validation are more important than cosmetic claims.
+
+---
+
+## 3. Locked architecture
 
 Keep this architecture unchanged unless explicitly directed by the human maintainer:
 
@@ -49,19 +38,21 @@ Keep this architecture unchanged unless explicitly directed by the human maintai
 - WPF desktop host
 - WebView2 UI surface
 - HTML/CSS/JS frontend assets
-- Access-oriented backend using DAO/Access SQL path where applicable
+- Access-oriented backend
 - Attachments and reports stored as files/folders, not embedded database binaries
+- Outlook draft-only workflow
 - End-user workflow must not require terminal usage on work machines
 - Packaging must support a practical Windows workstation deployment path
 
 Do **not** replace this with:
 
 - cloud-first architecture
-- web server architecture
+- local web server requirement
 - mobile app architecture
 - Electron rewrite
 - random framework migration
 - hosted database dependency
+- SMTP/cloud email sending
 - terminal-dependent user workflow
 
 ---
@@ -69,13 +60,14 @@ Do **not** replace this with:
 ## 4. Non-negotiable agent rules
 
 - Inspect before editing.
+- Read `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md` first.
 - Do not guess when files, scripts, or tests can be inspected.
 - Do not rewrite the project from scratch.
 - Do not remove features just to make checks pass.
-- Do not invent or implement future business stages early.
+- Do not invent business rules beyond the source of truth.
 - Do not introduce unrelated frameworks or tooling.
 - Do not claim features are implemented if they are scaffold-only.
-- Do not claim build, package, runtime, or workflow success unless verified.
+- Do not claim build, package, runtime, workflow, or screenshot success unless verified.
 - Do not hide failures or environment limits.
 - Do not commit secrets, credentials, tokens, private machine data, or personal paths as real defaults.
 - Do not break Windows runtime behavior while fixing Linux/cloud/static checks.
@@ -83,19 +75,19 @@ Do **not** replace this with:
 
 ---
 
-## 5. Stage discipline
+## 5. Business rules that must not drift
 
-Follow `05_BUILD_ORDER.md` stage boundaries.
+Always preserve the rules in `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`, especially:
 
-When working on a task:
-
-1. Identify the requested stage or scope.
-2. Confirm which spec sections apply.
-3. Implement only the requested scope.
-4. Explicitly label deferred work.
-5. Do not silently extend scope into future stages.
-
-If a requested change conflicts with the stage plan or source-of-truth specs, report the conflict before changing architecture.
+- User identity is read-only and comes from Windows/current runtime user.
+- Settings is admin-only, not supervisor/operator.
+- Diagnostics is admin-only, not supervisor/operator.
+- Normal workflow must not expose Settings/Diagnostics.
+- `Departments Completed` replaces old `Work Order Closure` wording.
+- Total Efficiency / Total Yield / Total Downtime labels must remain exactly as written.
+- Handover departments and Budget labour rows are different concepts.
+- Budget View must include full operational staffing information, not just a simple variance table.
+- Send workflow is Outlook draft-only and must never auto-send.
 
 ---
 
@@ -106,7 +98,7 @@ Use the repository structure intentionally:
 - `desktop-host/` — Windows host runtime, WPF shell, WebView2 bootstrap, host bridge, filesystem/runtime integration.
 - `webapp/` — HTML/CSS/JS UI routes, screen logic, client-side state, bridge calls.
 - `backend/access/` — Access schema, seed data, setup/bootstrap artefacts, persistence model.
-- `docs/` — stage notes, continuation notes, operator guidance, developer guidance, runtime checklist.
+- `docs/` — operator guidance, developer guidance, runtime checklist, Windows manual testing notes.
 - `scripts/` — repeatable helper scripts for prereq checks, web checks, build, package, and package verification.
 - `.github/workflows/` — CI validation, especially Windows build/package checks.
 
@@ -116,7 +108,7 @@ Do not move responsibilities across these boundaries without a clear reason and 
 
 ## 7. Required task lifecycle
 
-For every non-trivial task, follow this lifecycle:
+For every non-trivial task:
 
 ### A. Orient
 
@@ -132,7 +124,7 @@ Inspect the relevant files before editing.
 
 ### B. Plan
 
-Create a short internal plan based on the inspected files.
+Create a short internal plan based on inspected files.
 
 The plan must identify:
 
@@ -143,13 +135,11 @@ The plan must identify:
 
 ### C. Change
 
-Make focused changes only.
-
-Prefer existing patterns in the repository. Do not introduce new abstractions unless they reduce real duplication or fix a real maintainability issue.
+Make focused changes only. Prefer existing patterns in the repository.
 
 ### D. Verify
 
-Run the strongest relevant checks available in the environment.
+Run the strongest relevant checks available.
 
 ### E. Report
 
@@ -159,6 +149,7 @@ End with a clear summary of:
 - why it changed
 - commands run
 - pass/fail results
+- screenshot evidence where relevant
 - remaining risks
 - manual Windows checks still required
 
@@ -215,22 +206,24 @@ Do not invent unavailable commands.
 
 Every final response must separate these categories:
 
-1. **Verified** — command or runtime check was executed and passed.
-2. **Partially verified** — static/build/package checks passed, but real Windows runtime still needs manual validation.
+1. **Verified** — command, screenshot, or runtime check was executed and passed.
+2. **Partially verified** — static/build/package/browser checks passed, but real Windows runtime still needs manual validation.
 3. **Not verified** — could not be tested in this environment, with exact reason.
+4. **Blocked** — attempted but blocked by missing tool/runtime/permission, with exact blocker.
 
 Never write vague statements such as:
 
 - "should work"
 - "looks good"
 - "probably fixed"
-- "verified" without command evidence
+- "verified" without evidence
 
 Use evidence instead:
 
 - command run
 - result
 - relevant output summary
+- screenshot paths when applicable
 - remaining limitation if any
 
 ---
@@ -240,7 +233,7 @@ Use evidence instead:
 The real runtime target is Windows with:
 
 - WebView2 runtime
-- Access Database Engine / ACE OLEDB behavior where applicable
+- Access Database Engine / ACE OLEDB behaviour where applicable
 - Windows filesystem behavior
 - possible Outlook COM draft workflow
 - local/shared workplace folders
@@ -261,75 +254,25 @@ If these were not actually tested on Windows, mark them as **Partially verified*
 
 ---
 
-## 11. Build, package, and CI expectations
+## 11. Screenshot evidence rules
 
-When changing build, package, scripts, or CI:
+When changing UI, regenerate screenshot evidence where relevant.
 
-- keep local scripts and GitHub Actions aligned
-- ensure package verification checks real required assets
-- ensure scripts fail clearly when prerequisites are missing
-- avoid false-positive success paths
-- keep package output practical for Windows workstation use
-- update `BUILD_NOTES.md` and docs if commands or outputs change
+Screenshots must show realistic populated data where possible.
 
-Inspect:
+Do not use empty host-bridge-unavailable screens as main proof.
 
-- `scripts/*`
-- `.github/workflows/*`
-- `BUILD_NOTES.md`
-- `docs/LOCAL_WINDOWS_RUNBOOK.md`
-- `docs/WINDOWS_RUNTIME_TEST_CHECKLIST.md`
+Clearly state whether screenshots are:
+
+- real WPF/WebView2 runtime screenshots
+- browser/mock screenshots
+- static partial screenshots
+
+Do not claim full Windows runtime verification from browser/mock screenshots.
 
 ---
 
-## 12. WebView2 and host bridge rules
-
-When changing `desktop-host/` or bridge behavior:
-
-- preserve safe WebView2 initialization
-- preserve local asset loading
-- validate bridge message routing
-- handle malformed messages gracefully
-- keep async flows safe
-- return useful user-facing errors
-- avoid silent failures during bootstrap
-- do not assume Windows-only dependencies exist in cloud checks
-
-Bridge failures must be visible and diagnosable.
-
----
-
-## 13. Access backend and persistence rules
-
-When changing Access/backend logic:
-
-- protect existing data
-- keep bootstrap/setup idempotent
-- avoid destructive migrations unless explicitly required
-- handle missing/locked database clearly
-- handle missing ACE/OLEDB provider clearly
-- keep attachment binaries out of the database unless specs explicitly change
-- preserve auditability where required
-- keep schema/seed changes aligned with `03_DATA_MODEL.md`
-
-Persistence changes must be documented and verifiable.
-
----
-
-## 14. Reports and send workflow rules
-
-When changing report or send-related behavior:
-
-- preserve draft-only boundaries where specified
-- do not implement unsafe real email sending unless explicitly required by specs
-- validate before report/send package creation
-- return clear errors when Outlook or filesystem operations are unavailable
-- ensure generated reports are included in package checks where applicable
-- update runtime checklist if manual validation steps change
-
----
-
-## 15. Documentation rules
+## 12. Documentation rules
 
 Documentation must match implementation reality.
 
@@ -341,12 +284,13 @@ Update docs when:
 - runtime requirements change
 - manual test steps change
 - a feature is implemented, deferred, or removed
+- source-of-truth behaviour changes
 
 Do not document scaffold-only features as complete.
 
 ---
 
-## 16. Security and safety rules
+## 13. Security and safety rules
 
 Always check for:
 
@@ -357,39 +301,14 @@ Always check for:
 - arbitrary file overwrite risk
 - unsafe attachment handling
 - accidental real email sending
+- raw user/persisted text inserted into `innerHTML` without escaping
 - logs exposing sensitive local information
 
 Use safe defaults and clear validation.
 
 ---
 
-## 17. PR and commit discipline
-
-If working through a pull request:
-
-- keep commits focused
-- use clear commit messages
-- explain why each file changed
-- do not mix unrelated refactors with bug fixes
-- do not mark a PR ready if required checks are failing without explanation
-
-Recommended commit message style:
-
-```text
-Area: concise change summary
-```
-
-Examples:
-
-```text
-Scripts: tighten package asset verification
-Host: add safe WebView2 startup diagnostics
-Docs: update Windows runtime checklist
-```
-
----
-
-## 18. Final report format for agents
+## 14. Final report format
 
 End substantial tasks with this structure:
 
@@ -405,10 +324,14 @@ End substantial tasks with this structure:
 ## Verification
 - command: PASS/FAIL/BLOCKED — evidence summary
 
+## Screenshot evidence
+- screenshot path: what it proves, and whether browser/mock or WPF/WebView2
+
 ## Windows runtime status
 - Verified:
 - Partially verified:
 - Not verified:
+- Blocked:
 
 ## Remaining risks
 - Real remaining risks only
@@ -421,32 +344,14 @@ Do not bury failures. Put blockers and unverified runtime areas in the final rep
 
 ---
 
-## 19. Definition of done
+## 15. Definition of done
 
 A task is done only when:
 
-- relevant source-of-truth specs were inspected
+- `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md` was inspected
 - implementation changes are complete for the requested scope
 - relevant checks were run or honestly marked blocked
 - docs were updated if behavior changed
 - no known critical/high issue introduced by the change remains unresolved
 - Windows-only limitations are clearly identified
 - final report includes evidence, not vague confidence
-
----
-
-## 20. Default agent priority order
-
-When multiple issues are found, fix in this order:
-
-1. Build-breaking issues
-2. Runtime startup issues
-3. Data loss or unsafe persistence risks
-4. Broken core user workflows
-5. Packaging or CI false positives
-6. Diagnostics and user-facing error quality
-7. Documentation mismatches
-8. Maintainability improvements
-9. Cosmetic cleanup
-
-Do not spend time on cosmetics while critical verification or workflow issues remain.
