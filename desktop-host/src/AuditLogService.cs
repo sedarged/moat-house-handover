@@ -7,10 +7,10 @@ namespace MoatHouseHandover.Host;
 
 public sealed class AuditLogService
 {
-    private readonly AuditLogRepository _repository;
+    private readonly IAuditLogRepository _repository;
     private readonly BootstrapLogger _logger;
 
-    public AuditLogService(AuditLogRepository repository, BootstrapLogger logger)
+    public AuditLogService(IAuditLogRepository repository, BootstrapLogger logger)
     {
         _repository = repository;
         _logger = logger;

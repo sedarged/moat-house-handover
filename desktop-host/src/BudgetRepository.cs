@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class BudgetRepository
+public sealed class BudgetRepository : IBudgetRepository
 {
     private readonly string _connectionString;
 

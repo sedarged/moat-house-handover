@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class PreviewRepository
+public sealed class PreviewRepository : IPreviewRepository
 {
     private readonly string _connectionString;
 

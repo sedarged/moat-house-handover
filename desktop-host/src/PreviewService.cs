@@ -4,9 +4,9 @@ namespace MoatHouseHandover.Host;
 
 public sealed class PreviewService
 {
-    private readonly PreviewRepository _repository;
+    private readonly IPreviewRepository _repository;
 
-    public PreviewService(PreviewRepository repository)
+    public PreviewService(IPreviewRepository repository)
     {
         _repository = repository;
     }

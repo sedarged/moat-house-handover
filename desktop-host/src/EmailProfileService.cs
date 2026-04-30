@@ -4,9 +4,9 @@ namespace MoatHouseHandover.Host;
 
 public sealed class EmailProfileService
 {
-    private readonly EmailProfileRepository _repository;
+    private readonly IEmailProfileRepository _repository;
 
-    public EmailProfileService(EmailProfileRepository repository)
+    public EmailProfileService(IEmailProfileRepository repository)
     {
         _repository = repository;
     }

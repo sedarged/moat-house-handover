@@ -5,10 +5,10 @@ namespace MoatHouseHandover.Host;
 
 public sealed class SessionService
 {
-    private readonly SessionRepository _repository;
+    private readonly ISessionRepository _repository;
     private readonly AuditLogService _auditLogService;
 
-    public SessionService(SessionRepository repository, AuditLogService auditLogService)
+    public SessionService(ISessionRepository repository, AuditLogService auditLogService)
     {
         _repository = repository;
         _auditLogService = auditLogService;
