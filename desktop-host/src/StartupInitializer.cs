@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using MoatHouseHandover.Host.Sqlite;
 
 namespace MoatHouseHandover.Host;
 
@@ -34,19 +35,40 @@ public sealed class StartupInitializer
         var bootstrapper = new AccessBootstrapper(logger);
         bootstrapper.EnsureDatabaseAndSchema(resolvedConfig.AccessDatabasePath!);
 
+        var sqlitePath = Path.Combine(pathResolution.Paths.Data, "moat-house.db");
+        var sqliteBootstrapper = new SqliteBootstrapper();
+        var sqliteSucceeded = false;
+        string? sqliteMessage = null;
+
+        try
+        {
+            var sqliteResult = sqliteBootstrapper.EnsureBootstrapped(sqlitePath, pathResolution.Paths.DataRoot, Environment.UserName);
+            sqliteSucceeded = sqliteResult.Success;
+            sqliteMessage = sqliteResult.Message;
+            logger.Log($"SQLite bootstrap readiness: {sqliteResult.Message}");
+        }
+        catch (Exception ex)
+        {
+            sqliteMessage = ex.Message;
+            logger.Log($"SQLite bootstrap readiness failed: {ex.Message}");
+        }
+
         var assets = ResolveAssetRoot();
         logger.Log($"Resolved web asset root: {assets}");
 
         var status = new HostRuntimeStatus(
             ConfigPath: configResult.SourcePath,
             AccessDatabasePath: Path.GetFullPath(resolvedConfig.AccessDatabasePath!),
+            TargetSqlitePath: Path.GetFullPath(sqlitePath),
             AttachmentsRoot: Path.GetFullPath(resolvedConfig.AttachmentsRoot!),
             ReportsOutputRoot: Path.GetFullPath(resolvedConfig.ReportsOutputRoot!),
             LogRoot: Path.GetFullPath(resolvedConfig.LogRoot!),
             AssetRoot: assets,
             IsWindows: OperatingSystem.IsWindows(),
             DatabaseReady: true,
-            FoldersReady: pathResolution.AllValid);
+            FoldersReady: pathResolution.AllValid,
+            SqliteBootstrapSucceeded: sqliteSucceeded,
+            SqliteBootstrapMessage: sqliteMessage);
 
         return new StartupResult(status, logger, resolvedConfig, pathResolution);
     }
