@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Data.OleDb;
@@ -130,6 +131,31 @@ public sealed class DiagnosticsService
             return new DiagnosticsCheckResult("outlook.com.available", "ok", "Outlook COM type is available.", outlookType.FullName ?? "Outlook.Application");
         });
 
+        
+        AddCheck(checks, "sqlite.target.path", () =>
+        {
+            var sqlitePath = _runtimeStatus.TargetSqlitePath;
+            var exists = File.Exists(sqlitePath);
+            return new DiagnosticsCheckResult("sqlite.target.path", exists ? "ok" : "warning", exists ? "SQLite target file exists." : "SQLite target file does not exist yet.", sqlitePath);
+        });
+
+        AddCheck(checks, "sqlite.target.parent.exists", () =>
+        {
+            var parent = Path.GetDirectoryName(_runtimeStatus.TargetSqlitePath) ?? string.Empty;
+            var exists = !string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent);
+            return new DiagnosticsCheckResult("sqlite.target.parent.exists", exists ? "ok" : "failed", exists ? "SQLite target parent directory exists." : "SQLite target parent directory is missing.", parent);
+        });
+
+        AddCheck(checks, "sqlite.target.bootstrap", () => new DiagnosticsCheckResult(
+            "sqlite.target.bootstrap",
+            _runtimeStatus.SqliteBootstrapSucceeded ? "ok" : "warning",
+            _runtimeStatus.SqliteBootstrapSucceeded ? "SQLite bootstrap readiness completed." : "SQLite bootstrap readiness did not complete.",
+            _runtimeStatus.SqliteBootstrapMessage ?? "No bootstrap message."));
+
+        AddCheck(checks, "sqlite.schema.tables", CheckSqliteSchemaTables);
+        AddCheck(checks, "sqlite.schema.migrations", CheckSqliteMigrationMarker);
+        AddCheck(checks, "sqlite.shared_drive_policy", () => CheckSqliteSharedDrivePolicy(_runtimeStatus.TargetSqlitePath));
+
         AddCheck(checks, "runtime.boundary", () =>
         {
             if (!OperatingSystem.IsWindows())
@@ -259,6 +285,74 @@ WHERE s.ShiftCode = ?", connection);
         }
 
         return new DiagnosticsCheckResult("email.profiles.active.valid", "ok", "Active email profiles look valid.", "AM, PM, NS");
+    }
+
+    private DiagnosticsCheckResult CheckSqliteSchemaTables()
+    {
+        if (!File.Exists(_runtimeStatus.TargetSqlitePath))
+        {
+            return new DiagnosticsCheckResult("sqlite.schema.tables", "warning", "SQLite target database file does not exist; schema cannot be checked.", _runtimeStatus.TargetSqlitePath);
+        }
+
+        using var connection = new SqliteConnection($"Data Source={_runtimeStatus.TargetSqlitePath};Mode=ReadOnly;Cache=Shared");
+        connection.Open();
+
+        var required = MoatHouseHandover.Host.Sqlite.SqliteSchema.RequiredTables;
+        var missing = new List<string>();
+        foreach (var table in required)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $name;";
+            cmd.Parameters.AddWithValue("$name", table);
+            var exists = Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+            if (!exists) missing.Add(table);
+        }
+
+        return missing.Count == 0
+            ? new DiagnosticsCheckResult("sqlite.schema.tables", "ok", "All required SQLite tables exist.", string.Join(", ", required))
+            : new DiagnosticsCheckResult("sqlite.schema.tables", "failed", "SQLite schema is missing required tables.", string.Join(", ", missing));
+    }
+
+    private DiagnosticsCheckResult CheckSqliteMigrationMarker()
+    {
+        if (!File.Exists(_runtimeStatus.TargetSqlitePath))
+        {
+            return new DiagnosticsCheckResult("sqlite.schema.migrations", "warning", "SQLite target database file does not exist; migration marker cannot be checked.", _runtimeStatus.TargetSqlitePath);
+        }
+
+        using var connection = new SqliteConnection($"Data Source={_runtimeStatus.TargetSqlitePath};Mode=ReadOnly;Cache=Shared");
+        connection.Open();
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM tblSchemaMigrations WHERE MigrationId = $id;";
+        cmd.Parameters.AddWithValue("$id", MoatHouseHandover.Host.Sqlite.SqliteSchema.InitialMigrationId);
+        var exists = Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+        return new DiagnosticsCheckResult("sqlite.schema.migrations", exists ? "ok" : "failed", exists ? "Initial SQLite migration marker exists." : "Initial SQLite migration marker is missing.", MoatHouseHandover.Host.Sqlite.SqliteSchema.InitialMigrationId);
+    }
+
+    private static DiagnosticsCheckResult CheckSqliteSharedDrivePolicy(string sqlitePath)
+    {
+        if (!File.Exists(sqlitePath))
+        {
+            return new DiagnosticsCheckResult("sqlite.shared_drive_policy", "warning", "SQLite target database file does not exist; shared-drive journal policy cannot be checked.", sqlitePath);
+        }
+
+        using var connection = new SqliteConnection($"Data Source={sqlitePath};Mode=ReadOnly;Cache=Shared");
+        connection.Open();
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "PRAGMA journal_mode;";
+        var mode = (Convert.ToString(cmd.ExecuteScalar()) ?? string.Empty).Trim();
+
+        if (string.Equals(mode, "wal", StringComparison.OrdinalIgnoreCase))
+        {
+            return new DiagnosticsCheckResult("sqlite.shared_drive_policy", "failed", "SQLite target journal mode is WAL, which is not approved for potential shared-drive M: target.", $"journal_mode={mode}");
+        }
+
+        if (string.Equals(mode, "delete", StringComparison.OrdinalIgnoreCase))
+        {
+            return new DiagnosticsCheckResult("sqlite.shared_drive_policy", "ok", "SQLite shared-drive policy uses DELETE journal mode (WAL not assumed).", $"journal_mode={mode}");
+        }
+
+        return new DiagnosticsCheckResult("sqlite.shared_drive_policy", "warning", "SQLite target journal mode is non-WAL but not DELETE; confirm policy expectations.", $"journal_mode={mode}");
     }
 
     private static DiagnosticsCheckResult EnsureDirectory(string checkName, string path)

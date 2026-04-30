@@ -30,7 +30,7 @@ public sealed class AccessLegacyDataProvider : IDataProvider
 
     public DatabaseProviderInfo GetInfo()
     {
-        var sqliteTargetPath = System.IO.Path.Combine(_pathResolution.Paths.Data, "moat-house.db");
+        var sqliteTargetPath = _runtimeStatus.TargetSqlitePath;
         return new DatabaseProviderInfo(
             ProviderKind: DatabaseProviderKind.AccessLegacy,
             ActiveDatabasePath: _runtimeStatus.AccessDatabasePath,

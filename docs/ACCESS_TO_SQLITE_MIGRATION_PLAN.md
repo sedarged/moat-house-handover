@@ -14,7 +14,7 @@ This plan defines the controlled phased migration from the current Access-based 
 - **Phase 0 — ADR/source-of-truth update** — complete in PR #22.
 - **Phase 1 — Access schema inventory and SQLite target schema mapping** — complete in PR #23.
 - **Phase 2 — M:\ AppPathService/data root service** — complete in PR #25.
-- **Phase 3 — database provider boundary/repository interfaces** — implemented in this PR.
+- **Phase 3 — database provider boundary/repository interfaces** — complete in PR #27.
 - **Phase 4 — SQLite bootstrapper/schema creation**
 - **Phase 5 — Access-to-SQLite importer**
 - **Phase 6 — backup/restore foundation**
@@ -46,7 +46,7 @@ Phase 1 records:
 
 ## Next PR
 
-The next PR after Phase 3 is **Phase 4: SQLite bootstrapper/schema creation**.
+Phase 4 is implemented by this PR: **SQLite bootstrapper/schema creation**.
 
 Phase 4 should add SQLite bootstrap/schema creation only and keep Access as the active runtime provider during implementation.
 
