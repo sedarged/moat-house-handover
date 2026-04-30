@@ -4,10 +4,10 @@ namespace MoatHouseHandover.Host;
 
 public sealed class DepartmentService
 {
-    private readonly DepartmentRepository _repository;
+    private readonly IDepartmentRepository _repository;
     private readonly AuditLogService _auditLogService;
 
-    public DepartmentService(DepartmentRepository repository, AuditLogService auditLogService)
+    public DepartmentService(IDepartmentRepository repository, AuditLogService auditLogService)
     {
         _repository = repository;
         _auditLogService = auditLogService;

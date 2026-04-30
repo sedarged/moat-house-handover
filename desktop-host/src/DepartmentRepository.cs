@@ -4,7 +4,7 @@ using System.Data.OleDb;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class DepartmentRepository
+public sealed class DepartmentRepository : IDepartmentRepository
 {
     private static readonly HashSet<string> MetricDepartments = new(StringComparer.OrdinalIgnoreCase)
     {
