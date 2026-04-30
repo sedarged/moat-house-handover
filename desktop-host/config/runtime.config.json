@@ -1,6 +1,3 @@
 {
-  "accessDatabasePath": "C:/MOAT-Handover/shared/moat_handover_be.accdb",
-  "attachmentsRoot": "C:/MOAT-Handover/shared/Attachments",
-  "reportsOutputRoot": "C:/MOAT-Handover/shared/Reports",
-  "logRoot": "C:/MOAT-Handover/local/logs"
+  "dataRoot": "M:/Moat House/MoatHouse Handover/"
 }

@@ -85,19 +85,9 @@ public sealed class RuntimeConfigLoader
     {
         var missing = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(config.AccessDatabasePath))
+        if (string.IsNullOrWhiteSpace(config.DataRoot))
         {
-            missing.Add("accessDatabasePath");
-        }
-
-        if (string.IsNullOrWhiteSpace(config.AttachmentsRoot))
-        {
-            missing.Add("attachmentsRoot");
-        }
-
-        if (string.IsNullOrWhiteSpace(config.ReportsOutputRoot))
-        {
-            missing.Add("reportsOutputRoot");
+            missing.Add("dataRoot");
         }
 
         if (missing.Count > 0)

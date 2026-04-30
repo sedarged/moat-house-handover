@@ -10,11 +10,13 @@ public sealed class DiagnosticsService
 {
     private readonly HostRuntimeStatus _runtimeStatus;
     private readonly HostConfig _config;
+    private readonly AppPathResolution _pathResolution;
 
-    public DiagnosticsService(HostRuntimeStatus runtimeStatus, HostConfig config)
+    public DiagnosticsService(HostRuntimeStatus runtimeStatus, HostConfig config, AppPathResolution pathResolution)
     {
         _runtimeStatus = runtimeStatus;
         _config = config;
+        _pathResolution = pathResolution;
     }
 
     public DiagnosticsPayload Run(DiagnosticsRunRequest _)
@@ -32,19 +34,14 @@ public sealed class DiagnosticsService
         AddCheck(checks, "config.values.loaded", () =>
         {
             var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(_config.DataRoot))
+            {
+                missing.Add("dataRoot");
+            }
+
             if (string.IsNullOrWhiteSpace(_config.AccessDatabasePath))
             {
                 missing.Add("accessDatabasePath");
-            }
-
-            if (string.IsNullOrWhiteSpace(_config.AttachmentsRoot))
-            {
-                missing.Add("attachmentsRoot");
-            }
-
-            if (string.IsNullOrWhiteSpace(_config.ReportsOutputRoot))
-            {
-                missing.Add("reportsOutputRoot");
             }
 
             if (missing.Count > 0)
@@ -58,6 +55,20 @@ public sealed class DiagnosticsService
                 "Runtime config values are loaded.",
                 $"config={_runtimeStatus.ConfigPath} | db={_runtimeStatus.AccessDatabasePath} | attachments={_runtimeStatus.AttachmentsRoot} | reports={_runtimeStatus.ReportsOutputRoot} | logs={_runtimeStatus.LogRoot}");
         });
+
+
+        AddCheck(checks, "paths.dataRoot.approved", () =>
+        {
+            var expected = Path.GetFullPath(AppPathService.ApprovedDataRoot);
+            var actual = Path.GetFullPath(_pathResolution.Paths.DataRoot);
+            var matches = string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase);
+            return new DiagnosticsCheckResult("paths.dataRoot.approved", matches ? "ok" : "warning", matches ? "Data root matches approved live root." : "Data root differs from approved live root.", $"expected={expected} | actual={actual}");
+        });
+
+        foreach (var result in _pathResolution.ValidationResults)
+        {
+            AddCheck(checks, $"paths.{result.Key}", () => new DiagnosticsCheckResult($"paths.{result.Key}", result.Status, result.Message, result.FullPath));
+        }
 
         AddCheck(checks, "access.database.path", () =>
         {

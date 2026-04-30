@@ -45,7 +45,7 @@ public partial class MainWindow : Window
             var emailProfileService = new EmailProfileService(emailProfileRepository);
             var outlookDraftService = new OutlookDraftService();
             var sendPackageService = new SendPackageService(previewService, reportService, emailProfileService, outlookDraftService, auditLogService);
-            var diagnosticsService = new DiagnosticsService(startup.RuntimeStatus, startup.Config);
+            var diagnosticsService = new DiagnosticsService(startup.RuntimeStatus, startup.Config, startup.PathResolution);
             var fileDialogService = new FileDialogService();
 
             _hostWebBridge = new HostWebBridge(

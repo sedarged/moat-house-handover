@@ -5,11 +5,13 @@ namespace MoatHouseHandover.Host;
 /// </summary>
 public sealed class HostConfig
 {
-    public required string AccessDatabasePath { get; init; }
+    public string? DataRoot { get; init; }
 
-    public required string AttachmentsRoot { get; init; }
+    public string? AccessDatabasePath { get; init; }
 
-    public required string ReportsOutputRoot { get; init; }
+    public string? AttachmentsRoot { get; init; }
+
+    public string? ReportsOutputRoot { get; init; }
 
     public string? LogRoot { get; init; }
 }
