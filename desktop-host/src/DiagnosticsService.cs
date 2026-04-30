@@ -155,6 +155,12 @@ public sealed class DiagnosticsService
         AddCheck(checks, "sqlite.schema.tables", CheckSqliteSchemaTables);
         AddCheck(checks, "sqlite.schema.migrations", CheckSqliteMigrationMarker);
         AddCheck(checks, "sqlite.shared_drive_policy", () => CheckSqliteSharedDrivePolicy(_runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "migration.source_access.exists", () => new DiagnosticsCheckResult("migration.source_access.exists", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "failed", "Migration source Access DB existence check.", _runtimeStatus.AccessDatabasePath));
+        AddCheck(checks, "migration.target_sqlite.path", () => new DiagnosticsCheckResult("migration.target_sqlite.path", "ok", "Migration target SQLite path resolved.", _runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "migration.output_folder.exists", () => EnsureDirectory("migration.output_folder.exists", _pathResolution.Paths.Migration));
+        AddCheck(checks, "migration.can_create_staging_db", CheckMigrationStagingWrite);
+        AddCheck(checks, "migration.current_runtime_provider", () => new DiagnosticsCheckResult("migration.current_runtime_provider", "ok", "Runtime provider remains AccessLegacy.", "AccessLegacy"));
+        AddCheck(checks, "migration.last_report.exists", CheckMigrationLastReport);
 
         AddCheck(checks, "runtime.boundary", () =>
         {
@@ -233,6 +239,38 @@ WHERE s.ShiftCode = ?", connection);
         }
 
         return new DiagnosticsCheckResult("email.profiles.exist", "ok", "Email profile mappings exist for AM/PM/NS.", "AM, PM, NS");
+    }
+
+    private DiagnosticsCheckResult CheckMigrationStagingWrite()
+    {
+        try
+        {
+            Directory.CreateDirectory(_pathResolution.Paths.Migration);
+            var probe = Path.Combine(_pathResolution.Paths.Migration, "moat-house.importing.probe.db");
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = probe }.ToString());
+            connection.Open();
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "CREATE TABLE IF NOT EXISTS __probe (id INTEGER);";
+            cmd.ExecuteNonQuery();
+            connection.Close();
+            if (File.Exists(probe)) File.Delete(probe);
+            return new DiagnosticsCheckResult("migration.can_create_staging_db", "ok", "Can create staging sqlite database in migration folder.", _pathResolution.Paths.Migration);
+        }
+        catch (Exception ex)
+        {
+            return new DiagnosticsCheckResult("migration.can_create_staging_db", "failed", "Cannot create staging sqlite database.", ex.Message);
+        }
+    }
+
+    private DiagnosticsCheckResult CheckMigrationLastReport()
+    {
+        if (!Directory.Exists(_pathResolution.Paths.Migration))
+        {
+            return new DiagnosticsCheckResult("migration.last_report.exists", "warning", "Migration directory does not exist yet.", _pathResolution.Paths.Migration);
+        }
+
+        var found = Directory.GetFiles(_pathResolution.Paths.Migration, "migration_*.json").Length > 0;
+        return new DiagnosticsCheckResult("migration.last_report.exists", found ? "ok" : "warning", found ? "Migration report exists." : "No migration report found yet.", _pathResolution.Paths.Migration);
     }
 
     private DiagnosticsCheckResult CheckActiveProfilesValid()

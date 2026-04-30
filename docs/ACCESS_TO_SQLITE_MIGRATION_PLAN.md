@@ -51,3 +51,7 @@ Phase 4 is implemented by this PR: **SQLite bootstrapper/schema creation**.
 Phase 4 should add SQLite bootstrap/schema creation only and keep Access as the active runtime provider during implementation.
 
 Phase 4 must not switch runtime repositories to SQLite and must not redesign the UI.
+
+
+## Phase 5 update
+Importer, validator, report writer, and staging promotion logic added. Access remains active runtime provider.
