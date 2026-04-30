@@ -52,7 +52,8 @@ The app must remain:
 
 - WPF desktop host
 - WebView2 HTML/CSS/JS frontend
-- Access-oriented backend
+- SQLite local database target
+- Access legacy/current implementation until migration completes
 - local-first Windows deployment
 - attachments stored as files/folders
 - reports stored as files/folders
@@ -60,13 +61,22 @@ The app must remain:
 
 Do not replace this with:
 
+- SQL Server
+- hosted backend server
 - cloud database
+- SignalR dependency
 - local web server requirement
 - SMTP/cloud email sending
 - browser-only app
 - Electron rewrite
 - mobile app
 - automatic email sending
+
+Access is the current legacy runtime implementation until migration completes. Do not replace Access by hidden refactor. Access to SQLite migration must follow ADR-001 and phased PR sequence.
+
+Primary live data root is `M:\Moat House\MoatHouse Handover\`.
+
+Do not redesign the UI. Preserve the current modern Moat House dark/orange WebView2 design. Database/storage/deployment work must not change screen layout, colours, spacing, cards, buttons, badges, hover states, or workflow visuals unless explicitly requested.
 
 ## 3. Global data rule
 
@@ -347,7 +357,7 @@ Attachment panel must show:
 Attachments:
 
 - files are copied to managed AttachmentsRoot
-- Access stores metadata only
+- database stores metadata only
 - original display name is preserved
 - managed path is stored
 - remove is soft-delete metadata by default
@@ -750,7 +760,9 @@ Never:
 - do not send email automatically
 - do not add Send Now
 - do not use SMTP/cloud email
-- do not replace Access
+- do not replace Access by hidden refactor
+- Access-to-SQLite migration must follow ADR-001 and the phased migration plan
+- do not bypass the approved migration sequence
 - do not add local web server
 - do not store attachments inside database
 - do not show downtime/efficiency/yield for non-metric handover departments
