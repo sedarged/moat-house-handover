@@ -1,15 +1,25 @@
 # AI Task Queue
 
 ## Current priority
-- PR 23 (this PR): Phase 1 — Access schema inventory and SQLite target schema mapping.
+- Codex Web enablement and repository instruction alignment.
 
-## Phase 1 outputs
-- `docs/database/CURRENT_ACCESS_SCHEMA.md`
-- `docs/database/TARGET_SQLITE_SCHEMA.md`
-- `docs/database/SCHEMA_MAPPING_ACCESS_TO_SQLITE.md`
-- Update `docs/ACCESS_TO_SQLITE_MIGRATION_PLAN.md` to mark Phase 1 outputs and next PR.
+This preparation work must be merged before using Codex Web for the next implementation phase. It gives Codex one clear operating protocol, task template, environment guide, verification matrix, PR template, and issue template.
 
-## Next queued PR
+## Current enablement outputs
+- Align `AGENTS.md`, `README.md`, and `BUILD_NOTES.md` with the current SQLite-target architecture.
+- Add `docs/agents/CODEX_WEB_GUIDE.md`.
+- Add `docs/agents/CODEX_TASK_TEMPLATE.md`.
+- Add `docs/agents/CODEX_PHASE_PROTOCOL.md`.
+- Add `docs/agents/VERIFICATION_MATRIX.md`.
+- Add `docs/agents/CODEX_ENVIRONMENT.md`.
+- Add `.github/PULL_REQUEST_TEMPLATE.md`.
+- Add `.github/ISSUE_TEMPLATE/codex-task.yml`.
+
+## Completed migration setup
+- PR 22: Phase 0 — ADR/source-of-truth update for SQLite target and `M:\` storage policy.
+- PR 23: Phase 1 — Access schema inventory and SQLite target schema mapping.
+
+## Next queued PR after enablement
 - Phase 2 — `M:\` AppPathService/data root service.
 
 ## Phase 2 intended scope
@@ -26,3 +36,13 @@
 - Do not replace Access by hidden refactor. Access to SQLite migration must follow ADR-001 and phased PR sequence.
 - Do not redesign UI while executing storage/database phases.
 - No SQL Server, hosted backend server, cloud database, or SignalR dependency.
+
+## Codex Web task rule
+Use `docs/agents/CODEX_TASK_TEMPLATE.md` for future Codex Web implementation tasks.
+
+For implementation tasks, Codex Web must use CODE MODE and must either:
+
+1. produce a real branch/commit/PR, or
+2. report `NO CODE CHANGES MADE — BLOCKED` with exact blocker.
+
+Do not accept advice-only answers for implementation tasks unless the task explicitly says Ask/analysis only.
