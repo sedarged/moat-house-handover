@@ -85,24 +85,30 @@ public sealed class RuntimeConfigLoader
     {
         var missing = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(config.AccessDatabasePath))
-        {
-            missing.Add("accessDatabasePath");
-        }
-
-        if (string.IsNullOrWhiteSpace(config.AttachmentsRoot))
-        {
-            missing.Add("attachmentsRoot");
-        }
-
-        if (string.IsNullOrWhiteSpace(config.ReportsOutputRoot))
-        {
-            missing.Add("reportsOutputRoot");
-        }
+        AddMissingIfBlank(config.DataRoot, "dataRoot", missing);
+        AddMissingIfBlank(config.AccessDatabasePath, "accessDatabasePath", missing);
+        AddMissingIfBlank(config.AttachmentsRoot, "attachmentsRoot", missing);
+        AddMissingIfBlank(config.ReportsOutputRoot, "reportsOutputRoot", missing);
+        AddMissingIfBlank(config.BackupsRoot, "backupsRoot", missing);
+        AddMissingIfBlank(config.LogRoot, "logRoot", missing);
+        AddMissingIfBlank(config.ConfigRoot, "configRoot", missing);
+        AddMissingIfBlank(config.ImportsRoot, "importsRoot", missing);
+        AddMissingIfBlank(config.MigrationRoot, "migrationRoot", missing);
 
         if (missing.Count > 0)
         {
             throw new InvalidOperationException($"Config '{sourcePath}' is missing required values: {string.Join(", ", missing)}");
+        }
+
+        // Phase 2 guardrail: config must resolve to the approved M:\ live root and child paths.
+        _ = new AppPathService().Resolve(config);
+    }
+
+    private static void AddMissingIfBlank(string? value, string keyName, List<string> missing)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            missing.Add(keyName);
         }
     }
 }
