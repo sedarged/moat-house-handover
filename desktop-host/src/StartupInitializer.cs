@@ -10,28 +10,34 @@ public sealed class StartupInitializer
         var loader = new RuntimeConfigLoader();
         var configResult = loader.Load();
 
-        var logRoot = string.IsNullOrWhiteSpace(configResult.Config.LogRoot)
-            ? Path.Combine(Path.GetDirectoryName(configResult.SourcePath) ?? AppContext.BaseDirectory, "logs")
-            : configResult.Config.LogRoot;
+        var pathService = new AppPathService();
+        var paths = pathService.Resolve(configResult.Config);
 
-        var logger = new BootstrapLogger(Path.GetFullPath(logRoot!));
+        var logger = new BootstrapLogger(paths.LogsRoot);
         logger.Log($"Loaded runtime config: {configResult.SourcePath}");
+        logger.Log($"Resolved primary data root: {paths.DataRoot}");
 
-        EnsureDirectory(configResult.Config.AttachmentsRoot, logger, "attachmentsRoot");
-        EnsureDirectory(configResult.Config.ReportsOutputRoot, logger, "reportsOutputRoot");
+        pathService.EnsureRequiredDirectories(paths, logger);
 
         var bootstrapper = new AccessBootstrapper(logger);
-        bootstrapper.EnsureDatabaseAndSchema(configResult.Config.AccessDatabasePath);
+        bootstrapper.EnsureDatabaseAndSchema(paths.AccessDatabasePath);
 
         var assets = ResolveAssetRoot();
         logger.Log($"Resolved web asset root: {assets}");
 
         var status = new HostRuntimeStatus(
             ConfigPath: configResult.SourcePath,
-            AccessDatabasePath: Path.GetFullPath(configResult.Config.AccessDatabasePath),
-            AttachmentsRoot: Path.GetFullPath(configResult.Config.AttachmentsRoot),
-            ReportsOutputRoot: Path.GetFullPath(configResult.Config.ReportsOutputRoot),
-            LogRoot: Path.GetFullPath(logRoot!),
+            DataRoot: paths.DataRoot,
+            DataDirectory: paths.DataDirectory,
+            AccessDatabasePath: Path.GetFullPath(paths.AccessDatabasePath),
+            SQLiteDatabasePath: Path.GetFullPath(paths.SQLiteDatabasePath),
+            AttachmentsRoot: Path.GetFullPath(paths.AttachmentsRoot),
+            ReportsOutputRoot: Path.GetFullPath(paths.ReportsOutputRoot),
+            BackupsRoot: Path.GetFullPath(paths.BackupsRoot),
+            LogRoot: Path.GetFullPath(paths.LogsRoot),
+            ConfigRoot: Path.GetFullPath(paths.ConfigRoot),
+            ImportsRoot: Path.GetFullPath(paths.ImportsRoot),
+            MigrationRoot: Path.GetFullPath(paths.MigrationRoot),
             AssetRoot: assets,
             IsWindows: OperatingSystem.IsWindows(),
             DatabaseReady: true,
@@ -55,18 +61,6 @@ public sealed class StartupInitializer
         }
 
         throw new InvalidOperationException("webapp/index.html not found in packaged or development paths.");
-    }
-
-    private static void EnsureDirectory(string path, BootstrapLogger logger, string keyName)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            throw new InvalidOperationException($"Runtime config '{keyName}' is required.");
-        }
-
-        var fullPath = Path.GetFullPath(path);
-        Directory.CreateDirectory(fullPath);
-        logger.Log($"Ensured directory: {keyName} => {fullPath}");
     }
 }
 
