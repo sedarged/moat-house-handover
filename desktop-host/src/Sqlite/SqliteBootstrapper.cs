@@ -20,10 +20,11 @@ public sealed class SqliteBootstrapper
         using var connection = factory.Create(sqlitePath);
         connection.Open();
 
+        ExecutePragmaNonQuery(connection, "PRAGMA foreign_keys = ON;");
+        ExecutePragmaNonQuery(connection, "PRAGMA busy_timeout = 5000;");
+        var journalMode = ReadPragmaString(connection, "PRAGMA journal_mode = DELETE;");
+
         using var tx = connection.BeginTransaction();
-        Execute(connection, tx, "PRAGMA foreign_keys = ON;");
-        Execute(connection, tx, "PRAGMA journal_mode = DELETE;");
-        Execute(connection, tx, "PRAGMA busy_timeout = 5000;");
 
         foreach (var statement in SqliteSchema.CreateStatements)
         {
@@ -38,7 +39,7 @@ public sealed class SqliteBootstrapper
 
         var tablesPresent = CountExistingTables(connection, SqliteSchema.RequiredTables);
         var migrationExists = HasMigration(connection, SqliteSchema.InitialMigrationId);
-        return new BootstrapResult(true, $"SQLite bootstrap completed at '{sqlitePath}'.", tablesPresent, migrationExists);
+        return new BootstrapResult(true, $"SQLite bootstrap completed at '{sqlitePath}' with journal_mode={journalMode}.", tablesPresent, migrationExists);
     }
 
     private static void SeedDepartments(SqliteConnection connection, SqliteTransaction tx)
@@ -132,6 +133,20 @@ VALUES ($id, $at, $by, 'Initial SQLite schema bootstrap');";
         cmd.CommandText = "SELECT COUNT(*) FROM tblSchemaMigrations WHERE MigrationId = $id;";
         cmd.Parameters.AddWithValue("$id", migrationId);
         return Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+    }
+
+    private static void ExecutePragmaNonQuery(SqliteConnection connection, string sql)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.ExecuteNonQuery();
+    }
+
+    private static string ReadPragmaString(SqliteConnection connection, string sql)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = sql;
+        return Convert.ToString(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) ?? string.Empty;
     }
 
     private static void Execute(SqliteConnection connection, SqliteTransaction tx, string sql)
