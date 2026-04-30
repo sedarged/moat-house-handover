@@ -53,3 +53,5 @@ For implementation tasks, Codex Web must use CODE MODE and must either:
 2. report `NO CODE CHANGES MADE — BLOCKED` with exact blocker.
 
 Do not accept advice-only answers for implementation tasks unless the task explicitly says Ask/analysis only.
+
+- Phase 5 importer/validator/reporting implementation in progress (this PR scope).
