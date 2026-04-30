@@ -22,6 +22,10 @@ This preparation work must be merged before using Codex Web for the next impleme
 ## Next queued PR after enablement
 - Phase 2 — `M:\` AppPathService/data root service.
 
+## Phase 2 follow-up review fixes applied
+- unapproved `dataRoot` now fails validation (no warning-only behavior).
+- required operational directories now verify write access using create/delete probe files.
+
 ## Phase 2 intended scope
 - Create one host-side source of truth for operational paths.
 - Use `M:\Moat House\MoatHouse Handover\` as the primary live data root.
