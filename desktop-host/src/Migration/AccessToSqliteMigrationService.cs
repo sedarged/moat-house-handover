@@ -15,7 +15,7 @@ public sealed class AccessToSqliteMigrationService
     {
         var read = _reader.ReadAll(options.Paths.SourceAccessPath);
         var (tableResults, importIssues, configSummary) = _writer.Import(options, read);
-        var validation = _validator.Validate(options.Paths.StagingSqlitePath, tableResults, [..read.Issues, ..importIssues]);
+        var validation = _validator.Validate(options.Paths.StagingSqlitePath, tableResults, read.SourceRowCounts, [..read.Issues, ..importIssues]);
         var finished = DateTimeOffset.UtcNow;
 
         var promoted = false;

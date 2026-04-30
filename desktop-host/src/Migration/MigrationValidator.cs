@@ -10,7 +10,7 @@ public sealed class MigrationValidator
 {
     private static readonly string[] RequiredTables = ["tblHandoverHeader","tblHandoverDept","tblAttachments","tblBudgetHeader","tblBudgetRows","tblDepartments","tblShiftRules","tblEmailProfiles","tblConfig","tblAuditLog","tblSchemaMigrations"];
 
-    public MigrationValidationResult Validate(string sqlitePath, IReadOnlyList<MigrationTableResult> tableResults, IReadOnlyList<MigrationIssue> importIssues)
+    public MigrationValidationResult Validate(string sqlitePath, IReadOnlyList<MigrationTableResult> tableResults, IReadOnlyDictionary<string,int> sourceCounts, IReadOnlyList<MigrationIssue> importIssues)
     {
         var issues = new List<MigrationIssue>(importIssues);
         using var conn = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = sqlitePath }.ToString());
@@ -33,6 +33,8 @@ public sealed class MigrationValidator
                 issues.Add(new MigrationIssue("import.table.partial", MigrationSeverity.Warning, $"Table {tr.SourceTable} has failed/skipped rows.", $"failed={tr.FailedRows}; skipped={tr.SkippedRows}", tr.SourceTable));
             if (tr.ImportedRows + tr.FailedRows + tr.SkippedRows != tr.SourceRows)
                 issues.Add(new MigrationIssue("import.table.count_mismatch", MigrationSeverity.Error, $"Row accounting mismatch for {tr.SourceTable}.", Table: tr.SourceTable));
+            if (sourceCounts.TryGetValue(tr.SourceTable, out var sourceCount) && sourceCount != tr.SourceRows)
+                issues.Add(new MigrationIssue("source.rowcount.mismatch", MigrationSeverity.Error, $"Source row count changed for {tr.SourceTable}.", $"read={tr.SourceRows}; source={sourceCount}", tr.SourceTable));
         }
 
         var orphanDept = ScalarInt(conn, "SELECT COUNT(*) FROM tblHandoverDept d LEFT JOIN tblHandoverHeader h ON h.HandoverID=d.HandoverID WHERE h.HandoverID IS NULL;");
