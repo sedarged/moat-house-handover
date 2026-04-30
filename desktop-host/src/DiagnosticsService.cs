@@ -57,14 +57,6 @@ public sealed class DiagnosticsService
         });
 
 
-        AddCheck(checks, "paths.dataRoot.approved", () =>
-        {
-            var expected = Path.GetFullPath(AppPathService.ApprovedDataRoot);
-            var actual = Path.GetFullPath(_pathResolution.Paths.DataRoot);
-            var matches = string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase);
-            return new DiagnosticsCheckResult("paths.dataRoot.approved", matches ? "ok" : "warning", matches ? "Data root matches approved live root." : "Data root differs from approved live root.", $"expected={expected} | actual={actual}");
-        });
-
         foreach (var result in _pathResolution.ValidationResults)
         {
             AddCheck(checks, $"paths.{result.Key}", () => new DiagnosticsCheckResult($"paths.{result.Key}", result.Status, result.Message, result.FullPath));

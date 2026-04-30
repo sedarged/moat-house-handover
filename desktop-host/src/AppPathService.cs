@@ -12,6 +12,7 @@ public sealed class AppPathService
     {
         var configuredRoot = string.IsNullOrWhiteSpace(config.DataRoot) ? ApprovedDataRoot : config.DataRoot;
         var dataRoot = EnsureTrailingSeparator(Path.GetFullPath(configuredRoot));
+        var approvedRoot = EnsureTrailingSeparator(Path.GetFullPath(ApprovedDataRoot));
 
         var paths = new AppPaths(
             DataRoot: dataRoot,
@@ -26,35 +27,59 @@ public sealed class AppPathService
 
         var results = new List<AppPathValidationResult>
         {
-            ValidateDirectory("dataRoot", paths.DataRoot),
-            ValidateDirectory("data", paths.Data),
-            ValidateDirectory("attachments", paths.Attachments),
-            ValidateDirectory("reports", paths.Reports),
-            ValidateDirectory("backups", paths.Backups),
-            ValidateDirectory("logs", paths.Logs),
-            ValidateDirectory("config", paths.Config),
-            ValidateDirectory("imports", paths.Imports),
-            ValidateDirectory("migration", paths.Migration)
+            ValidateApprovedDataRoot(paths.DataRoot, approvedRoot)
         };
+
+        if (results[0].IsOk)
+        {
+            results.Add(ValidateRequiredDirectory("data", paths.Data));
+            results.Add(ValidateRequiredDirectory("attachments", paths.Attachments));
+            results.Add(ValidateRequiredDirectory("reports", paths.Reports));
+            results.Add(ValidateRequiredDirectory("backups", paths.Backups));
+            results.Add(ValidateRequiredDirectory("logs", paths.Logs));
+            results.Add(ValidateRequiredDirectory("config", paths.Config));
+            results.Add(ValidateRequiredDirectory("imports", paths.Imports));
+            results.Add(ValidateRequiredDirectory("migration", paths.Migration));
+        }
 
         return new AppPathResolution(paths, results);
     }
 
-    private static AppPathValidationResult ValidateDirectory(string key, string fullPath)
+    private static AppPathValidationResult ValidateApprovedDataRoot(string actualRoot, string approvedRoot)
+    {
+        var matches = string.Equals(actualRoot, approvedRoot, StringComparison.OrdinalIgnoreCase);
+        if (matches)
+        {
+            return new AppPathValidationResult("dataRoot.approved", actualRoot, "ok", "Data root matches approved live root.");
+        }
+
+        return new AppPathValidationResult(
+            "dataRoot.approved",
+            actualRoot,
+            "failed",
+            $"Configured data root is not approved. Expected '{approvedRoot}' but received '{actualRoot}'.");
+    }
+
+    private static AppPathValidationResult ValidateRequiredDirectory(string key, string fullPath)
     {
         try
         {
             Directory.CreateDirectory(fullPath);
-            return new AppPathValidationResult(key, fullPath, "ok", "Directory exists or was created.");
+            var probePath = Path.Combine(fullPath, ".write_probe_" + Guid.NewGuid().ToString("N") + ".tmp");
+            File.WriteAllText(probePath, "probe");
+            File.Delete(probePath);
+            return new AppPathValidationResult(key, fullPath, "ok", "Directory exists and write access is confirmed.");
         }
         catch (Exception ex)
         {
-            return new AppPathValidationResult(key, fullPath, "failed", ex.Message);
+            return new AppPathValidationResult(key, fullPath, "failed", $"Directory validation failed: {ex.Message}");
         }
     }
 
     private static string EnsureTrailingSeparator(string path)
-        => path.EndsWith(Path.DirectorySeparatorChar) ? path : path + Path.DirectorySeparatorChar;
+        => path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+            ? path
+            : path + Path.DirectorySeparatorChar;
 }
 
 public sealed record AppPaths(
@@ -68,7 +93,10 @@ public sealed record AppPaths(
     string Imports,
     string Migration);
 
-public sealed record AppPathValidationResult(string Key, string FullPath, string Status, string Message);
+public sealed record AppPathValidationResult(string Key, string FullPath, string Status, string Message)
+{
+    public bool IsOk => string.Equals(Status, "ok", StringComparison.OrdinalIgnoreCase);
+}
 
 public sealed record AppPathResolution(AppPaths Paths, IReadOnlyList<AppPathValidationResult> ValidationResults)
 {
@@ -78,7 +106,7 @@ public sealed record AppPathResolution(AppPaths Paths, IReadOnlyList<AppPathVali
         {
             foreach (var result in ValidationResults)
             {
-                if (!string.Equals(result.Status, "ok", StringComparison.OrdinalIgnoreCase))
+                if (!result.IsOk)
                 {
                     return false;
                 }

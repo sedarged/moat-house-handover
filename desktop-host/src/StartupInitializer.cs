@@ -13,6 +13,11 @@ public sealed class StartupInitializer
         var appPathService = new AppPathService();
         var pathResolution = appPathService.ResolveAndValidate(configResult.Config);
 
+        if (!pathResolution.AllValid)
+        {
+            throw new InvalidOperationException("App path validation failed: " + string.Join(" | ", pathResolution.ValidationResults));
+        }
+
         var resolvedConfig = new HostConfig
         {
             DataRoot = pathResolution.Paths.DataRoot,
