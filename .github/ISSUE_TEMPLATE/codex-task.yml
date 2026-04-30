@@ -1,0 +1,97 @@
+name: Codex task
+description: Create a scoped Codex Web task
+title: "[Codex] "
+labels:
+  - codex-task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for scoped Codex Web work. Implementation work should use CODE MODE and follow AGENTS.md plus docs/agents/CODEX_WEB_GUIDE.md.
+
+  - type: input
+    id: phase
+    attributes:
+      label: Phase
+      description: Phase number and short name.
+      placeholder: "Phase 2 - AppPathService data root service"
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One clear outcome for this PR.
+      placeholder: "Implement one focused phase and open a reviewable PR."
+    validations:
+      required: true
+
+  - type: textarea
+    id: required_reading
+    attributes:
+      label: Required reading
+      value: |
+        - AGENTS.md
+        - HANDOVER_APP_V2_SOURCE_OF_TRUTH.md
+        - docs/agents/CODEX_WEB_GUIDE.md
+        - docs/AI_TASK_QUEUE.md
+        - relevant phase docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: allowed
+    attributes:
+      label: Allowed changes
+      placeholder: "List allowed files, folders, or change types."
+    validations:
+      required: true
+
+  - type: textarea
+    id: forbidden
+    attributes:
+      label: Forbidden changes
+      value: |
+        - No unrelated refactors.
+        - No UI redesign unless explicitly requested.
+        - No database runtime switch unless this task explicitly approves it.
+        - No new server/cloud dependency.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - Criterion 1
+        - Criterion 2
+        - Criterion 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Use docs/agents/VERIFICATION_MATRIX.md.
+      placeholder: |
+        - bash scripts/check-web.sh
+        - bash scripts/build-host.sh
+        - bash scripts/package-local.sh
+    validations:
+      required: true
+
+  - type: textarea
+    id: final_status
+    attributes:
+      label: Required final status
+      value: |
+        End with exactly one:
+        - PHASE READY FOR REVIEW
+        - PHASE NOT READY — BLOCKERS REMAIN
+        - NO CODE CHANGES MADE — BLOCKED
+        - NO CODE CHANGES MADE — ANALYSIS ONLY
+    validations:
+      required: true
