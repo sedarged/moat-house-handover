@@ -19,8 +19,8 @@ This preparation work must be merged before using Codex Web for the next impleme
 - PR 22: Phase 0 — ADR/source-of-truth update for SQLite target and `M:\` storage policy.
 - PR 23: Phase 1 — Access schema inventory and SQLite target schema mapping.
 
-## Next queued PR after enablement
-- Phase 2 — `M:\` AppPathService/data root service.
+## Next queued PR
+- Phase 4 — SQLite bootstrapper/schema creation.
 
 ## Phase 2 follow-up review fixes applied
 - unapproved `dataRoot` now fails validation (no warning-only behavior).

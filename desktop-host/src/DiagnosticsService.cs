@@ -11,12 +11,14 @@ public sealed class DiagnosticsService
     private readonly HostRuntimeStatus _runtimeStatus;
     private readonly HostConfig _config;
     private readonly AppPathResolution _pathResolution;
+    private readonly IDataProvider _dataProvider;
 
-    public DiagnosticsService(HostRuntimeStatus runtimeStatus, HostConfig config, AppPathResolution pathResolution)
+    public DiagnosticsService(HostRuntimeStatus runtimeStatus, HostConfig config, AppPathResolution pathResolution, IDataProvider dataProvider)
     {
         _runtimeStatus = runtimeStatus;
         _config = config;
         _pathResolution = pathResolution;
+        _dataProvider = dataProvider;
     }
 
     public DiagnosticsPayload Run(DiagnosticsRunRequest _)
@@ -61,6 +63,17 @@ public sealed class DiagnosticsService
         {
             AddCheck(checks, $"paths.{result.Key}", () => new DiagnosticsCheckResult($"paths.{result.Key}", result.Status, result.Message, result.FullPath));
         }
+
+
+        AddCheck(checks, "database.provider.info", () =>
+        {
+            var info = _dataProvider.GetInfo();
+            return new DiagnosticsCheckResult(
+                "database.provider.info",
+                "ok",
+                $"Active provider: {info.ProviderKind}",
+                $"activeDb={info.ActiveDatabasePath} | sqliteTarget={info.TargetSqlitePath ?? "(not configured)"} | status={info.ProviderStatus} | migration={info.MigrationStatus}");
+        });
 
         AddCheck(checks, "access.database.path", () =>
         {

@@ -3,7 +3,7 @@ using System.Data.OleDb;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class EmailProfileRepository
+public sealed class EmailProfileRepository : IEmailProfileRepository
 {
     private readonly string _connectionString;
 

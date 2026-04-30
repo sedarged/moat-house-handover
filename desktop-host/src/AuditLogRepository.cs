@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class AuditLogRepository
+public sealed class AuditLogRepository : IAuditLogRepository
 {
     private readonly string _connectionString;
 

@@ -5,10 +5,10 @@ namespace MoatHouseHandover.Host;
 
 public sealed class BudgetService
 {
-    private readonly BudgetRepository _repository;
+    private readonly IBudgetRepository _repository;
     private readonly AuditLogService _auditLogService;
 
-    public BudgetService(BudgetRepository repository, AuditLogService auditLogService)
+    public BudgetService(IBudgetRepository repository, AuditLogService auditLogService)
     {
         _repository = repository;
         _auditLogService = auditLogService;

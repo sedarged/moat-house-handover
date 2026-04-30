@@ -4,7 +4,7 @@ using System.Data.OleDb;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class AttachmentRepository
+public sealed class AttachmentRepository : IAttachmentRepository
 {
     private readonly string _connectionString;
 
