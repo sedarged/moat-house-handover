@@ -12,7 +12,7 @@ This plan defines the controlled phased migration from the current Access-based 
 
 ## Phased sequence
 - **Phase 0 — ADR/source-of-truth update** — complete in PR #22.
-- **Phase 1 — Access schema inventory and SQLite target schema mapping** — this PR.
+- **Phase 1 — Access schema inventory and SQLite target schema mapping** — complete in PR #23.
 - **Phase 2 — M:\ AppPathService/data root service** — complete in PR #25.
 - **Phase 3 — database provider boundary/repository interfaces** — implemented in this PR.
 - **Phase 4 — SQLite bootstrapper/schema creation**
