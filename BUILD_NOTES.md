@@ -6,6 +6,7 @@ The active product source of truth is:
 
 - `HANDOVER_APP_V2_SOURCE_OF_TRUTH.md`
 - `AGENTS.md`
+- `docs/agents/CODEX_WEB_GUIDE.md` when using Codex Web
 - `MASTER_TASK_DEEP_REVIEW_UI_UX.md` for deep review / correction work
 
 Older fragmented stage/spec files have been retired.
@@ -15,11 +16,20 @@ Older fragmented stage/spec files have been retired.
 - WPF desktop host
 - WebView2 UI surface
 - HTML/CSS/JS frontend assets
-- Access-oriented backend/bootstrap path
+- SQLite local database target
+- Access legacy/current runtime until phased migration completes
 - Runtime config loaded from JSON
+- Primary live data root target: `M:\Moat House\MoatHouse Handover\`
 - Attachments stored as managed files/folders
 - Reports stored as managed files/folders
 - Outlook draft-only workflow
+
+Access-to-SQLite migration must follow:
+
+- `docs/decisions/ADR-001-local-sqlite-database.md`
+- `docs/ACCESS_TO_SQLITE_MIGRATION_PLAN.md`
+
+Do not replace Access by hidden refactor.
 
 ## Runtime config file
 
@@ -34,18 +44,41 @@ Typical lookup order used by the host runtime:
 3. approved workstation/shared fallback paths where configured
 4. development fallback paths during local development
 
-Required runtime keys include:
+Current legacy/runtime keys include:
 
 - `accessDatabasePath`
 - `attachmentsRoot`
 - `reportsOutputRoot`
 
+Upcoming Phase 2 path-service work will align config around:
+
+- `dataRoot`
+- `accessDatabasePath`
+- `sqliteDatabasePath`
+- `attachmentsRoot`
+- `reportsOutputRoot`
+- `backupsRoot`
+- `logRoot`
+- `configRoot`
+- `importsRoot`
+- `migrationRoot`
+
 ## Important runtime dependencies
 
 - `Microsoft.Web.WebView2` for the desktop WebView host
-- `System.Data.OleDb` / ACE OLEDB path for Access-oriented runtime/database access where applicable
-- Windows filesystem permissions for config, attachments, reports, and logs
+- `System.Data.OleDb` / ACE OLEDB path for the legacy/current Access runtime where applicable
+- Windows filesystem permissions for config, attachments, reports, logs, backups, imports, and migration folders
 - Outlook COM availability only for draft creation on a real Windows workstation
+
+## Codex Web / cloud task notes
+
+Codex Web can edit the repo and run available commands in its cloud environment, but it must not claim full Windows runtime verification unless the workflow was tested on a real Windows workstation.
+
+Use:
+
+- `docs/agents/CODEX_WEB_GUIDE.md`
+- `docs/agents/CODEX_TASK_TEMPLATE.md`
+- `docs/agents/VERIFICATION_MATRIX.md`
 
 ## Helper scripts
 
