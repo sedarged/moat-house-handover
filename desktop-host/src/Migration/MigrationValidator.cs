@@ -56,10 +56,40 @@ public sealed class MigrationValidator
 
         var badConfigPaths = ScalarInt(conn, "SELECT COUNT(*) FROM tblConfig WHERE ConfigValue LIKE 'C:/MOAT-Handover/shared%';");
         if (badConfigPaths > 0) issues.Add(new MigrationIssue("config.path.policy", MigrationSeverity.Error, "Legacy C:/ config paths remain after transform."));
+        ValidateRequiredConfig(conn, issues);
 
         return new MigrationValidationResult(issues, varianceMismatch, orphanAttachments, orphanDept, orphanBudgetHeader, orphanBudgetRows, journal);
     }
 
     static int ScalarInt(SqliteConnection c, string sql, params (string, object)[] p) { using var cmd=c.CreateCommand(); cmd.CommandText=sql; foreach(var pair in p) cmd.Parameters.AddWithValue(pair.Item1,pair.Item2); return Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture); }
     static string ScalarText(SqliteConnection c, string sql) { using var cmd=c.CreateCommand(); cmd.CommandText=sql; return Convert.ToString(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) ?? string.Empty; }
+
+    static void ValidateRequiredConfig(SqliteConnection conn, List<MigrationIssue> issues)
+    {
+        const string root = @"M:\Moat House\MoatHouse Handover";
+        var required = new Dictionary<string, string>
+        {
+            ["databaseProvider"] = "SQLite",
+            ["dataRoot"] = root,
+            ["sqliteDatabasePath"] = root + @"\Data\moat-house.db",
+            ["attachmentsRoot"] = root + @"\Attachments",
+            ["reportsOutputRoot"] = root + @"\Reports",
+            ["backupsRoot"] = root + @"\Backups",
+            ["logsRoot"] = root + @"\Logs",
+            ["configRoot"] = root + @"\Config",
+            ["importsRoot"] = root + @"\Imports",
+            ["migrationRoot"] = root + @"\Migration"
+        };
+        foreach (var kv in required)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT ConfigValue FROM tblConfig WHERE ConfigKey=$k LIMIT 1;";
+            cmd.Parameters.AddWithValue("$k", kv.Key);
+            var val = Convert.ToString(cmd.ExecuteScalar(), CultureInfo.InvariantCulture);
+            if (string.IsNullOrWhiteSpace(val))
+                issues.Add(new MigrationIssue("config.required.missing", MigrationSeverity.Error, $"Required config key missing: {kv.Key}"));
+            else if (!string.Equals(val, kv.Value, StringComparison.OrdinalIgnoreCase))
+                issues.Add(new MigrationIssue("config.required.invalid", MigrationSeverity.Error, $"Config key value is not approved policy: {kv.Key}", $"actual={val}; expected={kv.Value}"));
+        }
+    }
 }
