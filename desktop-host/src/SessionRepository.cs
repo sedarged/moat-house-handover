@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace MoatHouseHandover.Host;
 
-public sealed class SessionRepository
+public sealed class SessionRepository : ISessionRepository
 {
     private readonly string _connectionString;
 

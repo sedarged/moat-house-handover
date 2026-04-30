@@ -7,11 +7,11 @@ namespace MoatHouseHandover.Host;
 
 public sealed class AttachmentService
 {
-    private readonly AttachmentRepository _repository;
+    private readonly IAttachmentRepository _repository;
     private readonly AuditLogService _auditLogService;
     private readonly string _attachmentsRootFullPath;
 
-    public AttachmentService(AttachmentRepository repository, AuditLogService auditLogService, HostConfig config)
+    public AttachmentService(IAttachmentRepository repository, AuditLogService auditLogService, HostConfig config)
     {
         _repository = repository;
         _auditLogService = auditLogService;
