@@ -29,35 +29,22 @@ public sealed class DiagnosticsService
             return new DiagnosticsCheckResult("os.info", status, isWindows ? "Running on Windows." : "Running on non-Windows environment.", os);
         });
 
-        AddCheck(checks, "config.values.loaded", () =>
-        {
-            var missing = new List<string>();
-            if (string.IsNullOrWhiteSpace(_config.AccessDatabasePath))
-            {
-                missing.Add("accessDatabasePath");
-            }
+        AddCheck(checks, "config.values.loaded", CheckConfigValuesLoaded);
+        AddCheck(checks, "storage.data_root.policy", CheckDataRootPolicy);
 
-            if (string.IsNullOrWhiteSpace(_config.AttachmentsRoot))
-            {
-                missing.Add("attachmentsRoot");
-            }
+        AddCheck(checks, "storage.data.exists", () => EnsureDirectory("storage.data.exists", _runtimeStatus.DataDirectory));
+        AddCheck(checks, "storage.attachments.exists", () => EnsureDirectory("storage.attachments.exists", _runtimeStatus.AttachmentsRoot));
+        AddCheck(checks, "storage.reports.exists", () => EnsureDirectory("storage.reports.exists", _runtimeStatus.ReportsOutputRoot));
+        AddCheck(checks, "storage.backups.exists", () => EnsureDirectory("storage.backups.exists", _runtimeStatus.BackupsRoot));
+        AddCheck(checks, "storage.logs.exists", () => EnsureDirectory("storage.logs.exists", _runtimeStatus.LogRoot));
+        AddCheck(checks, "storage.config.exists", () => EnsureDirectory("storage.config.exists", _runtimeStatus.ConfigRoot));
+        AddCheck(checks, "storage.imports.exists", () => EnsureDirectory("storage.imports.exists", _runtimeStatus.ImportsRoot));
+        AddCheck(checks, "storage.migration.exists", () => EnsureDirectory("storage.migration.exists", _runtimeStatus.MigrationRoot));
 
-            if (string.IsNullOrWhiteSpace(_config.ReportsOutputRoot))
-            {
-                missing.Add("reportsOutputRoot");
-            }
-
-            if (missing.Count > 0)
-            {
-                return new DiagnosticsCheckResult("config.values.loaded", "failed", "Required runtime config values are missing.", string.Join(", ", missing));
-            }
-
-            return new DiagnosticsCheckResult(
-                "config.values.loaded",
-                "ok",
-                "Runtime config values are loaded.",
-                $"config={_runtimeStatus.ConfigPath} | db={_runtimeStatus.AccessDatabasePath} | attachments={_runtimeStatus.AttachmentsRoot} | reports={_runtimeStatus.ReportsOutputRoot} | logs={_runtimeStatus.LogRoot}");
-        });
+        AddCheck(checks, "storage.data.write", () => EnsureWriteAccess("storage.data.write", _runtimeStatus.DataDirectory));
+        AddCheck(checks, "storage.attachments.write", () => EnsureWriteAccess("storage.attachments.write", _runtimeStatus.AttachmentsRoot));
+        AddCheck(checks, "storage.reports.write", () => EnsureWriteAccess("storage.reports.write", _runtimeStatus.ReportsOutputRoot));
+        AddCheck(checks, "storage.logs.write", () => EnsureWriteAccess("storage.logs.write", _runtimeStatus.LogRoot));
 
         AddCheck(checks, "access.database.path", () =>
         {
@@ -67,6 +54,15 @@ public sealed class DiagnosticsService
                 exists ? "ok" : "failed",
                 exists ? "Access database path exists." : "Access database path was not found.",
                 _runtimeStatus.AccessDatabasePath);
+        });
+
+        AddCheck(checks, "sqlite.target.path", () =>
+        {
+            return new DiagnosticsCheckResult(
+                "sqlite.target.path",
+                "ok",
+                "SQLite target path is resolved for future migration phases; runtime is not switched to SQLite yet.",
+                _runtimeStatus.SQLiteDatabasePath);
         });
 
         AddCheck(checks, "access.connection.open", () =>
@@ -88,12 +84,6 @@ public sealed class DiagnosticsService
         });
 
         AddCheck(checks, "access.config.seed", CheckConfigSeed);
-
-        AddCheck(checks, "attachments.root.exists", () => EnsureDirectory("attachments.root.exists", _runtimeStatus.AttachmentsRoot));
-        AddCheck(checks, "reports.root.exists", () => EnsureDirectory("reports.root.exists", _runtimeStatus.ReportsOutputRoot));
-
-        AddCheck(checks, "attachments.root.write", () => EnsureWriteAccess("attachments.root.write", _runtimeStatus.AttachmentsRoot));
-        AddCheck(checks, "reports.root.write", () => EnsureWriteAccess("reports.root.write", _runtimeStatus.ReportsOutputRoot));
 
         AddCheck(checks, "email.profiles.exist", CheckEmailProfilesExist);
         AddCheck(checks, "email.profiles.active.valid", CheckActiveProfilesValid);
@@ -132,10 +122,45 @@ public sealed class DiagnosticsService
                 "WebView2 runtime, ACE provider, and Outlook desktop still require local validation.");
         });
 
-        AddCheck(checks, "logs.root.exists", () => EnsureDirectory("logs.root.exists", _runtimeStatus.LogRoot));
-
         var overall = ComputeOverallStatus(checks);
         return new DiagnosticsPayload(overall, DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture), checks);
+    }
+
+    private DiagnosticsCheckResult CheckConfigValuesLoaded()
+    {
+        var missing = new List<string>();
+        AddMissingIfBlank(_config.DataRoot, "dataRoot", missing);
+        AddMissingIfBlank(_config.AccessDatabasePath, "accessDatabasePath", missing);
+        AddMissingIfBlank(_config.AttachmentsRoot, "attachmentsRoot", missing);
+        AddMissingIfBlank(_config.ReportsOutputRoot, "reportsOutputRoot", missing);
+        AddMissingIfBlank(_config.BackupsRoot, "backupsRoot", missing);
+        AddMissingIfBlank(_config.LogRoot, "logRoot", missing);
+        AddMissingIfBlank(_config.ConfigRoot, "configRoot", missing);
+        AddMissingIfBlank(_config.ImportsRoot, "importsRoot", missing);
+        AddMissingIfBlank(_config.MigrationRoot, "migrationRoot", missing);
+
+        if (missing.Count > 0)
+        {
+            return new DiagnosticsCheckResult("config.values.loaded", "failed", "Required runtime config values are missing.", string.Join(", ", missing));
+        }
+
+        return new DiagnosticsCheckResult(
+            "config.values.loaded",
+            "ok",
+            "Runtime config values are loaded.",
+            $"config={_runtimeStatus.ConfigPath} | dataRoot={_runtimeStatus.DataRoot} | accessDb={_runtimeStatus.AccessDatabasePath} | sqliteTarget={_runtimeStatus.SQLiteDatabasePath}");
+    }
+
+    private DiagnosticsCheckResult CheckDataRootPolicy()
+    {
+        var valid = AppPathService.IsConfiguredPrimaryDataRoot(_runtimeStatus.DataRoot);
+        return new DiagnosticsCheckResult(
+            "storage.data_root.policy",
+            valid ? "ok" : "failed",
+            valid
+                ? "Primary live data root matches the approved M: storage policy."
+                : "Primary live data root does not match the approved M: storage policy.",
+            $"actual={_runtimeStatus.DataRoot} | expected={AppPathDefaults.PrimaryDataRoot}");
     }
 
     private DiagnosticsCheckResult CheckConfigSeed()
@@ -145,21 +170,39 @@ public sealed class DiagnosticsService
 
         var keys = new[] { "accessDatabasePath", "attachmentsRoot", "reportsOutputRoot" };
         var missing = new List<string>();
+        var legacyValues = new List<string>();
 
         foreach (var key in keys)
         {
             using var cmd = new OleDbCommand("SELECT TOP 1 ConfigValue FROM tblConfig WHERE ConfigKey = ?", connection);
             cmd.Parameters.AddWithValue("@p1", key);
             var value = cmd.ExecuteScalar();
-            if (value is null || value == DBNull.Value || string.IsNullOrWhiteSpace(Convert.ToString(value)))
+            var textValue = value is null || value == DBNull.Value ? string.Empty : Convert.ToString(value) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(textValue))
             {
                 missing.Add(key);
+                continue;
+            }
+
+            if (textValue.Contains("C:/MOAT-Handover", StringComparison.OrdinalIgnoreCase)
+                || textValue.Contains("C:\\MOAT-Handover", StringComparison.OrdinalIgnoreCase))
+            {
+                legacyValues.Add(key + "=" + textValue);
             }
         }
 
         if (missing.Count > 0)
         {
             return new DiagnosticsCheckResult("access.config.seed", "warning", "One or more tblConfig values are missing/blank.", string.Join(", ", missing));
+        }
+
+        if (legacyValues.Count > 0)
+        {
+            return new DiagnosticsCheckResult(
+                "access.config.seed",
+                "warning",
+                "tblConfig still contains legacy C:/MOAT-Handover seed values. Runtime path resolution now uses HostConfig/AppPathService; config seed cleanup is a later migration item.",
+                string.Join(" | ", legacyValues));
         }
 
         return new DiagnosticsCheckResult("access.config.seed", "ok", "tblConfig values were found.", string.Join(", ", keys));
@@ -273,6 +316,14 @@ WHERE s.ShiftCode = ?", connection);
         catch (Exception ex)
         {
             checks.Add(new DiagnosticsCheckResult(checkName, "failed", ex.Message, ex.GetType().Name));
+        }
+    }
+
+    private static void AddMissingIfBlank(string? value, string keyName, List<string> missing)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            missing.Add(keyName);
         }
     }
 
