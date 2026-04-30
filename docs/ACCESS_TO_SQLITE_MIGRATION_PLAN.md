@@ -44,14 +44,8 @@ Phase 1 records:
 - config path transformation from old `C:/MOAT-Handover/shared/...` values to ADR-001 `M:\Moat House\MoatHouse Handover\...` values
 - known alignment issues to fix later, especially current 4-department seed versus 13-department source-of-truth list
 
-## Next PR
-
-Phase 4 is implemented by this PR: **SQLite bootstrapper/schema creation**.
-
-Phase 4 should add SQLite bootstrap/schema creation only and keep Access as the active runtime provider during implementation.
-
-Phase 4 must not switch runtime repositories to SQLite and must not redesign the UI.
-
-
 ## Phase 5 update
 Importer, validator, report writer, and staging promotion logic added. Access remains active runtime provider.
+
+## Phase 6 update
+Backup/restore/rollback host-side safety foundation added, including manifest/checksum validation, staged restore planning, pre-restore backup enforcement, rollback readiness checks, and retention dry-run planning. Access remains active runtime provider.

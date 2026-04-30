@@ -64,3 +64,6 @@ Real Access ACE/OLEDB runtime migration execution requires Windows workstation v
 
 ## Next phase
 Phase 6 — backup/restore foundation.
+
+## Phase 6 follow-on
+Phase 6 adds dedicated backup/restore/rollback foundation under host backup services; Access remains active runtime.
