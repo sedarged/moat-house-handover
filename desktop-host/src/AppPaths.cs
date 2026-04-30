@@ -120,8 +120,8 @@ public sealed class AppPathService
 
     public static bool IsConfiguredPrimaryDataRoot(string dataRoot)
     {
-        var actual = TrimDirectorySeparator(Path.GetFullPath(dataRoot));
-        var expected = TrimDirectorySeparator(Path.GetFullPath(AppPathDefaults.PrimaryDataRoot));
+        var actual = NormalizeForComparison(dataRoot);
+        var expected = NormalizeForComparison(AppPathDefaults.PrimaryDataRoot);
         return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -159,12 +159,11 @@ public sealed class AppPathService
         }
 
         var fullPath = Path.GetFullPath(path);
-        var normalizedRoot = TrimDirectorySeparator(Path.GetFullPath(dataRoot));
-        var normalizedFullPath = TrimDirectorySeparator(fullPath);
+        var normalizedRoot = NormalizeForComparison(dataRoot);
+        var normalizedFullPath = NormalizeForComparison(fullPath);
 
         var isInsideRoot = normalizedFullPath.Equals(normalizedRoot, StringComparison.OrdinalIgnoreCase)
-            || normalizedFullPath.StartsWith(normalizedRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-            || normalizedFullPath.StartsWith(normalizedRoot + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+            || normalizedFullPath.StartsWith(normalizedRoot + "/", StringComparison.OrdinalIgnoreCase);
 
         if (!isInsideRoot)
         {
@@ -175,8 +174,14 @@ public sealed class AppPathService
         return fullPath;
     }
 
+    private static string NormalizeForComparison(string path)
+    {
+        return TrimDirectorySeparator(Path.GetFullPath(path))
+            .Replace('\\', '/');
+    }
+
     private static string TrimDirectorySeparator(string path)
     {
-        return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, '\\', '/');
     }
 }
