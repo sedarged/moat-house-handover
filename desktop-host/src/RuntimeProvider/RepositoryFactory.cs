@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using MoatHouseHandover.Host.DualRun;
 
 namespace MoatHouseHandover.Host;
@@ -112,7 +111,8 @@ public sealed class RuntimeProviderSelector
         var schemaReady = runtimeStatus.SqliteBootstrapSucceeded;
         var reposReady = !string.IsNullOrWhiteSpace(config.DataRoot);
 
-        var dualRun = EvaluateDualRun(paths);
+        var validator = new DualRunEvidenceValidator();
+        var dualRun = validator.ValidateLatest(Path.Combine(paths.Paths.Migration, "DualRun"), TimeSpan.FromDays(14));
 
         if (!parse.IsValid)
         {
@@ -122,7 +122,7 @@ public sealed class RuntimeProviderSelector
         if (requested == DatabaseProviderKind.AccessLegacy)
         {
             var fallback = parse.IsValid ? null : "Invalid runtimeProvider value requested.";
-            return new RuntimeProviderGateResult(RuntimeProviderGateStatus.Allowed, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.LatestReportPath, dualRun.Accepted, fallback, issues);
+            return new RuntimeProviderGateResult(RuntimeProviderGateStatus.Allowed, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.ReportPath, dualRun.Status == DualRunEvidenceStatus.Accepted, fallback, issues);
         }
 
         if (!sqliteExists) issues.Add(new RuntimeProviderIssue("sqlite.db.missing", RuntimeProviderSeverity.Error, "SQLite DB file is missing."));
@@ -130,70 +130,24 @@ public sealed class RuntimeProviderSelector
         if (!reposReady) issues.Add(new RuntimeProviderIssue("sqlite.repositories.not_ready", RuntimeProviderSeverity.Error, "SQLite repository prerequisites are not ready."));
         if (!accessAvailable) issues.Add(new RuntimeProviderIssue("access.fallback.unavailable", RuntimeProviderSeverity.Error, "AccessLegacy fallback DB is not available."));
 
-        if (!dualRun.Exists)
-        {
-            issues.Add(new RuntimeProviderIssue("sqlite.dualrun.missing", RuntimeProviderSeverity.Warning, "Latest dual-run report was not found."));
-        }
-        else if (!dualRun.Readable)
-        {
-            issues.Add(new RuntimeProviderIssue("sqlite.dualrun.unreadable", RuntimeProviderSeverity.Warning, "Latest dual-run report is unreadable or malformed.", dualRun.Detail));
-        }
-        else if (!dualRun.Accepted)
-        {
-            issues.Add(new RuntimeProviderIssue("sqlite.dualrun.not_accepted", RuntimeProviderSeverity.Warning, "Latest dual-run recommendation is not accepted for runtime switch.", dualRun.Recommendation));
-        }
+        if (dualRun.Status == DualRunEvidenceStatus.Missing) issues.Add(new RuntimeProviderIssue("sqlite.dualrun.missing", RuntimeProviderSeverity.Warning, "Latest dual-run report was not found."));
+        else if (dualRun.Status == DualRunEvidenceStatus.Unreadable) issues.Add(new RuntimeProviderIssue("sqlite.dualrun.unreadable", RuntimeProviderSeverity.Warning, "Latest dual-run report is unreadable or malformed.", dualRun.Issues.FirstOrDefault()?.Detail));
+        else if (dualRun.Status != DualRunEvidenceStatus.Accepted) issues.Add(new RuntimeProviderIssue("sqlite.dualrun.not_accepted", RuntimeProviderSeverity.Warning, "Latest dual-run recommendation is not accepted for runtime switch.", dualRun.Recommendation));
 
         var hasErrors = issues.Any(i => i.Severity == RuntimeProviderSeverity.Error);
         var hasDualRunWarning = issues.Any(i => i.Code.StartsWith("sqlite.dualrun", StringComparison.Ordinal));
         if (hasErrors)
         {
-            return new RuntimeProviderGateResult(RuntimeProviderGateStatus.WarningFallback, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.LatestReportPath, dualRun.Accepted, "SQLite request failed gate checks.", issues);
+            return new RuntimeProviderGateResult(RuntimeProviderGateStatus.WarningFallback, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.ReportPath, dualRun.Status == DualRunEvidenceStatus.Accepted, "SQLite request failed gate checks.", issues);
         }
 
         if (hasDualRunWarning && !overrideEnabled)
         {
-            return new RuntimeProviderGateResult(RuntimeProviderGateStatus.WarningFallback, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.LatestReportPath, dualRun.Accepted, "Dual-run evidence is missing/unreadable/not accepted; fallback to AccessLegacy.", issues);
+            return new RuntimeProviderGateResult(RuntimeProviderGateStatus.WarningFallback, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.ReportPath, dualRun.Status == DualRunEvidenceStatus.Accepted, "Dual-run evidence is missing/unreadable/not accepted; fallback to AccessLegacy.", issues);
         }
 
-        return new RuntimeProviderGateResult(RuntimeProviderGateStatus.Allowed, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.LatestReportPath, dualRun.Accepted, null, issues);
-    }
-
-    private static DualRunGateState EvaluateDualRun(AppPathResolution paths)
-    {
-        var dualRunDir = Path.Combine(paths.Paths.Migration, "DualRun");
-        if (!Directory.Exists(dualRunDir)) return DualRunGateState.Missing();
-
-        var latest = Directory.GetFiles(dualRunDir, "dualrun_*.json")
-            .Select(path => new FileInfo(path))
-            .OrderByDescending(fi => fi.LastWriteTimeUtc)
-            .ThenByDescending(fi => fi.Name)
-            .FirstOrDefault();
-
-        if (latest is null) return DualRunGateState.Missing();
-
-        try
-        {
-            using var doc = JsonDocument.Parse(File.ReadAllText(latest.FullName));
-            if (!doc.RootElement.TryGetProperty("Recommendation", out var recElement))
-            {
-                return DualRunGateState.Unreadable(latest.FullName, "Recommendation property missing.");
-            }
-
-            var recommendation = recElement.GetString() ?? string.Empty;
-            var accepted = string.Equals(recommendation, DualRunRecommendation.ReadyForRuntimeSwitchCandidate.ToString(), StringComparison.Ordinal);
-            return DualRunGateState.FromRecommendation(latest.FullName, recommendation, accepted);
-        }
-        catch (Exception ex)
-        {
-            return DualRunGateState.Unreadable(latest.FullName, ex.Message);
-        }
+        return new RuntimeProviderGateResult(RuntimeProviderGateStatus.Allowed, sqliteExists, schemaReady, reposReady, accessAvailable, dualRun.ReportPath, dualRun.Status == DualRunEvidenceStatus.Accepted, null, issues);
     }
 
     private sealed record ParsedProviderRequest(DatabaseProviderKind RequestedProvider, bool IsValid, string? RawValue);
-    private sealed record DualRunGateState(bool Exists, bool Readable, bool Accepted, string? LatestReportPath, string? Recommendation, string? Detail)
-    {
-        public static DualRunGateState Missing() => new(false, false, false, null, null, null);
-        public static DualRunGateState Unreadable(string path, string detail) => new(true, false, false, path, null, detail);
-        public static DualRunGateState FromRecommendation(string path, string recommendation, bool accepted) => new(true, true, accepted, path, recommendation, null);
-    }
 }

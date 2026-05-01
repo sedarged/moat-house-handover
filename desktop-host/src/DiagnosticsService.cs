@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 
 using MoatHouseHandover.Host.Backup;
+using MoatHouseHandover.Host.WorkstationVerification;
 
 namespace MoatHouseHandover.Host;
 
@@ -80,6 +81,19 @@ public sealed class DiagnosticsService
         AddCheck(checks, "runtime_provider.sqlite_gate.dualrun_accepted", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.dualrun_accepted", _runtimeStatus.ProviderGateStatus == RuntimeProviderGateStatus.Allowed && _runtimeStatus.RuntimeSwitchEnabled ? "ok" : "warning", "Dual-run report acceptance for runtime switch candidate.", _runtimeStatus.ProviderFallbackReason ?? _runtimeStatus.ProviderGateStatus.ToString()));
         AddCheck(checks, "runtime_provider.sqlite_gate.result", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.result", _runtimeStatus.ProviderGateStatus == RuntimeProviderGateStatus.Allowed ? "ok" : "warning", "SQLite provider gate result.", _runtimeStatus.ProviderGateStatus.ToString()));
         AddCheck(checks, "runtime_provider.fallback_accesslegacy_available", () => new DiagnosticsCheckResult("runtime_provider.fallback_accesslegacy_available", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "failed", "AccessLegacy fallback availability.", _runtimeStatus.AccessDatabasePath));
+
+        var pilotReadiness = new PilotReadinessService().Evaluate(_runtimeStatus, _config, _pathResolution);
+        AddCheck(checks, "workstation.windows.detected", () => new DiagnosticsCheckResult("workstation.windows.detected", pilotReadiness.Evidence.Snapshot.WindowsDetected ? "ok" : "warning", "Windows workstation detection.", pilotReadiness.Evidence.Snapshot.WindowsDetected.ToString()));
+        AddCheck(checks, "workstation.m_drive.exists", () => new DiagnosticsCheckResult("workstation.m_drive.exists", pilotReadiness.Evidence.Snapshot.MDriveRootDetected ? "ok" : "warning", "M: data root detection.", _pathResolution.Paths.DataRoot));
+        AddCheck(checks, "workstation.access_db.exists", () => new DiagnosticsCheckResult("workstation.access_db.exists", pilotReadiness.Evidence.Snapshot.AccessDbExists ? "ok" : "failed", "Access DB presence.", _runtimeStatus.AccessDatabasePath));
+        AddCheck(checks, "workstation.sqlite_db.exists", () => new DiagnosticsCheckResult("workstation.sqlite_db.exists", pilotReadiness.Evidence.Snapshot.SqliteDbExists ? "ok" : "warning", "SQLite DB presence.", _runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "workstation.backup_root.write", () => new DiagnosticsCheckResult("workstation.backup_root.write", pilotReadiness.Evidence.Snapshot.BackupRootWritable ? "ok" : "warning", "Backup root write check.", _pathResolution.Paths.Backups));
+        AddCheck(checks, "workstation.migration_dualrun.write", () => new DiagnosticsCheckResult("workstation.migration_dualrun.write", pilotReadiness.Evidence.Snapshot.DualRunFolderWritable ? "ok" : "warning", "Dual-run folder write check.", System.IO.Path.Combine(_pathResolution.Paths.Migration, "DualRun")));
+        AddCheck(checks, "workstation.latest_dualrun.accepted", () => new DiagnosticsCheckResult("workstation.latest_dualrun.accepted", pilotReadiness.Pilot.DualRunEvidence.Status == MoatHouseHandover.Host.DualRun.DualRunEvidenceStatus.Accepted ? "ok" : "warning", "Latest dual-run acceptance status.", pilotReadiness.Pilot.DualRunEvidence.Status.ToString()));
+        AddCheck(checks, "workstation.pilot_readiness.status", () => new DiagnosticsCheckResult("workstation.pilot_readiness.status", pilotReadiness.Pilot.Status == PilotReadinessStatus.ReadyForControlledPilot ? "ok" : "warning", "Controlled pilot readiness status.", pilotReadiness.Pilot.Status.ToString()));
+        AddCheck(checks, "runtime_provider.sqlite_gate.evidence_validator", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.evidence_validator", _runtimeStatus.ProviderGateStatus == RuntimeProviderGateStatus.Allowed || _runtimeStatus.EffectiveProvider == DatabaseProviderKind.AccessLegacy ? "ok" : "warning", "SQLite gate uses dual-run evidence validator aligned rules.", _runtimeStatus.ProviderGateStatus.ToString()));
+        AddCheck(checks, "runtime_provider.controlled_pilot.ready", () => new DiagnosticsCheckResult("runtime_provider.controlled_pilot.ready", pilotReadiness.Pilot.Status == PilotReadinessStatus.ReadyForControlledPilot ? "ok" : "warning", "Controlled pilot readiness gate.", pilotReadiness.Pilot.RecommendedNextAction));
+
 AddCheck(checks, "database.provider.info", () =>
         {
             var info = _dataProvider.GetInfo();

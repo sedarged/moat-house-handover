@@ -43,3 +43,7 @@ Any unresolved mismatches block runtime switch work. Phase 9 is runtime switch p
 
 ## Phase 9A follow-on
 Dual-run report existence is now consumed as a runtime provider gate for SQLite opt-in selection. Missing evidence triggers AccessLegacy fallback by default.
+
+
+## Phase 9B update
+- Latest dual-run report is now validated for acceptance/staleness before controlled pilot readiness and SQLite runtime gate decisions.
