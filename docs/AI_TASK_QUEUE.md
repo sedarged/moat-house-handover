@@ -80,3 +80,8 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - Next queued: Phase 9B workstation evidence capture and controlled SQLite pilot.
 
 - [x] Phase 9B: workstation evidence validator + controlled pilot readiness checks/docs
+
+
+## Phase 9C update
+- [x] Phase 9C: explicit workstation dual-run evidence runner (service + safe script + CLI/headless entry + docs).
+- Next queued: Phase 10A controlled SQLite pilot run (AccessLegacy default remains unchanged until pilot decision).

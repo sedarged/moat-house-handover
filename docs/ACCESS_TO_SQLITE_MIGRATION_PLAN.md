@@ -68,3 +68,9 @@ Phase 9A introduces guarded provider selection and repository factory wiring. Ac
 
 ## Phase 9B update
 - Added workstation evidence capture + controlled pilot readiness layer. Phase 10 is controlled pilot/default-switch only after accepted evidence.
+
+
+## Phase 9C update
+Phase 9C adds explicit workstation dual-run evidence execution/validation tooling (runner service + script/CLI).
+No runtime default switch occurs in Phase 9C.
+Next phase remains Phase 10A controlled SQLite pilot run after accepted workstation evidence.

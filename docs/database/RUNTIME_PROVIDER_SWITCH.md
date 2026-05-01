@@ -16,3 +16,8 @@ Next:
 ## Phase 9B update
 - Added workstation dual-run evidence validation and controlled SQLite pilot readiness checks.
 - AccessLegacy remains default safe provider; SQLite remains explicit opt-in with gated accepted evidence.
+
+
+## Phase 9C update
+A dedicated workstation evidence runner is now available (`--dualrun-evidence` and `scripts/run-workstation-dualrun.ps1`).
+This does not change runtime provider selection behavior: default remains `AccessLegacy`, and SQLite remains explicit opt-in with gate/fallback.
