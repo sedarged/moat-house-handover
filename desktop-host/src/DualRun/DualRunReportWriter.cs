@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MoatHouseHandover.Host.DualRun;
 
@@ -15,7 +16,7 @@ public sealed class DualRunReportWriter
         var stamp = DateTime.UtcNow.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
         var jsonPath = Path.Combine(result.Options.ReportOutputFolder, $"dualrun_{stamp}.json");
         var txtPath = Path.Combine(result.Options.ReportOutputFolder, $"dualrun_{stamp}.txt");
-        File.WriteAllText(jsonPath, JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(jsonPath, JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true, Converters = { new JsonStringEnumConverter() } }));
 
         var sb = new StringBuilder();
         sb.AppendLine("Dual-run Access vs SQLite verification");

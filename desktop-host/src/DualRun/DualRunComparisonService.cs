@@ -60,7 +60,7 @@ public sealed class DualRunComparisonService
                 () => accessBudget.LoadBudgetSummary(sessionA.SessionId),
                 () => sqliteBudget.LoadBudgetSummary(sessionS.SessionId),
                 options.NormalizePathSeparators));
-            results.Add(Skipped("BudgetRepository", "LoadBudget", "Skipped — mutating method not allowed in Phase 8 read-only dual-run."));
+            results.Add(SkippedExpected("BudgetRepository", "LoadBudget", "Skipped — mutating method not allowed in Phase 8 read-only dual-run."));
 
             results.Add(SafeCompare("PreviewRepository", "LoadPreview",
                 () => accessPreview.LoadPreview(sessionA.SessionId),
@@ -101,7 +101,7 @@ public sealed class DualRunComparisonService
             ? DualRunRecommendation.BlockedEnvironment
             : results.Any(r => r.Status is DualRunComparisonStatus.Mismatch)
             ? DualRunRecommendation.NotReadyMismatchFound
-            : results.Any(r => r.Status == DualRunComparisonStatus.Skipped)
+            : HasBlockingSkip(results)
                 ? DualRunRecommendation.NotReadyVerificationIncomplete
                 : DualRunRecommendation.ReadyForRuntimeSwitchCandidate;
 
@@ -127,8 +127,13 @@ public sealed class DualRunComparisonService
         return new DualRunRepositoryResult(repo, method, warningOnly ? DualRunComparisonStatus.MatchWithWarnings : DualRunComparisonStatus.Mismatch, aJson, sJson, "Payload mismatch detected.", new[] { issue });
     }
 
-    private static DualRunRepositoryResult Skipped(string repo, string method, string reason)
-        => new(repo, method, DualRunComparisonStatus.Skipped, null, null, reason, new[] { new DualRunIssue(repo, method, "method", DualRunSeverity.Info, reason, null, null) });
+
+    private static DualRunRepositoryResult SkippedExpected(string repo, string method, string reason)
+        => new(repo, method, DualRunComparisonStatus.Skipped, null, null, reason, new[] { new DualRunIssue(repo, method, "expected_skip", DualRunSeverity.Info, reason, null, null) });
+
+    private static bool HasBlockingSkip(IReadOnlyList<DualRunRepositoryResult> results)
+        => results.Any(r => r.Status == DualRunComparisonStatus.Skipped
+            && !r.Issues.Any(i => string.Equals(i.Path, "expected_skip", StringComparison.OrdinalIgnoreCase)));
 
     private DualRunRepositoryResult SafeCompare(string repo, string method, Func<object?> accessCall, Func<object?> sqliteCall, bool normalizePaths, bool warningOnly = false)
     {
