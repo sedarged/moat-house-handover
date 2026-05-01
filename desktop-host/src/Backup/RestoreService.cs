@@ -22,12 +22,32 @@ public sealed class RestoreService
         if (options.Mode == RestoreMode.ValidateOnly) return WriteReport(options, BackupOperationStatus.Success, issues);
         if (options.Mode == RestoreMode.RestoreToLive)
         {
+            foreach (var file in plan.Files)
+            {
+                if (!IsApprovedLiveTarget(file.SourcePath))
+                {
+                    issues.Add(new BackupIssue(BackupSeverity.Error, "restore.target.outside_approved_root", "Restore target is outside approved runtime paths.", file.SourcePath));
+                }
+            }
+
+            if (issues.Any(i => i.Severity == BackupSeverity.Error)) return WriteReport(options, BackupOperationStatus.Failed, issues);
+
             var pre = _backup.CreateBackup(new BackupOptions(BackupKind.PreRestore, options.Actor));
             if (pre.Status == BackupOperationStatus.Failed) return WriteReport(options, BackupOperationStatus.Failed, [..issues, ..pre.Issues]);
         }
 
         var stageRoot = options.Mode == RestoreMode.RestoreToStaging ? (options.StagingRoot ?? Path.Combine(_paths.Paths.Migration, "restore-staging", DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss"))) : null;
-        if (stageRoot is not null) Directory.CreateDirectory(stageRoot);
+        if (stageRoot is not null)
+        {
+            var fullStage = Path.GetFullPath(stageRoot);
+            var approvedStageBase = Path.GetFullPath(_paths.Paths.Migration);
+            if (!fullStage.StartsWith(approvedStageBase, StringComparison.OrdinalIgnoreCase))
+            {
+                issues.Add(new BackupIssue(BackupSeverity.Error, "restore.staging.outside_migration", "Staging root must be within migration path.", fullStage));
+                return WriteReport(options, BackupOperationStatus.Failed, issues);
+            }
+            Directory.CreateDirectory(stageRoot);
+        }
 
         foreach (var file in plan.Files)
         {
@@ -39,6 +59,21 @@ public sealed class RestoreService
             File.Copy(src, dest, true);
         }
         return WriteReport(options, BackupOperationStatus.Success, issues);
+    }
+
+    private bool IsApprovedLiveTarget(string sourcePath)
+    {
+        var target = Path.GetFullPath(sourcePath);
+        var approvedRoot = Path.GetFullPath(AppPathService.ApprovedDataRoot);
+        var accessPath = Path.GetFullPath(_runtime.AccessDatabasePath);
+        var sqlitePath = Path.GetFullPath(_runtime.TargetSqlitePath);
+        var migrationPath = Path.GetFullPath(_paths.Paths.Migration);
+
+        if (target.StartsWith(approvedRoot, StringComparison.OrdinalIgnoreCase)) return true;
+        if (string.Equals(target, accessPath, StringComparison.OrdinalIgnoreCase)) return true;
+        if (string.Equals(target, sqlitePath, StringComparison.OrdinalIgnoreCase)) return true;
+        if (target.StartsWith(migrationPath, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 
     private RestoreResult WriteReport(RestoreOptions options, BackupOperationStatus status, IReadOnlyList<BackupIssue> issues)

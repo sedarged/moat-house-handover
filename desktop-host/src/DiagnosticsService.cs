@@ -164,16 +164,12 @@ public sealed class DiagnosticsService
         AddCheck(checks, "migration.current_runtime_provider", () => new DiagnosticsCheckResult("migration.current_runtime_provider", "ok", "Runtime provider remains AccessLegacy.", "AccessLegacy"));
         AddCheck(checks, "migration.last_report.exists", CheckMigrationLastReport);
 
-        var backupService = new BackupService(_runtimeStatus, _pathResolution);
         var restorePlanner = new RestorePlanner(_runtimeStatus);
         AddCheck(checks, "backup.root.exists", () => EnsureDirectory("backup.root.exists", _pathResolution.Paths.Backups));
         AddCheck(checks, "backup.root.write", () => EnsureWriteAccess("backup.root.write", _pathResolution.Paths.Backups));
         AddCheck(checks, "backup.current_access.exists", () => new DiagnosticsCheckResult("backup.current_access.exists", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "failed", "Access backup source availability.", _runtimeStatus.AccessDatabasePath));
         AddCheck(checks, "backup.target_sqlite.exists_or_not_yet", () => new DiagnosticsCheckResult("backup.target_sqlite.exists_or_not_yet", File.Exists(_runtimeStatus.TargetSqlitePath) ? "ok" : "warning", File.Exists(_runtimeStatus.TargetSqlitePath) ? "SQLite target exists for backup." : "SQLite target not present yet.", _runtimeStatus.TargetSqlitePath));
-        AddCheck(checks, "backup.can_create_manifest", () => {
-            var result = backupService.CreateBackup(new BackupOptions(BackupKind.Manual, "diagnostics", false, false));
-            return new DiagnosticsCheckResult("backup.can_create_manifest", result.Status == BackupOperationStatus.Failed ? "failed" : "ok", "Backup manifest creation check.", result.ManifestPath);
-        });
+        AddCheck(checks, "backup.can_create_manifest", CheckBackupManifestProbe);
         AddCheck(checks, "backup.latest.exists", CheckLatestBackupExists);
         AddCheck(checks, "restore.latest_manifest.valid_if_present", () => CheckLatestBackupManifest(restorePlanner));
         AddCheck(checks, "restore.pre_restore_backup.required", () => new DiagnosticsCheckResult("restore.pre_restore_backup.required", "ok", "Live restore requires PreRestore backup by service contract.", "enforced"));
@@ -412,6 +408,33 @@ WHERE s.ShiftCode = ?", connection);
         return new DiagnosticsCheckResult("sqlite.shared_drive_policy", "warning", "SQLite target journal mode is non-WAL but not DELETE; confirm policy expectations.", $"journal_mode={mode}");
     }
 
+
+
+    private DiagnosticsCheckResult CheckBackupManifestProbe()
+    {
+        try
+        {
+            Directory.CreateDirectory(_pathResolution.Paths.Backups);
+            var probeDir = Path.Combine(_pathResolution.Paths.Backups, ".manifest_probe_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(probeDir);
+            var probeManifest = new BackupManifest(
+                BackupId: "probe",
+                Kind: BackupKind.Manual,
+                CreatedUtc: DateTimeOffset.UtcNow,
+                Actor: "diagnostics-probe",
+                BackupRoot: _pathResolution.Paths.Backups,
+                Files: []);
+            var probePath = Path.Combine(probeDir, "manifest.json");
+            File.WriteAllText(probePath, System.Text.Json.JsonSerializer.Serialize(probeManifest));
+            File.Delete(probePath);
+            Directory.Delete(probeDir, false);
+            return new DiagnosticsCheckResult("backup.can_create_manifest", "ok", "Can serialize and write/delete backup manifest probe without creating real backup.", _pathResolution.Paths.Backups);
+        }
+        catch (Exception ex)
+        {
+            return new DiagnosticsCheckResult("backup.can_create_manifest", "failed", "Backup manifest probe failed.", ex.Message);
+        }
+    }
 
     private DiagnosticsCheckResult CheckLatestBackupExists()
     {
