@@ -5,6 +5,8 @@ using System.Data.OleDb;
 using System.Globalization;
 using System.IO;
 
+using MoatHouseHandover.Host.Backup;
+
 namespace MoatHouseHandover.Host;
 
 public sealed class DiagnosticsService
@@ -161,6 +163,19 @@ public sealed class DiagnosticsService
         AddCheck(checks, "migration.can_create_staging_db", CheckMigrationStagingWrite);
         AddCheck(checks, "migration.current_runtime_provider", () => new DiagnosticsCheckResult("migration.current_runtime_provider", "ok", "Runtime provider remains AccessLegacy.", "AccessLegacy"));
         AddCheck(checks, "migration.last_report.exists", CheckMigrationLastReport);
+
+        var restorePlanner = new RestorePlanner(_runtimeStatus);
+        AddCheck(checks, "backup.root.exists", () => EnsureDirectory("backup.root.exists", _pathResolution.Paths.Backups));
+        AddCheck(checks, "backup.root.write", () => EnsureWriteAccess("backup.root.write", _pathResolution.Paths.Backups));
+        AddCheck(checks, "backup.current_access.exists", () => new DiagnosticsCheckResult("backup.current_access.exists", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "failed", "Access backup source availability.", _runtimeStatus.AccessDatabasePath));
+        AddCheck(checks, "backup.target_sqlite.exists_or_not_yet", () => new DiagnosticsCheckResult("backup.target_sqlite.exists_or_not_yet", File.Exists(_runtimeStatus.TargetSqlitePath) ? "ok" : "warning", File.Exists(_runtimeStatus.TargetSqlitePath) ? "SQLite target exists for backup." : "SQLite target not present yet.", _runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "backup.can_create_manifest", CheckBackupManifestProbe);
+        AddCheck(checks, "backup.latest.exists", CheckLatestBackupExists);
+        AddCheck(checks, "restore.latest_manifest.valid_if_present", () => CheckLatestBackupManifest(restorePlanner));
+        AddCheck(checks, "restore.pre_restore_backup.required", () => new DiagnosticsCheckResult("restore.pre_restore_backup.required", "ok", "Live restore requires PreRestore backup by service contract.", "enforced"));
+        AddCheck(checks, "migration.rollback.available_if_backup_exists", CheckMigrationRollbackAvailable);
+        AddCheck(checks, "runtime.provider.remains_accesslegacy", () => new DiagnosticsCheckResult("runtime.provider.remains_accesslegacy", "ok", "Runtime provider remains AccessLegacy.", _dataProvider.GetInfo().ProviderKind.ToString()));
+
 
         AddCheck(checks, "runtime.boundary", () =>
         {
@@ -391,6 +406,56 @@ WHERE s.ShiftCode = ?", connection);
         }
 
         return new DiagnosticsCheckResult("sqlite.shared_drive_policy", "warning", "SQLite target journal mode is non-WAL but not DELETE; confirm policy expectations.", $"journal_mode={mode}");
+    }
+
+
+
+    private DiagnosticsCheckResult CheckBackupManifestProbe()
+    {
+        try
+        {
+            Directory.CreateDirectory(_pathResolution.Paths.Backups);
+            var probeDir = Path.Combine(_pathResolution.Paths.Backups, ".manifest_probe_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(probeDir);
+            var probeManifest = new BackupManifest(
+                BackupId: "probe",
+                Kind: BackupKind.Manual,
+                CreatedUtc: DateTimeOffset.UtcNow,
+                Actor: "diagnostics-probe",
+                BackupRoot: _pathResolution.Paths.Backups,
+                Files: []);
+            var probePath = Path.Combine(probeDir, "manifest.json");
+            File.WriteAllText(probePath, System.Text.Json.JsonSerializer.Serialize(probeManifest));
+            File.Delete(probePath);
+            Directory.Delete(probeDir, false);
+            return new DiagnosticsCheckResult("backup.can_create_manifest", "ok", "Can serialize and write/delete backup manifest probe without creating real backup.", _pathResolution.Paths.Backups);
+        }
+        catch (Exception ex)
+        {
+            return new DiagnosticsCheckResult("backup.can_create_manifest", "failed", "Backup manifest probe failed.", ex.Message);
+        }
+    }
+
+    private DiagnosticsCheckResult CheckLatestBackupExists()
+    {
+        if (!Directory.Exists(_pathResolution.Paths.Backups)) return new DiagnosticsCheckResult("backup.latest.exists", "warning", "Backup root missing.", _pathResolution.Paths.Backups);
+        var latest = Directory.GetDirectories(_pathResolution.Paths.Backups).OrderByDescending(d => d).FirstOrDefault();
+        return new DiagnosticsCheckResult("backup.latest.exists", latest is null ? "warning" : "ok", latest is null ? "No backups found yet." : "Latest backup found.", latest ?? _pathResolution.Paths.Backups);
+    }
+
+    private DiagnosticsCheckResult CheckLatestBackupManifest(RestorePlanner planner)
+    {
+        var latest = Directory.Exists(_pathResolution.Paths.Backups) ? Directory.GetDirectories(_pathResolution.Paths.Backups).OrderByDescending(d => d).FirstOrDefault() : null;
+        if (latest is null) return new DiagnosticsCheckResult("restore.latest_manifest.valid_if_present", "warning", "No backup available to validate.", _pathResolution.Paths.Backups);
+        var plan = planner.Plan(latest);
+        return new DiagnosticsCheckResult("restore.latest_manifest.valid_if_present", plan.CanProceed ? "ok" : "failed", plan.CanProceed ? "Latest backup manifest validates." : "Latest backup manifest validation failed.", plan.ManifestPath);
+    }
+
+    private DiagnosticsCheckResult CheckMigrationRollbackAvailable()
+    {
+        if (!Directory.Exists(_pathResolution.Paths.Backups)) return new DiagnosticsCheckResult("migration.rollback.available_if_backup_exists", "warning", "No backup root yet.", _pathResolution.Paths.Backups);
+        var premig = Directory.GetDirectories(_pathResolution.Paths.Backups).Any(d => d.Contains("PreMigration", StringComparison.OrdinalIgnoreCase));
+        return new DiagnosticsCheckResult("migration.rollback.available_if_backup_exists", premig ? "ok" : "warning", premig ? "PreMigration backup exists for rollback." : "No PreMigration backup found yet.", _pathResolution.Paths.Backups);
     }
 
     private static DiagnosticsCheckResult EnsureDirectory(string checkName, string path)

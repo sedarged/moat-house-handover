@@ -54,4 +54,11 @@ For implementation tasks, Codex Web must use CODE MODE and must either:
 
 Do not accept advice-only answers for implementation tasks unless the task explicitly says Ask/analysis only.
 
-- Phase 5 importer/validator/reporting implementation in progress (this PR scope).
+- Phase 5 importer/validator/reporting implementation complete in PR #29.
+- Phase 6 backup/restore/rollback foundation in progress in this PR.
+
+
+## Phase 6 progress
+- Backup/restore/rollback foundation implemented host-side (service/model/diagnostic layer).
+- Retention planning added as dry-run only (no default deletion).
+- Next queued PR: Phase 7 — SQLite repository implementations.
