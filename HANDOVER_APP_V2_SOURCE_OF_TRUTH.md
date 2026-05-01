@@ -839,3 +839,7 @@ Screenshot rules:
 - clearly state whether screenshots are browser/mock or real WPF/WebView2
 - admin-only Diagnostics screenshot must be labelled/understood as admin-only evidence
 - normal workflow screenshots must not show Settings/Diagnostics as normal operator/supervisor actions
+
+## Roadmap update — Phase 10 foundation
+- Data foundation: app-owned data root, SQLite app-owned DB, AccessLegacy fallback/import source, backups, diagnostics.
+- UI roadmap: Phase 10C Main Menu + App Shell UI; 10D Shift Dashboards; 10E Handover Session; 10F Department Board; 10G Budget; 10H Attachments; 10I Preview/Reports/Export; 10J Admin/Diagnostics/Settings.

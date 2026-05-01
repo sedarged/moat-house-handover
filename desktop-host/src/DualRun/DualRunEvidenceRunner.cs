@@ -9,7 +9,8 @@ public sealed record DualRunEvidenceRunRequest(
     string ShiftCode,
     DateTime ShiftDate,
     string UserName,
-    IReadOnlyList<string> SelectedDepartments);
+    IReadOnlyList<string> SelectedDepartments,
+    string? DataRoot = null);
 
 public sealed record DualRunEvidenceRunResult(
     bool Success,
@@ -33,11 +34,13 @@ public sealed class DualRunEvidenceRunner
     {
         var shiftCode = NormalizeShiftCode(request.ShiftCode);
         var departments = NormalizeDepartments(request.SelectedDepartments);
+        var root = AppData.AppDataRootInitializer.BuildRoot(AppData.AppDataRootInitializer.ResolveDataRoot(request.DataRoot));
+
         var options = new DualRunOptions(
-            AccessDatabasePath: @"M:\Moat House\MoatHouse Handover\Data\moat_handover_be.accdb",
-            SqliteDatabasePath: @"M:\Moat House\MoatHouse Handover\Data\moat-house.db",
-            ApprovedDataRoot: @"M:\Moat House\MoatHouse Handover\",
-            ReportOutputFolder: @"M:\Moat House\MoatHouse Handover\Migration\DualRun\",
+            AccessDatabasePath: root.AccessLegacyDatabasePath,
+            SqliteDatabasePath: root.SqliteDatabasePath,
+            ApprovedDataRoot: root.DataRoot,
+            ReportOutputFolder: root.DualRunFolder,
             SessionId: null,
             ShiftDate: request.ShiftDate,
             ShiftCode: shiftCode,

@@ -21,4 +21,6 @@ public sealed record HostRuntimeStatus(
     string ApprovedDataRoot,
     string? LatestDualRunReportPath,
     bool RuntimeSwitchEnabled,
-    string ProviderStatusMessage);
+    string ProviderStatusMessage,
+    string AppDataOwnershipStatus,
+    bool AppDataFirstRunInitialized);
