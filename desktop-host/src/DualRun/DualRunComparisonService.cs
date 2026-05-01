@@ -16,54 +16,90 @@ public sealed class DualRunComparisonService
         var started = DateTime.UtcNow;
         var results = new List<DualRunRepositoryResult>();
         var accessSession = new SessionRepository(options.AccessDatabasePath);
-        var sqliteSession = new SqliteSessionRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
+        var sqliteSession = new SqliteSessionRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
+        var accessDept = new DepartmentRepository(options.AccessDatabasePath);
+        var sqliteDept = new SqliteDepartmentRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
+        var accessBudget = new BudgetRepository(options.AccessDatabasePath);
+        var sqliteBudget = new SqliteBudgetRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
+        var accessPreview = new PreviewRepository(options.AccessDatabasePath);
+        var sqlitePreview = new SqlitePreviewRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
+        var accessAttachment = new AttachmentRepository(options.AccessDatabasePath);
+        var sqliteAttachment = new SqliteAttachmentRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
+        var accessEmail = new EmailProfileRepository(options.AccessDatabasePath);
+        var sqliteEmail = new SqliteEmailProfileRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
+        var accessAudit = new AuditLogRepository(options.AccessDatabasePath);
+        var sqliteAudit = new SqliteAuditLogRepository(options.SqliteDatabasePath, options.ApprovedDataRoot);
 
-        var sessionA = accessSession.OpenExistingSession(options.ShiftCode, options.ShiftDate ?? DateTime.Today, options.UserName);
-        var sessionS = sqliteSession.OpenExistingSession(options.ShiftCode, options.ShiftDate ?? DateTime.Today, options.UserName);
-        results.Add(Compare("SessionRepository", "OpenExistingSession", sessionA, sessionS, options.NormalizePathSeparators));
+        var sessionComparison = SafeCompare(
+            "SessionRepository",
+            "OpenExistingSession",
+            () => accessSession.OpenExistingSession(options.ShiftCode, options.ShiftDate ?? DateTime.Today, options.UserName),
+            () => sqliteSession.OpenExistingSession(options.ShiftCode, options.ShiftDate ?? DateTime.Today, options.UserName),
+            options.NormalizePathSeparators);
+        results.Add(sessionComparison);
 
-        if (sessionA is not null && sessionS is not null)
+        if (sessionComparison.Status is DualRunComparisonStatus.Match or DualRunComparisonStatus.MatchWithWarnings && sessionComparison.AccessPayload is not null && sessionComparison.SqlitePayload is not null)
         {
-            var accessDept = new DepartmentRepository(options.AccessDatabasePath);
-            var sqliteDept = new SqliteDepartmentRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
+            var sessionA = accessSession.OpenExistingSession(options.ShiftCode, options.ShiftDate ?? DateTime.Today, options.UserName);
+            var sessionS = sqliteSession.OpenExistingSession(options.ShiftCode, options.ShiftDate ?? DateTime.Today, options.UserName);
+            if (sessionA is null || sessionS is null)
+            {
+                results.Add(Failed("SessionRepository", "OpenExistingSession", "Session payload was not available for follow-on repository comparisons."));
+            }
+            else
+            {
             foreach (var dept in options.SelectedDepartments.DefaultIfEmpty("Injection"))
             {
-                results.Add(Compare("DepartmentRepository", "LoadDepartment", accessDept.LoadDepartment(sessionA.SessionId, dept), sqliteDept.LoadDepartment(sessionS.SessionId, dept), options.NormalizePathSeparators));
+                results.Add(SafeCompare("DepartmentRepository", $"LoadDepartment({dept})",
+                    () => accessDept.LoadDepartment(sessionA.SessionId, dept),
+                    () => sqliteDept.LoadDepartment(sessionS.SessionId, dept),
+                    options.NormalizePathSeparators));
             }
 
-            var accessBudget = new BudgetRepository(options.AccessDatabasePath);
-            var sqliteBudget = new SqliteBudgetRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
-            results.Add(Compare("BudgetRepository", "LoadBudgetSummary", accessBudget.LoadBudgetSummary(sessionA.SessionId), sqliteBudget.LoadBudgetSummary(sessionS.SessionId), options.NormalizePathSeparators));
+            results.Add(SafeCompare("BudgetRepository", "LoadBudgetSummary",
+                () => accessBudget.LoadBudgetSummary(sessionA.SessionId),
+                () => sqliteBudget.LoadBudgetSummary(sessionS.SessionId),
+                options.NormalizePathSeparators));
             results.Add(Skipped("BudgetRepository", "LoadBudget", "Skipped — mutating method not allowed in Phase 8 read-only dual-run."));
 
-            var accessPreview = new PreviewRepository(options.AccessDatabasePath);
-            var sqlitePreview = new SqlitePreviewRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
-            results.Add(Compare("PreviewRepository", "LoadPreview", accessPreview.LoadPreview(sessionA.SessionId), sqlitePreview.LoadPreview(sessionS.SessionId), options.NormalizePathSeparators));
-
-            var accessAttachment = new AttachmentRepository(options.AccessDatabasePath);
-            var sqliteAttachment = new SqliteAttachmentRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
+            results.Add(SafeCompare("PreviewRepository", "LoadPreview",
+                () => accessPreview.LoadPreview(sessionA.SessionId),
+                () => sqlitePreview.LoadPreview(sessionS.SessionId),
+                options.NormalizePathSeparators));
             foreach (var dept in sessionA.Departments.Take(3))
             {
-                var accessDeptPayload = accessDept.LoadDepartment(sessionA.SessionId, dept.DeptName);
-                var sqliteDeptPayload = sqliteDept.LoadDepartment(sessionS.SessionId, dept.DeptName);
-                var la = accessAttachment.ListAttachments(sessionA.SessionId, accessDeptPayload.DeptRecordId, dept.DeptName);
-                var ls = sqliteAttachment.ListAttachments(sessionS.SessionId, sqliteDeptPayload.DeptRecordId, dept.DeptName);
-                results.Add(Compare("AttachmentRepository", "ListAttachments", la, ls, options.NormalizePathSeparators));
+                results.Add(SafeCompare("AttachmentRepository", $"ListAttachments({dept.DeptName})", () =>
+                    {
+                        var accessDeptPayload = accessDept.LoadDepartment(sessionA.SessionId, dept.DeptName);
+                        return accessAttachment.ListAttachments(sessionA.SessionId, accessDeptPayload.DeptRecordId, dept.DeptName);
+                    },
+                    () =>
+                    {
+                        var sqliteDeptPayload = sqliteDept.LoadDepartment(sessionS.SessionId, dept.DeptName);
+                        return sqliteAttachment.ListAttachments(sessionS.SessionId, sqliteDeptPayload.DeptRecordId, dept.DeptName);
+                    },
+                    options.NormalizePathSeparators));
+            }
             }
         }
 
-        var accessEmail = new EmailProfileRepository(options.AccessDatabasePath);
-        var sqliteEmail = new SqliteEmailProfileRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
         foreach (var shift in new[] { "AM", "PM", "NS" })
         {
-            results.Add(Compare("EmailProfileRepository", $"LoadByShiftCode({shift})", accessEmail.LoadByShiftCode(shift), sqliteEmail.LoadByShiftCode(shift), options.NormalizePathSeparators));
+            results.Add(SafeCompare("EmailProfileRepository", $"LoadByShiftCode({shift})",
+                () => accessEmail.LoadByShiftCode(shift),
+                () => sqliteEmail.LoadByShiftCode(shift),
+                options.NormalizePathSeparators));
         }
 
-        var accessAudit = new AuditLogRepository(options.AccessDatabasePath);
-        var sqliteAudit = new SqliteAuditLogRepository(options.SqliteDatabasePath, options.ReportOutputFolder);
-        results.Add(Compare("AuditLogRepository", "ListRecent", accessAudit.ListRecent(options.AuditLimit), sqliteAudit.ListRecent(options.AuditLimit), options.NormalizePathSeparators, warningOnly: true));
+        results.Add(SafeCompare("AuditLogRepository", "ListRecent",
+            () => accessAudit.ListRecent(options.AuditLimit),
+            () => sqliteAudit.ListRecent(options.AuditLimit),
+            options.NormalizePathSeparators,
+            warningOnly: true));
 
-        var recommendation = results.Any(r => r.Status is DualRunComparisonStatus.Mismatch or DualRunComparisonStatus.Failed)
+        var recommendation = results.Any(r => r.Status == DualRunComparisonStatus.Failed)
+            ? DualRunRecommendation.BlockedEnvironment
+            : results.Any(r => r.Status is DualRunComparisonStatus.Mismatch)
             ? DualRunRecommendation.NotReadyMismatchFound
             : results.Any(r => r.Status == DualRunComparisonStatus.Skipped)
                 ? DualRunRecommendation.NotReadyVerificationIncomplete
@@ -93,6 +129,30 @@ public sealed class DualRunComparisonService
 
     private static DualRunRepositoryResult Skipped(string repo, string method, string reason)
         => new(repo, method, DualRunComparisonStatus.Skipped, null, null, reason, new[] { new DualRunIssue(repo, method, "method", DualRunSeverity.Info, reason, null, null) });
+
+    private DualRunRepositoryResult SafeCompare(string repo, string method, Func<object?> accessCall, Func<object?> sqliteCall, bool normalizePaths, bool warningOnly = false)
+    {
+        try
+        {
+            var accessPayload = accessCall();
+            var sqlitePayload = sqliteCall();
+            return Compare(repo, method, accessPayload, sqlitePayload, normalizePaths, warningOnly);
+        }
+        catch (Exception ex)
+        {
+            return Failed(repo, method, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static DualRunRepositoryResult Failed(string repo, string method, string message)
+        => new(
+            repo,
+            method,
+            DualRunComparisonStatus.Failed,
+            null,
+            null,
+            "Comparison failed due to repository exception.",
+            new[] { new DualRunIssue(repo, method, "exception", DualRunSeverity.Error, message, null, null) });
 
     private static string Trim(string value) => value.Length > 1200 ? value[..1200] + "...<trimmed>" : value;
 }

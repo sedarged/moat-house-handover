@@ -22,6 +22,8 @@ public sealed class DualRunReportWriter
         sb.AppendLine($"Runtime provider: {result.ActiveRuntimeProvider}");
         sb.AppendLine($"Access DB: {result.Options.AccessDatabasePath}");
         sb.AppendLine($"SQLite DB: {result.Options.SqliteDatabasePath}");
+        sb.AppendLine($"Approved Data Root: {result.Options.ApprovedDataRoot}");
+        sb.AppendLine($"Report Output Folder: {result.Options.ReportOutputFolder}");
         sb.AppendLine($"Mode: {result.Options.VerificationMode}");
         sb.AppendLine($"Session: {result.Options.SessionId?.ToString() ?? "(none)"} | Shift: {result.Options.ShiftCode} | Date: {result.Options.ShiftDate:yyyy-MM-dd}");
         var byStatus = result.RepositoryResults.GroupBy(r => r.Status).ToDictionary(g => g.Key, g => g.Count());

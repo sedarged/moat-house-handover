@@ -22,6 +22,11 @@ Each run writes:
 - `dualrun_YYYY-MM-DD_HH-mm-ss.txt`
 
 Reports include source/target paths, comparison scope, status counts, mismatches/warnings, and recommendation.
+Reports also record the approved SQLite data root separately from the dual-run report output folder.
+
+## Normalization behaviour
+- List/array ordering is preserved by default so ordering mismatches are detectable for contract-sensitive payloads (department summaries, attachments, budget rows, preview data).
+- No global collection sorting is applied.
 
 ## Diagnostics
 Diagnostics now exposes dual-run readiness checks:

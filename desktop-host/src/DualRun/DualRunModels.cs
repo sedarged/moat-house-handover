@@ -37,6 +37,7 @@ public enum DualRunRecommendation
 public sealed record DualRunOptions(
     string AccessDatabasePath,
     string SqliteDatabasePath,
+    string ApprovedDataRoot,
     string ReportOutputFolder,
     long? SessionId,
     DateTime? ShiftDate,

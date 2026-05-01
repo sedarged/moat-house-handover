@@ -19,7 +19,7 @@ public sealed class DualRunPayloadNormalizer
         if (value is IDictionary dict) return NormalizeDictionary(dict, normalizePathSeparators);
         if (value is IEnumerable enumerable && value is not string)
         {
-            return enumerable.Cast<object?>().Select(v => Normalize(v, normalizePathSeparators)).OrderBy(v => JsonSerializer.Serialize(v)).ToList();
+            return enumerable.Cast<object?>().Select(v => Normalize(v, normalizePathSeparators)).ToList();
         }
 
         return NormalizeJsonElement(JsonSerializer.SerializeToElement(value), normalizePathSeparators);
@@ -32,7 +32,7 @@ public sealed class DualRunPayloadNormalizer
             JsonValueKind.Object => element.EnumerateObject()
                 .OrderBy(p => p.Name, StringComparer.Ordinal)
                 .ToDictionary(p => p.Name, p => NormalizeJsonElement(p.Value, normalizePathSeparators)),
-            JsonValueKind.Array => element.EnumerateArray().Select(i => NormalizeJsonElement(i, normalizePathSeparators)).OrderBy(v => JsonSerializer.Serialize(v)).ToList(),
+            JsonValueKind.Array => element.EnumerateArray().Select(i => NormalizeJsonElement(i, normalizePathSeparators)).ToList(),
             JsonValueKind.String => NormalizeString(element.GetString() ?? string.Empty, normalizePathSeparators),
             JsonValueKind.Number => element.GetDouble(),
             JsonValueKind.True => true,
