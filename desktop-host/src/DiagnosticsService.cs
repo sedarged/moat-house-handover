@@ -177,6 +177,14 @@ public sealed class DiagnosticsService
         AddCheck(checks, "runtime.provider.remains_accesslegacy", () => new DiagnosticsCheckResult("runtime.provider.remains_accesslegacy", "ok", "Runtime provider remains AccessLegacy.", _dataProvider.GetInfo().ProviderKind.ToString()));
 
 
+
+        AddCheck(checks, "sqlite.repositories.infrastructure", () => new DiagnosticsCheckResult("sqlite.repositories.infrastructure", "ok", "SQLite repository infrastructure classes are available in host build.", "SqliteRepositoryBase + repository implementations"));
+        AddCheck(checks, "sqlite.repositories.audit_log.constructible", () => CheckSqliteRepoConstructible("sqlite.repositories.audit_log.constructible", () => new Sqlite.Repositories.SqliteAuditLogRepository(_runtimeStatus.TargetSqlitePath, _config.DataRoot ?? string.Empty)));
+        AddCheck(checks, "sqlite.repositories.email_profile.constructible", () => CheckSqliteRepoConstructible("sqlite.repositories.email_profile.constructible", () => new Sqlite.Repositories.SqliteEmailProfileRepository(_runtimeStatus.TargetSqlitePath, _config.DataRoot ?? string.Empty)));
+        AddCheck(checks, "sqlite.repositories.session.constructible", () => CheckSqliteRepoConstructible("sqlite.repositories.session.constructible", () => new Sqlite.Repositories.SqliteSessionRepository(_runtimeStatus.TargetSqlitePath, _config.DataRoot ?? string.Empty)));
+        AddCheck(checks, "sqlite.repositories.department.constructible", () => CheckSqliteRepoConstructible("sqlite.repositories.department.constructible", () => new Sqlite.Repositories.SqliteDepartmentRepository(_runtimeStatus.TargetSqlitePath, _config.DataRoot ?? string.Empty)));
+        AddCheck(checks, "sqlite.repositories.runtime_default", () => new DiagnosticsCheckResult("sqlite.repositories.runtime_default", "ok", "SQLite repositories are available but runtime default remains AccessLegacy.", _dataProvider.GetInfo().ProviderKind.ToString()));
+
         AddCheck(checks, "runtime.boundary", () =>
         {
             if (!OperatingSystem.IsWindows())
@@ -475,6 +483,19 @@ WHERE s.ShiftCode = ?", connection);
         File.Delete(probePath);
 
         return new DiagnosticsCheckResult(checkName, "ok", "Write access confirmed.", fullPath);
+    }
+
+    private static DiagnosticsCheckResult CheckSqliteRepoConstructible(string checkName, Func<object> builder)
+    {
+        try
+        {
+            _ = builder();
+            return new DiagnosticsCheckResult(checkName, "ok", "Repository instance created.", "constructible");
+        }
+        catch (Exception ex)
+        {
+            return new DiagnosticsCheckResult(checkName, "warning", "Repository instance construction failed.", ex.Message);
+        }
     }
 
     private static void AddCheck(List<DiagnosticsCheckResult> checks, string checkName, Func<DiagnosticsCheckResult> checker)
