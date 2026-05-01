@@ -18,7 +18,9 @@ $accessPath = 'M:\Moat House\MoatHouse Handover\Data\moat_handover_be.accdb'
 $sqlitePath = 'M:\Moat House\MoatHouse Handover\Data\moat-house.db'
 $reportRoot = 'M:\Moat House\MoatHouse Handover\Migration\DualRun\'
 
-if (-not $IsWindows -and -not $AllowNonWindows) {
+$isWindowsRuntime = $env:OS -eq 'Windows_NT' -or [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
+
+if (-not $isWindowsRuntime -and -not $AllowNonWindows) {
     Write-Host 'BLOCKED_ENVIRONMENT: This script only runs on Windows unless -AllowNonWindows is passed.' -ForegroundColor Yellow
     exit 2
 }
@@ -49,6 +51,25 @@ $arguments = @(
 
 & dotnet @arguments
 $exitCode = $LASTEXITCODE
+
+$latestJson = Get-ChildItem -Path $reportRoot -Filter 'dualrun_*.json' -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+$latestTxt = Get-ChildItem -Path $reportRoot -Filter 'dualrun_*.txt' -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+
+if ($null -ne $latestJson) {
+    Write-Host "Latest JSON report: $($latestJson.FullName)"
+} else {
+    Write-Host 'Latest JSON report: (not found)'
+}
+
+if ($null -ne $latestTxt) {
+    Write-Host "Latest TXT report: $($latestTxt.FullName)"
+} else {
+    Write-Host 'Latest TXT report: (not found)'
+}
 
 if ($exitCode -eq 0) {
     Write-Host 'ACCEPTED_EVIDENCE_READY' -ForegroundColor Green
