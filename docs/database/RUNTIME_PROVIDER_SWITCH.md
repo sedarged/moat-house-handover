@@ -11,3 +11,8 @@ Phase 9A adds a guarded runtime provider selector and repository factory boundar
 Next:
 - Phase 9B: workstation dual-run evidence capture and controlled SQLite pilot.
 - Phase 10: remove Access from normal runtime only after accepted evidence.
+
+
+## Phase 9B update
+- Added workstation dual-run evidence validation and controlled SQLite pilot readiness checks.
+- AccessLegacy remains default safe provider; SQLite remains explicit opt-in with gated accepted evidence.

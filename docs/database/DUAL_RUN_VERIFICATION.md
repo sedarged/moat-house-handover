@@ -43,3 +43,10 @@ Any unresolved mismatches block runtime switch work. Phase 9 is runtime switch p
 
 ## Phase 9A follow-on
 Dual-run report existence is now consumed as a runtime provider gate for SQLite opt-in selection. Missing evidence triggers AccessLegacy fallback by default.
+
+
+## Phase 9B update
+- Latest dual-run report is now validated for acceptance/staleness before controlled pilot readiness and SQLite runtime gate decisions.
+
+- JSON reports now serialize enum fields as strings (with backward-compatible validator support for older numeric enum reports).
+- Approved expected mutating-method skips (for example `BudgetRepository.LoadBudget`) remain in reports as `Skipped` but are non-blocking for `ReadyForRuntimeSwitchCandidate` when all required read-only comparisons pass with no mismatches/failures.

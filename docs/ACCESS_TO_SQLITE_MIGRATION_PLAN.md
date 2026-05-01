@@ -64,3 +64,7 @@ Prepare guarded runtime provider switch controls with explicit fallback safety a
 
 ## Phase 9A update
 Phase 9A introduces guarded provider selection and repository factory wiring. AccessLegacy remains default runtime. SQLite opt-in is gated and falls back safely when checks/evidence are incomplete.
+
+
+## Phase 9B update
+- Added workstation evidence capture + controlled pilot readiness layer. Phase 10 is controlled pilot/default-switch only after accepted evidence.
