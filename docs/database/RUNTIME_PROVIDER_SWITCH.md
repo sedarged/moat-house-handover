@@ -21,3 +21,5 @@ Next:
 ## Phase 9C update
 A dedicated workstation evidence runner is now available (`--dualrun-evidence` and `scripts/run-workstation-dualrun.ps1`).
 This does not change runtime provider selection behavior: default remains `AccessLegacy`, and SQLite remains explicit opt-in with gate/fallback.
+
+Phase 10B adds advisory/required app-lock status reporting: lock is advisory in AccessLegacy and required for SQLite writes.

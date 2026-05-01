@@ -23,4 +23,14 @@ public sealed record HostRuntimeStatus(
     bool RuntimeSwitchEnabled,
     string ProviderStatusMessage,
     string AppDataOwnershipStatus,
-    bool AppDataFirstRunInitialized);
+    bool AppDataFirstRunInitialized,
+    string AppLockPath,
+    string AppLockStatus,
+    string? AppLockOwnerMachine,
+    string? AppLockOwnerUser,
+    int? AppLockOwnerProcessId,
+    string? AppLockCreatedAt,
+    string? AppLockHeartbeatAt,
+    bool AppCanRead,
+    bool AppCanWrite,
+    string AppLockMessage);

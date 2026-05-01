@@ -843,3 +843,15 @@ Screenshot rules:
 ## Roadmap update — Phase 10 foundation
 - Data foundation: app-owned data root, SQLite app-owned DB, AccessLegacy fallback/import source, backups, diagnostics.
 - UI roadmap: Phase 10C Main Menu + App Shell UI; 10D Shift Dashboards; 10E Handover Session; 10F Department Board; 10G Budget; 10H Attachments; 10I Preview/Reports/Export; 10J Admin/Diagnostics/Settings.
+
+## Roadmap update — Phase 10A to 10J
+- Phase 10A: app-owned data root.
+- Phase 10B: app-level lock/concurrency safety for shared SQLite.
+- Phase 10C: Main Menu + App Shell UI.
+- Phase 10D: Shift Dashboards.
+- Phase 10E: Handover Session UI.
+- Phase 10F: Department Board UI.
+- Phase 10G: Budget UI.
+- Phase 10H: Attachments UI.
+- Phase 10I: Preview/Reports/Export UI.
+- Phase 10J: Admin/Diagnostics/Settings UI.

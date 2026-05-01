@@ -24,3 +24,5 @@ Before any controlled pilot run, generate fresh workstation evidence using:
 `\scripts\run-workstation-dualrun.ps1 -ShiftCode PM -ShiftDate 2026-05-01`
 
 Even after accepted evidence, keep `AccessLegacy` as default unless an explicit Phase 10A pilot action requests SQLite.
+
+Phase 10B prerequisite: app-lock diagnostics must report SQLite write guard readiness before any shared-drive pilot writes.

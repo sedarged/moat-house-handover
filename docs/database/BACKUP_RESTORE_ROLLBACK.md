@@ -38,3 +38,5 @@ Manifest stores included files, size, and SHA256.
 
 ## Windows limitations
 Cloud/Linux checks cannot prove shared `M:` permissions, ACE/OLEDB provider runtime behavior, or WPF/WebView2 interactive flows.
+
+Phase 10B note: lock/concurrency checks protect active writes but do not replace backup/restore safeguards.

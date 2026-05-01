@@ -7,6 +7,8 @@ using System.IO;
 
 using MoatHouseHandover.Host.Backup;
 using MoatHouseHandover.Host.WorkstationVerification;
+using MoatHouseHandover.Host.AppLock;
+using MoatHouseHandover.Host.AppData;
 
 namespace MoatHouseHandover.Host;
 
@@ -85,6 +87,20 @@ public sealed class DiagnosticsService
         AddCheck(checks, "app_data.accesslegacy.exists", () => new DiagnosticsCheckResult("app_data.accesslegacy.exists", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "warning", "AccessLegacy database existence.", _runtimeStatus.AccessDatabasePath));
         AddCheck(checks, "app_data.first_run.initialized", () => new DiagnosticsCheckResult("app_data.first_run.initialized", "ok", "First-run initialization status.", _runtimeStatus.AppDataFirstRunInitialized.ToString()));
         AddCheck(checks, "app_data.ownership.status", () => new DiagnosticsCheckResult("app_data.ownership.status", _runtimeStatus.AppDataOwnershipStatus == "Blocked" ? "failed" : "ok", "App data ownership status.", _runtimeStatus.AppDataOwnershipStatus));
+        var lockRoot = AppDataRootInitializer.BuildRoot(_runtimeStatus.ApprovedDataRoot);
+        var appLockService = new AppLockService(lockRoot);
+        var lockStatus = appLockService.CheckStatus(lockRequired: _runtimeStatus.EffectiveProvider == DatabaseProviderKind.SQLite);
+        var lockOwner = lockStatus.Owner is null ? "none" : $"{lockStatus.Owner.UserName}@{lockStatus.Owner.MachineName} pid={lockStatus.Owner.ProcessId}";
+        AddCheck(checks, "app_lock.path", () => new DiagnosticsCheckResult("app_lock.path", "ok", "App lock file path.", lockStatus.LockFilePath));
+        AddCheck(checks, "app_lock.file.exists", () => new DiagnosticsCheckResult("app_lock.file.exists", lockStatus.LockFileExists ? "ok" : "warning", "App lock file exists.", lockStatus.LockFileExists.ToString()));
+        AddCheck(checks, "app_lock.status", () => new DiagnosticsCheckResult("app_lock.status", lockStatus.Status is AppLockStatus.Broken or AppLockStatus.Blocked ? "failed" : "ok", "App lock status.", lockStatus.Status.ToString()));
+        AddCheck(checks, "app_lock.can_read", () => new DiagnosticsCheckResult("app_lock.can_read", lockStatus.CanRead ? "ok" : "failed", "App lock read capability.", lockStatus.CanRead.ToString()));
+        AddCheck(checks, "app_lock.can_write", () => new DiagnosticsCheckResult("app_lock.can_write", lockStatus.CanWrite ? "ok" : "warning", "App lock write capability.", lockStatus.CanWrite.ToString()));
+        AddCheck(checks, "app_lock.owner", () => new DiagnosticsCheckResult("app_lock.owner", "ok", "App lock owner details.", lockOwner));
+        AddCheck(checks, "app_lock.heartbeat_age", () => new DiagnosticsCheckResult("app_lock.heartbeat_age", "ok", "App lock heartbeat age.", lockStatus.HeartbeatAge?.ToString() ?? "n/a"));
+        AddCheck(checks, "app_lock.stale", () => new DiagnosticsCheckResult("app_lock.stale", lockStatus.IsStale ? "warning" : "ok", "App lock stale status.", lockStatus.IsStale.ToString()));
+        AddCheck(checks, "app_lock.sqlite_write_guard.ready", () => new DiagnosticsCheckResult("app_lock.sqlite_write_guard.ready", _runtimeStatus.EffectiveProvider == DatabaseProviderKind.SQLite && !lockStatus.CanWrite ? "warning" : "ok", "SQLite write guard readiness.", lockStatus.Message));
+        AddCheck(checks, "app_lock.accesslegacy.mode", () => new DiagnosticsCheckResult("app_lock.accesslegacy.mode", _runtimeStatus.EffectiveProvider == DatabaseProviderKind.AccessLegacy ? "ok" : "warning", "AccessLegacy lock mode advisory.", _runtimeStatus.EffectiveProvider.ToString()));
 
         AddCheck(checks, "runtime_provider.requested", () => new DiagnosticsCheckResult("runtime_provider.requested", "ok", "Requested runtime provider.", _runtimeStatus.RequestedProvider.ToString()));
         AddCheck(checks, "runtime_provider.effective", () => new DiagnosticsCheckResult("runtime_provider.effective", "ok", "Effective runtime provider.", _runtimeStatus.EffectiveProvider.ToString()));
