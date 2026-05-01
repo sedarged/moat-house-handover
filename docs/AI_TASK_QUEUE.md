@@ -71,5 +71,5 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - SQLite provider/runtime switch is not enabled yet.
 
 ## Next phase
-- Phase 8 — dual-run Access vs SQLite verification and evidence capture.
+- Phase 8 — dual-run Access vs SQLite verification (implemented) and evidence capture.
 - Phase 9 — runtime default switch to SQLite only after Phase 8 verification evidence is accepted.

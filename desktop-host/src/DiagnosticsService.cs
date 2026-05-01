@@ -188,6 +188,13 @@ public sealed class DiagnosticsService
         AddCheck(checks, "sqlite.repositories.preview.constructible", () => CheckSqliteRepoConstructible("sqlite.repositories.preview.constructible", () => new Sqlite.Repositories.SqlitePreviewRepository(_runtimeStatus.TargetSqlitePath, _config.DataRoot ?? string.Empty)));
         AddCheck(checks, "sqlite.repositories.phase7b.complete", () => new DiagnosticsCheckResult("sqlite.repositories.phase7b.complete", "ok", "Phase 7B repositories (Attachment/Budget/Preview) are constructible; runtime switch is not enabled.", "Phase7B"));
         AddCheck(checks, "sqlite.repositories.runtime_default", () => new DiagnosticsCheckResult("sqlite.repositories.runtime_default", "ok", "SQLite repositories are available but runtime default remains AccessLegacy.", _dataProvider.GetInfo().ProviderKind.ToString()));
+        AddCheck(checks, "dualrun.access_db.exists", () => new DiagnosticsCheckResult("dualrun.access_db.exists", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "failed", "Dual-run source Access DB exists check.", _runtimeStatus.AccessDatabasePath));
+        AddCheck(checks, "dualrun.sqlite_db.exists", () => new DiagnosticsCheckResult("dualrun.sqlite_db.exists", File.Exists(_runtimeStatus.TargetSqlitePath) ? "ok" : "warning", "Dual-run target SQLite DB exists check.", _runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "dualrun.repositories.available", () => new DiagnosticsCheckResult("dualrun.repositories.available", "ok", "Access and SQLite repository implementations are available for dual-run verification.", "Phase8"));
+        AddCheck(checks, "dualrun.report_folder.write", () => EnsureWriteAccess("dualrun.report_folder.write", Path.Combine(_pathResolution.Paths.Migration, "DualRun")));
+        AddCheck(checks, "dualrun.runtime_default_accesslegacy", () => new DiagnosticsCheckResult("dualrun.runtime_default_accesslegacy", _dataProvider.GetInfo().ProviderKind == DatabaseProviderKind.AccessLegacy ? "ok" : "failed", "Dual-run phase requires AccessLegacy as active runtime provider.", _dataProvider.GetInfo().ProviderKind.ToString()));
+        AddCheck(checks, "dualrun.last_report.exists", CheckDualRunLastReport);
+        AddCheck(checks, "dualrun.ready_for_manual_verification", CheckDualRunReadyForManualVerification);
 
         AddCheck(checks, "runtime.boundary", () =>
         {
@@ -298,6 +305,31 @@ WHERE s.ShiftCode = ?", connection);
 
         var found = Directory.GetFiles(_pathResolution.Paths.Migration, "migration_*.json").Length > 0;
         return new DiagnosticsCheckResult("migration.last_report.exists", found ? "ok" : "warning", found ? "Migration report exists." : "No migration report found yet.", _pathResolution.Paths.Migration);
+    }
+
+    private DiagnosticsCheckResult CheckDualRunLastReport()
+    {
+        var dualRunDir = Path.Combine(_pathResolution.Paths.Migration, "DualRun");
+        if (!Directory.Exists(dualRunDir))
+        {
+            return new DiagnosticsCheckResult("dualrun.last_report.exists", "warning", "Dual-run report folder does not exist yet.", dualRunDir);
+        }
+
+        var found = Directory.GetFiles(dualRunDir, "dualrun_*.json").Length > 0;
+        return new DiagnosticsCheckResult("dualrun.last_report.exists", found ? "ok" : "warning", found ? "Dual-run report exists." : "No dual-run report found yet.", dualRunDir);
+    }
+
+    private DiagnosticsCheckResult CheckDualRunReadyForManualVerification()
+    {
+        var providerIsAccess = _dataProvider.GetInfo().ProviderKind == DatabaseProviderKind.AccessLegacy;
+        var accessExists = File.Exists(_runtimeStatus.AccessDatabasePath);
+        var sqliteExists = File.Exists(_runtimeStatus.TargetSqlitePath);
+        var ready = providerIsAccess && accessExists && sqliteExists;
+        var status = ready ? "ok" : "warning";
+        var message = ready
+            ? "Dual-run prerequisites are present for manual verification run."
+            : "Dual-run prerequisites are incomplete. Ensure Access/SQLite DB paths exist and runtime default remains AccessLegacy.";
+        return new DiagnosticsCheckResult("dualrun.ready_for_manual_verification", status, message, $"provider={_dataProvider.GetInfo().ProviderKind} access={accessExists} sqlite={sqliteExists}");
     }
 
     private DiagnosticsCheckResult CheckActiveProfilesValid()
