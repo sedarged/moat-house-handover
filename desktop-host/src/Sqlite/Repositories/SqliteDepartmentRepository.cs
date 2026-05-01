@@ -32,7 +32,11 @@ WHERE HandoverID=$sid AND DeptName=$dept AND COALESCE(IsDeleted,0)=0";
         u.Parameters.AddWithValue("$user", userName);
         u.Parameters.AddWithValue("$sid", request.SessionId);
         u.Parameters.AddWithValue("$dept", request.DeptName);
-        u.ExecuteNonQuery();
+        var affected = u.ExecuteNonQuery();
+        if (affected <= 0)
+        {
+            throw new InvalidOperationException($"Department '{request.DeptName}' for session '{request.SessionId}' could not be updated.");
+        }
 
         return new DepartmentSaveResult(LoadDepartmentCore(c, request.SessionId, request.DeptName)!, LoadDashboardDepartmentSummary(c, request.SessionId));
     }
