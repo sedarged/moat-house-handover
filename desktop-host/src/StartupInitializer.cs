@@ -15,7 +15,7 @@ public sealed class StartupInitializer
         var appDataStatus = new AppDataRootInitializer().Initialize(configResult.Config, Environment.UserName);
         var root = appDataStatus.Root;
 
-        var pathResolution = new AppPathService().ResolveAndValidate(configResult.Config);
+        var pathResolution = new AppPathService().ResolveAndValidateRoot(root.DataRoot);
 
         var resolvedConfig = new HostConfig
         {
@@ -42,22 +42,9 @@ public sealed class StartupInitializer
         }
 
         var sqlitePath = root.SqliteDatabasePath;
-        var sqliteBootstrapper = new SqliteBootstrapper();
-        var sqliteSucceeded = false;
-        string? sqliteMessage = null;
-
-        try
-        {
-            var sqliteResult = sqliteBootstrapper.EnsureBootstrapped(sqlitePath, root.DataRoot, Environment.UserName);
-            sqliteSucceeded = sqliteResult.Success;
-            sqliteMessage = sqliteResult.Message;
-            logger.Log($"SQLite bootstrap readiness: {sqliteResult.Message}");
-        }
-        catch (Exception ex)
-        {
-            sqliteMessage = ex.Message;
-            logger.Log($"SQLite bootstrap readiness failed: {ex.Message}");
-        }
+        var sqliteSucceeded = appDataStatus.SqliteBootstrapSucceeded;
+        var sqliteMessage = appDataStatus.SqliteBootstrapMessage;
+        logger.Log($"SQLite bootstrap readiness: {sqliteMessage ?? "(no message)"}");
 
         var assets = ResolveAssetRoot();
         logger.Log($"Resolved web asset root: {assets}");
@@ -80,7 +67,7 @@ public sealed class StartupInitializer
             ProviderSelectionSource: RuntimeProviderSource.Default,
             ProviderGateStatus: RuntimeProviderGateStatus.Allowed,
             ProviderFallbackReason: null,
-            ApprovedDataRoot: AppDataRootInitializer.DefaultDataRoot,
+            ApprovedDataRoot: root.DataRoot,
             LatestDualRunReportPath: null,
             RuntimeSwitchEnabled: false,
             ProviderStatusMessage: "AccessLegacy is active default provider.",

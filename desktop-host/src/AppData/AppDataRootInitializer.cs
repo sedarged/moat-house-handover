@@ -31,11 +31,13 @@ public sealed class AppDataRootInitializer
 
         var sqliteCreated = false;
         var schemaReady = false;
+        string? sqliteMessage = null;
         if (!blocking.Any())
         {
             sqliteCreated = !File.Exists(root.SqliteDatabasePath);
             var sqliteResult = new SqliteBootstrapper().EnsureBootstrapped(root.SqliteDatabasePath, root.DataRoot, userName);
             schemaReady = sqliteResult.Success;
+            sqliteMessage = sqliteResult.Message;
             if (!sqliteResult.Success)
             {
                 blocking.Add(new AppDataRootIssue("app_data.sqlite_schema", sqliteResult.Message, true));
@@ -54,7 +56,7 @@ public sealed class AppDataRootInitializer
                 ? AppDataOwnershipStatus.FirstRunInitialized
                 : warnings.Any() || !schemaReady ? AppDataOwnershipStatus.ReadyWithWarnings : AppDataOwnershipStatus.Ready;
 
-        return new AppDataRootStatus(root, firstRun, created, existing, blocking, warnings, status);
+        return new AppDataRootStatus(root, firstRun, created, existing, blocking, warnings, status, schemaReady, sqliteMessage);
     }
 
     public static string ResolveDataRoot(string? configuredRoot)

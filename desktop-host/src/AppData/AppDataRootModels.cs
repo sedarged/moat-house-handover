@@ -27,4 +27,6 @@ public sealed record AppDataRootStatus(
     IReadOnlyList<string> ExistingFolders,
     IReadOnlyList<AppDataRootIssue> BlockingIssues,
     IReadOnlyList<AppDataRootIssue> Warnings,
-    AppDataOwnershipStatus OwnershipStatus);
+    AppDataOwnershipStatus OwnershipStatus,
+    bool SqliteBootstrapSucceeded,
+    string? SqliteBootstrapMessage);

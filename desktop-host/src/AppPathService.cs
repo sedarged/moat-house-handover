@@ -11,7 +11,12 @@ public sealed class AppPathService
     public AppPathResolution ResolveAndValidate(HostConfig config)
     {
         var configuredRoot = string.IsNullOrWhiteSpace(config.DataRoot) ? ApprovedDataRoot : config.DataRoot;
-        var dataRoot = EnsureTrailingSeparator(Path.GetFullPath(configuredRoot));
+        return ResolveAndValidateRoot(configuredRoot);
+    }
+
+    public AppPathResolution ResolveAndValidateRoot(string dataRootPath)
+    {
+        var dataRoot = EnsureTrailingSeparator(Path.GetFullPath(dataRootPath));
         var approvedRoot = EnsureTrailingSeparator(Path.GetFullPath(ApprovedDataRoot));
 
         var paths = new AppPaths(
@@ -30,7 +35,6 @@ public sealed class AppPathService
             ValidateApprovedDataRoot(paths.DataRoot, approvedRoot)
         };
 
-        if (results[0].IsOk)
         {
             results.Add(ValidateRequiredDirectory("data", paths.Data));
             results.Add(ValidateRequiredDirectory("attachments", paths.Attachments));
