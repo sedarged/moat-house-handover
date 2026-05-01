@@ -89,3 +89,7 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 ## Phase 10A update
 - [x] App-owned data root and first-run SQLite ownership foundation implemented.
 - Next queued: Phase 10B — app-level lock/concurrency safety for shared SQLite.
+
+## Phase 10B update
+- [x] App-level lock and shared SQLite write-safety foundation.
+- Next queued: Phase 10C — Main Menu + App Shell UI.

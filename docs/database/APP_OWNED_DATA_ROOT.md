@@ -27,3 +27,7 @@ First-run behavior is non-destructive:
 Next phases:
 - Phase 10B: shared SQLite lock/concurrency safety
 - Phase 10C: Main Menu + App Shell UI
+
+Phase 10B adds app-level shared SQLite lock safety using `Data/moat-house.write.lock` for conservative write ownership checks.
+
+Phase 10B enforcement note: SQLite mutating repository methods are guarded by AppWriteGuard when SQLite is effective provider; AccessLegacy is unchanged.

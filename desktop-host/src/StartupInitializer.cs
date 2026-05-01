@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using MoatHouseHandover.Host.Sqlite;
 using MoatHouseHandover.Host.AppData;
+using MoatHouseHandover.Host.AppLock;
 
 namespace MoatHouseHandover.Host;
 
@@ -46,6 +47,11 @@ public sealed class StartupInitializer
         var sqliteMessage = appDataStatus.SqliteBootstrapMessage;
         logger.Log($"SQLite bootstrap readiness: {sqliteMessage ?? "(no message)"}");
 
+
+        var appLockService = new AppLockService(root, typeof(StartupInitializer).Assembly.GetName().Version?.ToString());
+        var appLockRequired = false;
+        var appLockState = appLockService.CheckStatus(lockRequired: appLockRequired);
+
         var assets = ResolveAssetRoot();
         logger.Log($"Resolved web asset root: {assets}");
 
@@ -72,9 +78,20 @@ public sealed class StartupInitializer
             RuntimeSwitchEnabled: false,
             ProviderStatusMessage: "AccessLegacy is active default provider.",
             AppDataOwnershipStatus: appDataStatus.OwnershipStatus.ToString(),
-            AppDataFirstRunInitialized: appDataStatus.IsFirstRun);
+            AppDataFirstRunInitialized: appDataStatus.IsFirstRun,
+            AppLockPath: appLockState.LockFilePath,
+            AppLockStatus: appLockState.Status.ToString(),
+            AppLockOwnerMachine: appLockState.Owner?.MachineName,
+            AppLockOwnerUser: appLockState.Owner?.UserName,
+            AppLockOwnerProcessId: appLockState.Owner?.ProcessId,
+            AppLockCreatedAt: appLockState.Owner?.CreatedAtUtc.ToString("O"),
+            AppLockHeartbeatAt: appLockState.Owner?.HeartbeatAtUtc.ToString("O"),
+            AppCanRead: appLockState.CanRead,
+            AppCanWrite: appLockState.CanWrite,
+            AppLockMessage: appLockState.Message);
 
         var selection = new RuntimeProviderSelector().Select(provisionalStatus, resolvedConfig, pathResolution);
+        var effectiveLockState = appLockService.CheckStatus(lockRequired: selection.EffectiveProvider == DatabaseProviderKind.SQLite);
         var status = provisionalStatus with
         {
             RequestedProvider = selection.RequestedProvider,
@@ -84,7 +101,16 @@ public sealed class StartupInitializer
             ProviderFallbackReason = selection.GateResult.FallbackReason,
             LatestDualRunReportPath = selection.GateResult.LatestDualRunReportPath,
             RuntimeSwitchEnabled = selection.RuntimeSwitchEnabled,
-            ProviderStatusMessage = selection.RuntimeStatusMessage
+            ProviderStatusMessage = selection.RuntimeStatusMessage,
+            AppLockStatus = effectiveLockState.Status.ToString(),
+            AppLockOwnerMachine = effectiveLockState.Owner?.MachineName,
+            AppLockOwnerUser = effectiveLockState.Owner?.UserName,
+            AppLockOwnerProcessId = effectiveLockState.Owner?.ProcessId,
+            AppLockCreatedAt = effectiveLockState.Owner?.CreatedAtUtc.ToString("O"),
+            AppLockHeartbeatAt = effectiveLockState.Owner?.HeartbeatAtUtc.ToString("O"),
+            AppCanRead = effectiveLockState.CanRead,
+            AppCanWrite = effectiveLockState.CanWrite,
+            AppLockMessage = effectiveLockState.Message
         };
 
         return new StartupResult(status, logger, resolvedConfig, pathResolution);
