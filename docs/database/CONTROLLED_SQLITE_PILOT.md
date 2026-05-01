@@ -17,3 +17,10 @@ Readiness statuses:
 - `EvidenceMissing`
 
 Next phase: Phase 10 controlled pilot/default-switch decision after accepted workstation evidence.
+
+
+## Phase 9C update
+Before any controlled pilot run, generate fresh workstation evidence using:
+`\scripts\run-workstation-dualrun.ps1 -ShiftCode PM -ShiftDate 2026-05-01`
+
+Even after accepted evidence, keep `AccessLegacy` as default unless an explicit Phase 10A pilot action requests SQLite.
