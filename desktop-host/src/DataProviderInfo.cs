@@ -32,9 +32,13 @@ public sealed class RuntimeDataProvider : IDataProvider
     public DatabaseProviderInfo GetInfo()
     {
         var sqliteTargetPath = _runtimeStatus.TargetSqlitePath;
+        var activePath = _runtimeStatus.EffectiveProvider == DatabaseProviderKind.SQLite
+            ? _runtimeStatus.TargetSqlitePath
+            : _runtimeStatus.AccessDatabasePath;
+
         return new DatabaseProviderInfo(
             ProviderKind: _runtimeStatus.EffectiveProvider,
-            ActiveDatabasePath: _runtimeStatus.AccessDatabasePath,
+            ActiveDatabasePath: activePath,
             TargetSqlitePath: sqliteTargetPath,
             ProviderStatus: _runtimeStatus.ProviderStatusMessage,
             MigrationStatus: "SQLite remains opt-in and gated; AccessLegacy is default safe provider.");

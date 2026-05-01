@@ -36,6 +36,7 @@ public sealed record RuntimeProviderGateResult(
     bool SqliteRepositoriesReady,
     bool AccessLegacyFallbackAvailable,
     string? LatestDualRunReportPath,
+    bool DualRunReportAccepted,
     string? FallbackReason,
     IReadOnlyList<RuntimeProviderIssue> Issues);
 
