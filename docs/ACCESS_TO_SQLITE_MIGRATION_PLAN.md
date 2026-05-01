@@ -49,3 +49,8 @@ Importer, validator, report writer, and staging promotion logic added. Access re
 
 ## Phase 6 update
 Backup/restore/rollback host-side safety foundation added, including manifest/checksum validation, staged restore planning, pre-restore backup enforcement, rollback readiness checks, and retention dry-run planning. Access remains active runtime provider.
+
+
+## Phase 7A update
+SQLite repository infrastructure and first repositories (AuditLog, EmailProfile, Session, Department) implemented while AccessLegacy remains default runtime.
+Phase 7B will add Attachment, Budget, and Preview SQLite repositories.

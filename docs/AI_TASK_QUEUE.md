@@ -62,3 +62,8 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - Backup/restore/rollback foundation implemented host-side (service/model/diagnostic layer).
 - Retention planning added as dry-run only (no default deletion).
 - Next queued PR: Phase 7 — SQLite repository implementations.
+
+
+## Phase 7A update
+SQLite repository infrastructure and first repositories (AuditLog, EmailProfile, Session, Department) implemented while AccessLegacy remains default runtime.
+Phase 7B will add Attachment, Budget, and Preview SQLite repositories.
