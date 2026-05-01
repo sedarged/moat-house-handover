@@ -855,3 +855,10 @@ Screenshot rules:
 - Phase 10H: Attachments UI.
 - Phase 10I: Preview/Reports/Export UI.
 - Phase 10J: Admin/Diagnostics/Settings UI.
+
+
+## Phase 10C delivery note
+- Main Menu/App Shell UI is implemented with routed placeholders for Home, AM, PM, Night, Reports, Budget, Attachments, History, Admin, and Settings.
+- Shift colour rules: AM red, PM blue, NS green.
+- Runtime/data/lock summary appears in shell/home using runtime status payload with dev fallback when bridge is unavailable.
+- Next phase: Phase 10D Shift Dashboards.
