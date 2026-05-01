@@ -63,7 +63,13 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - Retention planning added as dry-run only (no default deletion).
 - Next queued PR: Phase 7 — SQLite repository implementations.
 
+## Phase 7 update
+- Phase 7A complete: initial SQLite repository implementations (AuditLog, EmailProfile, Session, Department).
+- Phase 7B complete: remaining SQLite repositories (Attachment, Budget, Preview).
+- All repository interfaces now have SQLite implementations.
+- AccessLegacy remains active runtime default provider.
+- SQLite provider/runtime switch is not enabled yet.
 
-## Phase 7A update
-SQLite repository infrastructure and first repositories (AuditLog, EmailProfile, Session, Department) implemented while AccessLegacy remains default runtime.
-Phase 7B will add Attachment, Budget, and Preview SQLite repositories.
+## Next phase
+- Phase 8 — dual-run Access vs SQLite verification and evidence capture.
+- Phase 9 — runtime default switch to SQLite only after Phase 8 verification evidence is accepted.

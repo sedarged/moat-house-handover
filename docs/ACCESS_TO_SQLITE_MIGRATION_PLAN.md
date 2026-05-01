@@ -18,8 +18,8 @@ This plan defines the controlled phased migration from the current Access-based 
 - **Phase 4 — SQLite bootstrapper/schema creation**
 - **Phase 5 — Access-to-SQLite importer**
 - **Phase 6 — backup/restore foundation**
-- **Phase 7 — SQLite repository implementations**
-- **Phase 8 — dual-run Access vs SQLite verification**
+- **Phase 7 — SQLite repository implementations** — completed in two PR phases: 7A (AuditLog/EmailProfile/Session/Department) and 7B (Attachment/Budget/Preview).
+- **Phase 8 — dual-run Access vs SQLite verification** (next).
 - **Phase 9 — switch runtime default to SQLite**
 - **Phase 10 — remove Access/ACE from normal runtime**
 - **Phase 11 — installer/updater integration**
