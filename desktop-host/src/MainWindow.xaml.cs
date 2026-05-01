@@ -27,13 +27,17 @@ public partial class MainWindow : Window
             }
 
             await AppWebView.EnsureCoreWebView2Async();
-            ISessionRepository sessionRepository = new SessionRepository(startup.RuntimeStatus.AccessDatabasePath);
-            IDepartmentRepository departmentRepository = new DepartmentRepository(startup.RuntimeStatus.AccessDatabasePath);
-            IAttachmentRepository attachmentRepository = new AttachmentRepository(startup.RuntimeStatus.AccessDatabasePath);
-            IBudgetRepository budgetRepository = new BudgetRepository(startup.RuntimeStatus.AccessDatabasePath);
-            IPreviewRepository previewRepository = new PreviewRepository(startup.RuntimeStatus.AccessDatabasePath);
-            IEmailProfileRepository emailProfileRepository = new EmailProfileRepository(startup.RuntimeStatus.AccessDatabasePath);
-            IAuditLogRepository auditLogRepository = new AuditLogRepository(startup.RuntimeStatus.AccessDatabasePath);
+            IAppRepositoryFactory repositoryFactory = startup.RuntimeStatus.EffectiveProvider == DatabaseProviderKind.SQLite
+                ? new SqliteRepositoryFactory()
+                : new AccessRepositoryFactory();
+            var repositorySet = repositoryFactory.Create(startup.RuntimeStatus, startup.Config);
+            ISessionRepository sessionRepository = repositorySet.SessionRepository;
+            IDepartmentRepository departmentRepository = repositorySet.DepartmentRepository;
+            IAttachmentRepository attachmentRepository = repositorySet.AttachmentRepository;
+            IBudgetRepository budgetRepository = repositorySet.BudgetRepository;
+            IPreviewRepository previewRepository = repositorySet.PreviewRepository;
+            IEmailProfileRepository emailProfileRepository = repositorySet.EmailProfileRepository;
+            IAuditLogRepository auditLogRepository = repositorySet.AuditLogRepository;
 
             var auditLogService = new AuditLogService(auditLogRepository, startup.Logger);
             var sessionService = new SessionService(sessionRepository, auditLogService);
@@ -45,7 +49,7 @@ public partial class MainWindow : Window
             var emailProfileService = new EmailProfileService(emailProfileRepository);
             var outlookDraftService = new OutlookDraftService();
             var sendPackageService = new SendPackageService(previewService, reportService, emailProfileService, outlookDraftService, auditLogService);
-            var dataProvider = new AccessLegacyDataProvider(startup.RuntimeStatus, startup.PathResolution);
+            var dataProvider = new RuntimeDataProvider(startup.RuntimeStatus, startup.PathResolution);
             var diagnosticsService = new DiagnosticsService(startup.RuntimeStatus, startup.Config, startup.PathResolution, dataProvider);
             var fileDialogService = new FileDialogService();
 

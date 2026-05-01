@@ -61,3 +61,6 @@ Dual-run Access vs SQLite verification harness added for read-only parity checks
 
 ## Phase 9 next
 Prepare guarded runtime provider switch controls with explicit fallback safety and mismatch gate enforcement.
+
+## Phase 9A update
+Phase 9A introduces guarded provider selection and repository factory wiring. AccessLegacy remains default runtime. SQLite opt-in is gated and falls back safely when checks/evidence are incomplete.

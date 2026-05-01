@@ -25,7 +25,8 @@ public sealed class StartupInitializer
             AccessDatabasePath = Path.Combine(pathResolution.Paths.Data, "moat_handover_be.accdb"),
             AttachmentsRoot = pathResolution.Paths.Attachments,
             ReportsOutputRoot = pathResolution.Paths.Reports,
-            LogRoot = pathResolution.Paths.Logs
+            LogRoot = pathResolution.Paths.Logs,
+            RuntimeProvider = configResult.Config.RuntimeProvider
         };
 
         var logger = new BootstrapLogger(pathResolution.Paths.Logs);
@@ -56,7 +57,7 @@ public sealed class StartupInitializer
         var assets = ResolveAssetRoot();
         logger.Log($"Resolved web asset root: {assets}");
 
-        var status = new HostRuntimeStatus(
+        var provisionalStatus = new HostRuntimeStatus(
             ConfigPath: configResult.SourcePath,
             AccessDatabasePath: Path.GetFullPath(resolvedConfig.AccessDatabasePath!),
             TargetSqlitePath: Path.GetFullPath(sqlitePath),
@@ -68,7 +69,29 @@ public sealed class StartupInitializer
             DatabaseReady: true,
             FoldersReady: pathResolution.AllValid,
             SqliteBootstrapSucceeded: sqliteSucceeded,
-            SqliteBootstrapMessage: sqliteMessage);
+            SqliteBootstrapMessage: sqliteMessage,
+            RequestedProvider: DatabaseProviderKind.AccessLegacy,
+            EffectiveProvider: DatabaseProviderKind.AccessLegacy,
+            ProviderSelectionSource: RuntimeProviderSource.Default,
+            ProviderGateStatus: RuntimeProviderGateStatus.Allowed,
+            ProviderFallbackReason: null,
+            ApprovedDataRoot: AppPathService.ApprovedDataRoot,
+            LatestDualRunReportPath: null,
+            RuntimeSwitchEnabled: false,
+            ProviderStatusMessage: "AccessLegacy is active default provider.");
+
+        var selection = new RuntimeProviderSelector().Select(provisionalStatus, resolvedConfig, pathResolution);
+        var status = provisionalStatus with
+        {
+            RequestedProvider = selection.RequestedProvider,
+            EffectiveProvider = selection.EffectiveProvider,
+            ProviderSelectionSource = selection.Source,
+            ProviderGateStatus = selection.GateResult.Status,
+            ProviderFallbackReason = selection.GateResult.FallbackReason,
+            LatestDualRunReportPath = selection.GateResult.LatestDualRunReportPath,
+            RuntimeSwitchEnabled = selection.RuntimeSwitchEnabled,
+            ProviderStatusMessage = selection.RuntimeStatusMessage
+        };
 
         return new StartupResult(status, logger, resolvedConfig, pathResolution);
     }

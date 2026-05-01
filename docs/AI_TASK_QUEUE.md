@@ -73,3 +73,8 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 ## Next phase
 - Phase 8 — dual-run Access vs SQLite verification (implemented) and evidence capture.
 - Phase 9 — runtime default switch to SQLite only after Phase 8 verification evidence is accepted.
+
+## Phase 9A update
+- Guarded runtime provider selector and repository factory boundary implemented.
+- AccessLegacy remains default provider; SQLite is explicit opt-in only with gate checks and fallback.
+- Next queued: Phase 9B workstation evidence capture and controlled SQLite pilot.

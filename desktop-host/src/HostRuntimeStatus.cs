@@ -12,4 +12,13 @@ public sealed record HostRuntimeStatus(
     bool DatabaseReady,
     bool FoldersReady,
     bool SqliteBootstrapSucceeded,
-    string? SqliteBootstrapMessage);
+    string? SqliteBootstrapMessage,
+    DatabaseProviderKind RequestedProvider,
+    DatabaseProviderKind EffectiveProvider,
+    RuntimeProviderSource ProviderSelectionSource,
+    RuntimeProviderGateStatus ProviderGateStatus,
+    string? ProviderFallbackReason,
+    string ApprovedDataRoot,
+    string? LatestDualRunReportPath,
+    bool RuntimeSwitchEnabled,
+    string ProviderStatusMessage);
