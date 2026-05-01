@@ -54,3 +54,10 @@ Backup/restore/rollback host-side safety foundation added, including manifest/ch
 ## Phase 7A update
 SQLite repository infrastructure and first repositories (AuditLog, EmailProfile, Session, Department) implemented while AccessLegacy remains default runtime.
 Phase 7B will add Attachment, Budget, and Preview SQLite repositories.
+
+
+## Phase 8 update
+Dual-run Access vs SQLite verification harness added for read-only parity checks across repository outputs, with diagnostics readiness checks and dual-run reports under Migration/DualRun. AccessLegacy remains active runtime provider.
+
+## Phase 9 next
+Prepare guarded runtime provider switch controls with explicit fallback safety and mismatch gate enforcement.
