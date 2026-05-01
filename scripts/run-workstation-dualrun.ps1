@@ -10,13 +10,16 @@ param(
 
     [string]$UserName = 'dualrun',
 
+    [string]$DataRoot = 'M:\Moat House\MoatHouse Handover\',
+
     [switch]$AllowNonWindows
 )
 
-$approvedRoot = 'M:\Moat House\MoatHouse Handover\'
-$accessPath = 'M:\Moat House\MoatHouse Handover\Data\moat_handover_be.accdb'
-$sqlitePath = 'M:\Moat House\MoatHouse Handover\Data\moat-house.db'
-$reportRoot = 'M:\Moat House\MoatHouse Handover\Migration\DualRun\'
+$approvedRoot = $DataRoot
+if (-not $approvedRoot.EndsWith('\')) { $approvedRoot = $approvedRoot + '\' }
+$accessPath = Join-Path $approvedRoot 'Data\moat_handover_be.accdb'
+$sqlitePath = Join-Path $approvedRoot 'Data\moat-house.db'
+$reportRoot = Join-Path $approvedRoot 'Migration\DualRun'
 
 $isWindowsRuntime = $env:OS -eq 'Windows_NT' -or [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
 
@@ -26,10 +29,14 @@ if (-not $isWindowsRuntime -and -not $AllowNonWindows) {
 }
 
 Write-Host 'Running workstation dual-run evidence (non-destructive/read-only compare + report write only).'
-Write-Host "Approved data root: $approvedRoot"
+Write-Host "Moat House Handover app data root: $approvedRoot"
 Write-Host "Access DB path: $accessPath"
 Write-Host "SQLite DB path: $sqlitePath"
 Write-Host "Report output folder: $reportRoot"
+Write-Host "AccessLegacy exists: $(Test-Path $accessPath)"
+Write-Host "SQLite exists: $(Test-Path $sqlitePath)"
+Write-Host "Reports folder exists: $(Test-Path (Join-Path $approvedRoot 'Reports'))"
+Write-Host "Reports folder writable: $([bool](New-Item -ItemType Directory -Path (Join-Path $approvedRoot 'Reports') -Force -ErrorAction SilentlyContinue))"
 Write-Host "ShiftCode: $ShiftCode"
 Write-Host "ShiftDate: $($ShiftDate.ToString('yyyy-MM-dd'))"
 Write-Host "Departments: $($Departments -join ', ')"
@@ -46,7 +53,8 @@ $arguments = @(
     '--shift-code', $ShiftCode,
     '--shift-date', $ShiftDate.ToString('yyyy-MM-dd'),
     '--departments', $departmentArg,
-    '--user-name', $UserName
+    '--user-name', $UserName,
+    '--data-root', $approvedRoot
 )
 
 & dotnet @arguments

@@ -34,7 +34,7 @@ internal static class DualRunCli
         try
         {
             var parsed = Parse(args);
-            var result = new DualRunEvidenceRunner().Run(new DualRunEvidenceRunRequest(parsed.ShiftCode, parsed.ShiftDate, parsed.UserName, parsed.Departments));
+            var result = new DualRunEvidenceRunner().Run(new DualRunEvidenceRunRequest(parsed.ShiftCode, parsed.ShiftDate, parsed.UserName, parsed.Departments, parsed.DataRoot));
 
             Console.WriteLine($"Dual-run evidence report generated. JSON: {result.JsonReportPath}");
             Console.WriteLine($"Dual-run evidence report generated. TXT: {result.TextReportPath}");
@@ -65,7 +65,7 @@ internal static class DualRunCli
         }
     }
 
-    private static (string ShiftCode, DateTime ShiftDate, string UserName, IReadOnlyList<string> Departments) Parse(string[] args)
+    private static (string ShiftCode, DateTime ShiftDate, string UserName, IReadOnlyList<string> Departments, string? DataRoot) Parse(string[] args)
     {
         var shiftCode = ReadRequired(args, "--shift-code");
         var shiftDateRaw = ReadRequired(args, "--shift-date");
@@ -80,7 +80,8 @@ internal static class DualRunCli
             : departmentsRaw.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
         var userName = ReadOptional(args, "--user-name") ?? "dualrun";
-        return (shiftCode, shiftDate, userName, departments);
+        var dataRoot = ReadOptional(args, "--data-root");
+        return (shiftCode, shiftDate, userName, departments, dataRoot);
     }
 
     private static string ReadRequired(string[] args, string name)
@@ -100,6 +101,6 @@ internal static class DualRunCli
 
     private static void PrintUsage()
     {
-        Console.WriteLine("Usage: MoatHouseHandover.Host.exe --dualrun-evidence --shift-code <AM|PM|NS> --shift-date <yyyy-MM-dd> [--departments Injection,MetaPress,Slicing] [--user-name dualrun]");
+        Console.WriteLine("Usage: MoatHouseHandover.Host.exe --dualrun-evidence --shift-code <AM|PM|NS> --shift-date <yyyy-MM-dd> [--departments Injection,MetaPress,Slicing] [--user-name dualrun] [--data-root <path>]");
     }
 }

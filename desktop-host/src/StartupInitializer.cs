@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using MoatHouseHandover.Host.Sqlite;
+using MoatHouseHandover.Host.AppData;
 
 namespace MoatHouseHandover.Host;
 
@@ -11,39 +12,43 @@ public sealed class StartupInitializer
         var loader = new RuntimeConfigLoader();
         var configResult = loader.Load();
 
-        var appPathService = new AppPathService();
-        var pathResolution = appPathService.ResolveAndValidate(configResult.Config);
+        var appDataStatus = new AppDataRootInitializer().Initialize(configResult.Config, Environment.UserName);
+        var root = appDataStatus.Root;
 
-        if (!pathResolution.AllValid)
-        {
-            throw new InvalidOperationException("App path validation failed: " + string.Join(" | ", pathResolution.ValidationResults));
-        }
+        var pathResolution = new AppPathService().ResolveAndValidate(configResult.Config);
 
         var resolvedConfig = new HostConfig
         {
-            DataRoot = pathResolution.Paths.DataRoot,
-            AccessDatabasePath = Path.Combine(pathResolution.Paths.Data, "moat_handover_be.accdb"),
-            AttachmentsRoot = pathResolution.Paths.Attachments,
-            ReportsOutputRoot = pathResolution.Paths.Reports,
-            LogRoot = pathResolution.Paths.Logs,
+            DataRoot = root.DataRoot,
+            AccessDatabasePath = root.AccessLegacyDatabasePath,
+            AttachmentsRoot = root.AttachmentsFolder,
+            ReportsOutputRoot = root.ReportsFolder,
+            LogRoot = root.LogsFolder,
             RuntimeProvider = configResult.Config.RuntimeProvider
         };
 
-        var logger = new BootstrapLogger(pathResolution.Paths.Logs);
+        var logger = new BootstrapLogger(root.LogsFolder);
         logger.Log($"Loaded runtime config: {configResult.SourcePath}");
-        logger.Log($"Resolved data root: {pathResolution.Paths.DataRoot}");
+        logger.Log($"Resolved data root: {root.DataRoot}");
 
         var bootstrapper = new AccessBootstrapper(logger);
-        bootstrapper.EnsureDatabaseAndSchema(resolvedConfig.AccessDatabasePath!);
+        if (File.Exists(resolvedConfig.AccessDatabasePath!))
+        {
+            bootstrapper.EnsureDatabaseAndSchema(resolvedConfig.AccessDatabasePath!);
+        }
+        else
+        {
+            logger.Log("AccessLegacy database missing; startup continues with warning for fallback/import role.");
+        }
 
-        var sqlitePath = Path.Combine(pathResolution.Paths.Data, "moat-house.db");
+        var sqlitePath = root.SqliteDatabasePath;
         var sqliteBootstrapper = new SqliteBootstrapper();
         var sqliteSucceeded = false;
         string? sqliteMessage = null;
 
         try
         {
-            var sqliteResult = sqliteBootstrapper.EnsureBootstrapped(sqlitePath, pathResolution.Paths.DataRoot, Environment.UserName);
+            var sqliteResult = sqliteBootstrapper.EnsureBootstrapped(sqlitePath, root.DataRoot, Environment.UserName);
             sqliteSucceeded = sqliteResult.Success;
             sqliteMessage = sqliteResult.Message;
             logger.Log($"SQLite bootstrap readiness: {sqliteResult.Message}");
@@ -67,7 +72,7 @@ public sealed class StartupInitializer
             AssetRoot: assets,
             IsWindows: OperatingSystem.IsWindows(),
             DatabaseReady: true,
-            FoldersReady: pathResolution.AllValid,
+            FoldersReady: appDataStatus.OwnershipStatus != AppDataOwnershipStatus.Blocked,
             SqliteBootstrapSucceeded: sqliteSucceeded,
             SqliteBootstrapMessage: sqliteMessage,
             RequestedProvider: DatabaseProviderKind.AccessLegacy,
@@ -75,10 +80,12 @@ public sealed class StartupInitializer
             ProviderSelectionSource: RuntimeProviderSource.Default,
             ProviderGateStatus: RuntimeProviderGateStatus.Allowed,
             ProviderFallbackReason: null,
-            ApprovedDataRoot: AppPathService.ApprovedDataRoot,
+            ApprovedDataRoot: AppDataRootInitializer.DefaultDataRoot,
             LatestDualRunReportPath: null,
             RuntimeSwitchEnabled: false,
-            ProviderStatusMessage: "AccessLegacy is active default provider.");
+            ProviderStatusMessage: "AccessLegacy is active default provider.",
+            AppDataOwnershipStatus: appDataStatus.OwnershipStatus.ToString(),
+            AppDataFirstRunInitialized: appDataStatus.IsFirstRun);
 
         var selection = new RuntimeProviderSelector().Select(provisionalStatus, resolvedConfig, pathResolution);
         var status = provisionalStatus with

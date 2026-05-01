@@ -85,3 +85,7 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 ## Phase 9C update
 - [x] Phase 9C: explicit workstation dual-run evidence runner (service + safe script + CLI/headless entry + docs).
 - Next queued: Phase 10A controlled SQLite pilot run (AccessLegacy default remains unchanged until pilot decision).
+
+## Phase 10A update
+- [x] App-owned data root and first-run SQLite ownership foundation implemented.
+- Next queued: Phase 10B — app-level lock/concurrency safety for shared SQLite.

@@ -70,6 +70,22 @@ public sealed class DiagnosticsService
 
 
         
+        AddCheck(checks, "app_data.root.exists", () => new DiagnosticsCheckResult("app_data.root.exists", Directory.Exists(_pathResolution.Paths.DataRoot) ? "ok" : "failed", "App data root existence.", _pathResolution.Paths.DataRoot));
+        AddCheck(checks, "app_data.root.writable", () => EnsureWriteAccess("app_data.root.writable", _pathResolution.Paths.DataRoot));
+        AddCheck(checks, "app_data.data_folder.exists", () => new DiagnosticsCheckResult("app_data.data_folder.exists", Directory.Exists(_pathResolution.Paths.Data) ? "ok" : "failed", "Data folder existence.", _pathResolution.Paths.Data));
+        AddCheck(checks, "app_data.attachments_folder.exists", () => new DiagnosticsCheckResult("app_data.attachments_folder.exists", Directory.Exists(_pathResolution.Paths.Attachments) ? "ok" : "failed", "Attachments folder existence.", _pathResolution.Paths.Attachments));
+        AddCheck(checks, "app_data.reports_folder.exists", () => new DiagnosticsCheckResult("app_data.reports_folder.exists", Directory.Exists(_pathResolution.Paths.Reports) ? "ok" : "failed", "Reports folder existence.", _pathResolution.Paths.Reports));
+        AddCheck(checks, "app_data.backups_folder.exists", () => new DiagnosticsCheckResult("app_data.backups_folder.exists", Directory.Exists(_pathResolution.Paths.Backups) ? "ok" : "failed", "Backups folder existence.", _pathResolution.Paths.Backups));
+        AddCheck(checks, "app_data.migration_folder.exists", () => new DiagnosticsCheckResult("app_data.migration_folder.exists", Directory.Exists(_pathResolution.Paths.Migration) ? "ok" : "failed", "Migration folder existence.", _pathResolution.Paths.Migration));
+        AddCheck(checks, "app_data.dualrun_folder.exists", () => new DiagnosticsCheckResult("app_data.dualrun_folder.exists", Directory.Exists(Path.Combine(_pathResolution.Paths.Migration, "DualRun")) ? "ok" : "failed", "DualRun folder existence.", Path.Combine(_pathResolution.Paths.Migration, "DualRun")));
+        AddCheck(checks, "app_data.logs_folder.exists", () => new DiagnosticsCheckResult("app_data.logs_folder.exists", Directory.Exists(_pathResolution.Paths.Logs) ? "ok" : "failed", "Logs folder existence.", _pathResolution.Paths.Logs));
+        AddCheck(checks, "app_data.config_folder.exists", () => new DiagnosticsCheckResult("app_data.config_folder.exists", Directory.Exists(_pathResolution.Paths.Config) ? "ok" : "failed", "Config folder existence.", _pathResolution.Paths.Config));
+        AddCheck(checks, "app_data.sqlite_db.exists", () => new DiagnosticsCheckResult("app_data.sqlite_db.exists", File.Exists(_runtimeStatus.TargetSqlitePath) ? "ok" : "warning", "SQLite app-owned database existence.", _runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "app_data.sqlite_schema.ready", () => new DiagnosticsCheckResult("app_data.sqlite_schema.ready", _runtimeStatus.SqliteBootstrapSucceeded ? "ok" : "warning", "SQLite schema readiness.", _runtimeStatus.SqliteBootstrapMessage ?? string.Empty));
+        AddCheck(checks, "app_data.accesslegacy.exists", () => new DiagnosticsCheckResult("app_data.accesslegacy.exists", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "warning", "AccessLegacy database existence.", _runtimeStatus.AccessDatabasePath));
+        AddCheck(checks, "app_data.first_run.initialized", () => new DiagnosticsCheckResult("app_data.first_run.initialized", "ok", "First-run initialization status.", _runtimeStatus.AppDataFirstRunInitialized.ToString()));
+        AddCheck(checks, "app_data.ownership.status", () => new DiagnosticsCheckResult("app_data.ownership.status", _runtimeStatus.AppDataOwnershipStatus == "Blocked" ? "failed" : "ok", "App data ownership status.", _runtimeStatus.AppDataOwnershipStatus));
+
         AddCheck(checks, "runtime_provider.requested", () => new DiagnosticsCheckResult("runtime_provider.requested", "ok", "Requested runtime provider.", _runtimeStatus.RequestedProvider.ToString()));
         AddCheck(checks, "runtime_provider.effective", () => new DiagnosticsCheckResult("runtime_provider.effective", "ok", "Effective runtime provider.", _runtimeStatus.EffectiveProvider.ToString()));
         AddCheck(checks, "runtime_provider.default_safe", () => new DiagnosticsCheckResult("runtime_provider.default_safe", _runtimeStatus.EffectiveProvider == DatabaseProviderKind.AccessLegacy ? "ok" : "warning", "AccessLegacy remains default safe provider.", _runtimeStatus.ProviderSelectionSource.ToString()));
