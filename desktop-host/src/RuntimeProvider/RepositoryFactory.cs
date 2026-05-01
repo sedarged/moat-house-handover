@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MoatHouseHandover.Host.DualRun;
+using MoatHouseHandover.Host.AppData;
+using MoatHouseHandover.Host.AppLock;
 
 namespace MoatHouseHandover.Host;
 
@@ -40,14 +42,18 @@ public sealed class SqliteRepositoryFactory : IAppRepositoryFactory
             ? runtimeStatus.ApprovedDataRoot
             : config.DataRoot ?? string.Empty;
 
-        return new AppRepositorySet(
-            new Sqlite.Repositories.SqliteSessionRepository(runtimeStatus.TargetSqlitePath, root),
-            new Sqlite.Repositories.SqliteDepartmentRepository(runtimeStatus.TargetSqlitePath, root),
-            new Sqlite.Repositories.SqliteAttachmentRepository(runtimeStatus.TargetSqlitePath, root),
-            new Sqlite.Repositories.SqliteBudgetRepository(runtimeStatus.TargetSqlitePath, root),
-            new Sqlite.Repositories.SqlitePreviewRepository(runtimeStatus.TargetSqlitePath, root),
-            new Sqlite.Repositories.SqliteAuditLogRepository(runtimeStatus.TargetSqlitePath, root),
-            new Sqlite.Repositories.SqliteEmailProfileRepository(runtimeStatus.TargetSqlitePath, root));
+        var appRoot = AppDataRootInitializer.BuildRoot(root);
+        var guard = new AppWriteGuard(appRoot);
+
+        var session = new GuardedSqliteSessionRepository(new Sqlite.Repositories.SqliteSessionRepository(runtimeStatus.TargetSqlitePath, root), guard);
+        var department = new GuardedSqliteDepartmentRepository(new Sqlite.Repositories.SqliteDepartmentRepository(runtimeStatus.TargetSqlitePath, root), guard);
+        var attachment = new GuardedSqliteAttachmentRepository(new Sqlite.Repositories.SqliteAttachmentRepository(runtimeStatus.TargetSqlitePath, root), guard);
+        var budget = new GuardedSqliteBudgetRepository(new Sqlite.Repositories.SqliteBudgetRepository(runtimeStatus.TargetSqlitePath, root), guard);
+        var preview = new Sqlite.Repositories.SqlitePreviewRepository(runtimeStatus.TargetSqlitePath, root);
+        var audit = new GuardedSqliteAuditLogRepository(new Sqlite.Repositories.SqliteAuditLogRepository(runtimeStatus.TargetSqlitePath, root), guard);
+        var email = new Sqlite.Repositories.SqliteEmailProfileRepository(runtimeStatus.TargetSqlitePath, root);
+
+        return new AppRepositorySet(session, department, attachment, budget, preview, audit, email);
     }
 }
 

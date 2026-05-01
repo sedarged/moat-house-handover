@@ -34,3 +34,6 @@ This phase establishes host/service/diagnostic foundations only.
 Full UI-driven write lock interaction lands in Phase 10C+ with app shell/menu workflows.
 
 This safety layer complements backups/restore; it does not replace backup policy.
+
+## Phase 10B guarded write enforcement
+Phase 10B now enforces the write guard on SQLite mutating repository paths via guarded wrappers selected only for SQLite runtime provider. User-facing lock acquire/release UX remains for Phase 10C/10J.
