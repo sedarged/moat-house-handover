@@ -40,3 +40,6 @@ Diagnostics now exposes dual-run readiness checks:
 
 ## Decision rule for next phase
 Any unresolved mismatches block runtime switch work. Phase 9 is runtime switch preparation with guarded toggle and rollout safety checks.
+
+## Phase 9A follow-on
+Dual-run report existence is now consumed as a runtime provider gate for SQLite opt-in selection. Missing evidence triggers AccessLegacy fallback by default.

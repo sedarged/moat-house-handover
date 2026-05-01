@@ -32,3 +32,8 @@ Phase 3 introduces a host-side provider/repository boundary while keeping Access
 ## Next phases
 - Phase 4: SQLite bootstrapper/schema creation.
 - Phase 5: Access-to-SQLite importer.
+
+## Phase 9A update
+- Added guarded runtime provider selector, runtime repository factories, and fallback safety.
+- AccessLegacy remains default effective provider.
+- SQLite is explicit opt-in and gated by readiness checks and dual-run evidence.

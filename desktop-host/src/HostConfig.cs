@@ -14,4 +14,6 @@ public sealed class HostConfig
     public string? ReportsOutputRoot { get; init; }
 
     public string? LogRoot { get; init; }
+
+    public string? RuntimeProvider { get; init; }
 }

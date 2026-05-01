@@ -68,7 +68,19 @@ public sealed class DiagnosticsService
         }
 
 
-        AddCheck(checks, "database.provider.info", () =>
+        
+        AddCheck(checks, "runtime_provider.requested", () => new DiagnosticsCheckResult("runtime_provider.requested", "ok", "Requested runtime provider.", _runtimeStatus.RequestedProvider.ToString()));
+        AddCheck(checks, "runtime_provider.effective", () => new DiagnosticsCheckResult("runtime_provider.effective", "ok", "Effective runtime provider.", _runtimeStatus.EffectiveProvider.ToString()));
+        AddCheck(checks, "runtime_provider.default_safe", () => new DiagnosticsCheckResult("runtime_provider.default_safe", _runtimeStatus.EffectiveProvider == DatabaseProviderKind.AccessLegacy ? "ok" : "warning", "AccessLegacy remains default safe provider.", _runtimeStatus.ProviderSelectionSource.ToString()));
+        AddCheck(checks, "runtime_provider.sqlite_requested", () => new DiagnosticsCheckResult("runtime_provider.sqlite_requested", "ok", "SQLite request state.", (_runtimeStatus.RequestedProvider == DatabaseProviderKind.SQLite).ToString()));
+        AddCheck(checks, "runtime_provider.sqlite_gate.schema_ready", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.schema_ready", _runtimeStatus.SqliteBootstrapSucceeded ? "ok" : "warning", "SQLite schema readiness gate.", _runtimeStatus.SqliteBootstrapMessage ?? string.Empty));
+        AddCheck(checks, "runtime_provider.sqlite_gate.db_exists", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.db_exists", File.Exists(_runtimeStatus.TargetSqlitePath) ? "ok" : "warning", "SQLite db existence gate.", _runtimeStatus.TargetSqlitePath));
+        AddCheck(checks, "runtime_provider.sqlite_gate.repositories_ready", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.repositories_ready", !string.IsNullOrWhiteSpace(_config.DataRoot) ? "ok" : "failed", "SQLite repository prerequisites gate.", _config.DataRoot ?? string.Empty));
+        AddCheck(checks, "runtime_provider.sqlite_gate.latest_dualrun_report", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.latest_dualrun_report", string.IsNullOrWhiteSpace(_runtimeStatus.LatestDualRunReportPath) ? "warning" : "ok", "Latest dual-run report gate.", _runtimeStatus.LatestDualRunReportPath ?? "not found"));
+        AddCheck(checks, "runtime_provider.sqlite_gate.dualrun_accepted", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.dualrun_accepted", _runtimeStatus.ProviderGateStatus == RuntimeProviderGateStatus.Allowed && _runtimeStatus.RuntimeSwitchEnabled ? "ok" : "warning", "Dual-run report acceptance for runtime switch candidate.", _runtimeStatus.ProviderFallbackReason ?? _runtimeStatus.ProviderGateStatus.ToString()));
+        AddCheck(checks, "runtime_provider.sqlite_gate.result", () => new DiagnosticsCheckResult("runtime_provider.sqlite_gate.result", _runtimeStatus.ProviderGateStatus == RuntimeProviderGateStatus.Allowed ? "ok" : "warning", "SQLite provider gate result.", _runtimeStatus.ProviderGateStatus.ToString()));
+        AddCheck(checks, "runtime_provider.fallback_accesslegacy_available", () => new DiagnosticsCheckResult("runtime_provider.fallback_accesslegacy_available", File.Exists(_runtimeStatus.AccessDatabasePath) ? "ok" : "failed", "AccessLegacy fallback availability.", _runtimeStatus.AccessDatabasePath));
+AddCheck(checks, "database.provider.info", () =>
         {
             var info = _dataProvider.GetInfo();
             return new DiagnosticsCheckResult(

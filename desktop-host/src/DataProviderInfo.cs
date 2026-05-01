@@ -2,7 +2,8 @@ namespace MoatHouseHandover.Host;
 
 public enum DatabaseProviderKind
 {
-    AccessLegacy = 1
+    AccessLegacy = 1,
+    SQLite = 2
 }
 
 public sealed record DatabaseProviderInfo(
@@ -17,12 +18,12 @@ public interface IDataProvider
     DatabaseProviderInfo GetInfo();
 }
 
-public sealed class AccessLegacyDataProvider : IDataProvider
+public sealed class RuntimeDataProvider : IDataProvider
 {
     private readonly HostRuntimeStatus _runtimeStatus;
     private readonly AppPathResolution _pathResolution;
 
-    public AccessLegacyDataProvider(HostRuntimeStatus runtimeStatus, AppPathResolution pathResolution)
+    public RuntimeDataProvider(HostRuntimeStatus runtimeStatus, AppPathResolution pathResolution)
     {
         _runtimeStatus = runtimeStatus;
         _pathResolution = pathResolution;
@@ -31,11 +32,15 @@ public sealed class AccessLegacyDataProvider : IDataProvider
     public DatabaseProviderInfo GetInfo()
     {
         var sqliteTargetPath = _runtimeStatus.TargetSqlitePath;
+        var activePath = _runtimeStatus.EffectiveProvider == DatabaseProviderKind.SQLite
+            ? _runtimeStatus.TargetSqlitePath
+            : _runtimeStatus.AccessDatabasePath;
+
         return new DatabaseProviderInfo(
-            ProviderKind: DatabaseProviderKind.AccessLegacy,
-            ActiveDatabasePath: _runtimeStatus.AccessDatabasePath,
+            ProviderKind: _runtimeStatus.EffectiveProvider,
+            ActiveDatabasePath: activePath,
             TargetSqlitePath: sqliteTargetPath,
-            ProviderStatus: "Access legacy/current runtime provider is active.",
-            MigrationStatus: "SQLite is approved as the future target provider and is not active in runtime yet.");
+            ProviderStatus: _runtimeStatus.ProviderStatusMessage,
+            MigrationStatus: "SQLite remains opt-in and gated; AccessLegacy is default safe provider.");
     }
 }
