@@ -21,7 +21,7 @@ test('PM dashboard renders shift header, hours, and key action cards', async ({ 
   await expect(page.getByText('PM Shift Handover')).toBeVisible();
   await expect(page.getByText('Hours: 14:00 – 22:00')).toBeVisible();
   await expect(page.getByRole('button', { name: /Continue Draft/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Budget/i })).toBeVisible();
+  await expect(page.locator('.shift-dashboard').getByRole('button', { name: /Budget/i })).toBeVisible();
 });
 
 test('Night dashboard renders shift header, hours, and key action cards', async ({ page }) => {
