@@ -1,4 +1,4 @@
-import { setSelectedShift } from '../state/appState.js';
+import { setSelectedShift, setActiveSessionContext } from '../state/appState.js';
 
 function readRuntime(status, keys, fallback = 'Unknown') {
   for (const key of keys) {
@@ -39,9 +39,9 @@ export function renderShiftDashboardScreen(root, state, shiftConfig) {
     </div>
 
     <div class="shift-dashboard-grid primary-grid">
-      ${actionCard("Create Today's Handover", 'shift', 'Opens legacy shift workflow · Phase 10E next')}
-      ${actionCard('Continue Draft', 'dashboard', 'Opens existing legacy dashboard · Phase 10E next')}
-      ${actionCard('Open Existing Handover', 'history', 'Browse prior sessions and drafts')}
+      ${actionCard("Create Today's Handover", 'sessionCreate', 'Open shift/date session context')}
+      ${actionCard('Continue Draft', 'sessionContinue', 'Continue in-progress handover for this shift')}
+      ${actionCard('Open Existing Handover', 'sessionOpen', 'Open existing handover lookup session')}
     </div>
 
     <div class="shift-dashboard-grid workflow-grid">
@@ -72,6 +72,19 @@ export function renderShiftDashboardScreen(root, state, shiftConfig) {
   </section>`;
 
   root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }));
+    const route = button.dataset.nav;
+    if (route === 'sessionCreate' || route === 'sessionContinue' || route === 'sessionOpen') {
+      const mode = route === 'sessionCreate' ? 'create' : route === 'sessionContinue' ? 'continue' : 'open';
+      setActiveSessionContext({
+        selectedShift: shiftConfig.shiftCode,
+        selectedShiftLabel: shiftConfig.label,
+        activeSessionMode: mode,
+        activeSessionDate: dateLabel,
+        activeSessionStatus: mode === 'create' ? 'Draft not started' : mode === 'continue' ? 'Draft in progress' : 'Existing handover lookup'
+      });
+      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route, shiftCode: shiftConfig.shiftCode, shiftLabel: shiftConfig.label, accent: shiftConfig.accent } }));
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route } }));
   }));
 }

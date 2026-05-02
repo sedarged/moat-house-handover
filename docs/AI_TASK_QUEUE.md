@@ -103,3 +103,8 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Shift dashboards include shift-specific headers, major workflow cards, and runtime/lock/provider readiness panel.
 - [x] Home shift cards route to AM/PM/Night dashboards with AM red, PM blue, NS green identity styling.
 - Next queued: Phase 10E — Handover Session UI.
+
+## Phase 10E update
+- [x] Handover Session UI implemented with Create/Continue/Open entry from AM/PM/Night dashboards.
+- [x] Session screen now shows shift/date/mode/status context and routes to Department Board, Budget, Attachments, Preview/Reports.
+- Next queued: Phase 10F — Department Board UI.
