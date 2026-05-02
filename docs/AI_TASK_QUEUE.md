@@ -93,3 +93,8 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 ## Phase 10B update
 - [x] App-level lock and shared SQLite write-safety foundation.
 - Next queued: Phase 10C — Main Menu + App Shell UI.
+
+
+## Phase 10C update
+- [x] Main Menu + App Shell UI implemented in webapp (home, nav shell, module placeholders, runtime status strip).
+- Next queued: Phase 10D — Shift Dashboards.

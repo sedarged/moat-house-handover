@@ -1,7 +1,10 @@
 import { createInitialSessionState } from '../models/contracts.js';
 
 export const appState = {
-  currentRoute: 'shift',
+  currentRoute: 'home',
+  selectedShift: null,
+  runtimeStatus: null,
+  runtimeStatusError: null,
   session: createInitialSessionState(),
   activeDepartmentName: null,
   activeDepartment: null,
@@ -14,6 +17,10 @@ export const appState = {
   generatedReports: [],
   sendPackage: null
 };
+
+export function setSelectedShift(shiftCode) { appState.selectedShift = shiftCode || null; }
+export function setRuntimeStatus(status) { appState.runtimeStatus = status || null; appState.runtimeStatusError = null; }
+export function setRuntimeStatusError(message) { appState.runtimeStatusError = message || 'Status unavailable'; }
 
 export function applySessionPayload(sessionPayload) {
   appState.activeDepartmentName = null;
@@ -42,71 +49,24 @@ export function applySessionPayload(sessionPayload) {
   };
 }
 
-export function setActiveDepartmentName(deptName) {
-  appState.activeDepartmentName = deptName || null;
-}
-
-export function applyActiveDepartmentPayload(payload) {
-  appState.activeDepartment = payload || null;
-  appState.activeDepartmentName = payload?.deptName || appState.activeDepartmentName;
-}
-
+export function setActiveDepartmentName(deptName) { appState.activeDepartmentName = deptName || null; }
+export function applyActiveDepartmentPayload(payload) { appState.activeDepartment = payload || null; appState.activeDepartmentName = payload?.deptName || appState.activeDepartmentName; }
 export function applyDepartmentSummaryPayload(departments) {
-  if (!Array.isArray(departments)) {
-    return;
-  }
-
+  if (!Array.isArray(departments)) return;
   appState.session.departments = departments;
-
-  const latest = departments
-    .filter((dept) => dept?.updatedAt)
-    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
-
-  if (latest) {
-    appState.session.updatedAt = latest.updatedAt;
-    appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy;
-  }
+  const latest = departments.filter((dept) => dept?.updatedAt).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+  if (latest) { appState.session.updatedAt = latest.updatedAt; appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy; }
 }
-
 export function applyAttachmentListPayload(listPayload) {
   appState.activeAttachments = Array.isArray(listPayload?.attachments) ? listPayload.attachments : [];
-
   if (!appState.activeAttachments.some((item) => item.attachmentId === appState.selectedAttachmentId)) {
     appState.selectedAttachmentId = appState.activeAttachments[0]?.attachmentId ?? null;
   }
 }
-
-export function setSelectedAttachmentId(attachmentId) {
-  appState.selectedAttachmentId = attachmentId || null;
-}
-
-export function applyViewerPayload(viewerPayload) {
-  appState.viewerState = viewerPayload || null;
-  appState.selectedAttachmentId = viewerPayload?.current?.attachmentId || appState.selectedAttachmentId;
-}
-
-export function applyBudgetPayload(payload) {
-  appState.activeBudget = payload || null;
-  appState.budgetSummary = payload?.summary || payload?.totals || null;
-}
-
-export function applyBudgetSummaryPayload(payload) {
-  appState.budgetSummary = payload || null;
-}
-
-export function applyPreviewPayload(payload) {
-  appState.preview = payload || null;
-}
-
-export function appendGeneratedReport(result) {
-  if (!result) {
-    return;
-  }
-
-  const existing = Array.isArray(appState.generatedReports) ? appState.generatedReports : [];
-  appState.generatedReports = [result, ...existing].slice(0, 10);
-}
-
-export function applySendPackagePayload(payload) {
-  appState.sendPackage = payload || null;
-}
+export function setSelectedAttachmentId(attachmentId) { appState.selectedAttachmentId = attachmentId || null; }
+export function applyViewerPayload(viewerPayload) { appState.viewerState = viewerPayload || null; appState.selectedAttachmentId = viewerPayload?.current?.attachmentId || appState.selectedAttachmentId; }
+export function applyBudgetPayload(payload) { appState.activeBudget = payload || null; appState.budgetSummary = payload?.summary || payload?.totals || null; }
+export function applyBudgetSummaryPayload(payload) { appState.budgetSummary = payload || null; }
+export function applyPreviewPayload(payload) { appState.preview = payload || null; }
+export function appendGeneratedReport(result) { if (!result) return; const existing = Array.isArray(appState.generatedReports) ? appState.generatedReports : []; appState.generatedReports = [result, ...existing].slice(0, 10); }
+export function applySendPackagePayload(payload) { appState.sendPackage = payload || null; }
