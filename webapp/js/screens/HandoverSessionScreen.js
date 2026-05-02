@@ -7,18 +7,49 @@ function readRuntime(status, keys, fallback = 'Unknown') {
   return fallback;
 }
 
-function summaryCard(label, value) {
-  return `<article class="session-summary-card"><span>${label}</span><strong>${value}</strong></article>`;
+function createElement(tagName, className, text) {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  if (text !== undefined && text !== null) element.textContent = String(text);
+  return element;
 }
 
-function actionCard(label, route, note) {
-  return `<button class="session-workflow-card" data-nav="${route}"><span>${label}</span><small>${note}</small></button>`;
+function createButton(label, className, route) {
+  const button = createElement('button', className, label);
+  if (route) button.dataset.nav = route;
+  return button;
+}
+
+function createSummaryCard(label, value) {
+  const card = createElement('article', 'session-summary-card');
+  card.append(createElement('span', null, label), createElement('strong', null, value));
+  return card;
+}
+
+function createActionCard(label, route, note) {
+  const button = createElement('button', 'session-workflow-card');
+  button.dataset.nav = route;
+  button.append(createElement('span', null, label), createElement('small', null, note));
+  return button;
+}
+
+function addReadinessRow(parent, label, value, title) {
+  parent.append(createElement('span', null, label));
+  const strong = createElement('strong', null, value);
+  if (title) strong.title = title;
+  parent.append(strong);
 }
 
 function statusFromMode(mode) {
   if (mode === 'create') return 'Draft not started';
   if (mode === 'continue') return 'Draft in progress';
   return 'Existing handover lookup';
+}
+
+function addNavigateHandlers(root) {
+  root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }));
+  }));
 }
 
 export function renderHandoverSessionScreen(root, state, sessionConfig) {
@@ -49,54 +80,64 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   const lastSaved = state.session?.updatedAt || state.session?.createdAt || 'Not saved yet';
   const modeLabel = sessionConfig.mode === 'create' ? 'Create' : sessionConfig.mode === 'continue' ? 'Continue' : 'Open';
 
-  root.innerHTML = `<section class="handover-session shift-${sessionConfig.accent}">
-    <div class="session-header-card">
-      <p class="session-kicker">${sessionConfig.shiftLabel}</p>
-      <h2>${sessionConfig.shiftLabel} Handover Session</h2>
-      <p>Hours: ${sessionConfig.hours} · Date: ${dateLabel}</p>
-      <p>Mode: ${modeLabel} · Status: ${sessionStatus}</p>
-    </div>
+  const section = createElement('section', `handover-session shift-${sessionConfig.accent}`);
 
-    <div class="session-summary-grid">
-      ${summaryCard('Session date', dateLabel)}
-      ${summaryCard('Shift', sessionConfig.shiftCode)}
-      ${summaryCard('Supervisor/User', state.session?.updatedBy || state.session?.createdBy || 'Supervisor')}
-      ${summaryCard('Status', sessionStatus)}
-      ${summaryCard('Last saved', lastSaved)}
-      ${summaryCard('Data provider', provider)}
-    </div>
+  const header = createElement('div', 'session-header-card');
+  header.append(
+    createElement('p', 'session-kicker', sessionConfig.shiftLabel),
+    createElement('h2', null, `${sessionConfig.shiftLabel} Handover Session`),
+    createElement('p', null, `Hours: ${sessionConfig.hours} · Date: ${dateLabel}`),
+    createElement('p', null, `Mode: ${modeLabel} · Status: ${sessionStatus}`)
+  );
+  section.append(header);
 
-    <div class="session-actions-row">
-      <button class="btn btn-primary" data-action="start">${modeLabel === 'Create' ? 'Start / Create Session' : modeLabel === 'Continue' ? 'Continue Session' : 'Open Session Lookup'}</button>
-      <button class="btn btn-ghost" disabled>Save Draft (Phase 10F+)</button>
-      <button class="btn btn-ghost" data-nav="${sessionConfig.dashboardRoute}">Back to Shift Dashboard</button>
-      <button class="btn btn-ghost" data-nav="home">Back to Home</button>
-    </div>
+  const summaryGrid = createElement('div', 'session-summary-grid');
+  summaryGrid.append(
+    createSummaryCard('Session date', dateLabel),
+    createSummaryCard('Shift', sessionConfig.shiftCode),
+    createSummaryCard('Supervisor/User', state.session?.updatedBy || state.session?.createdBy || 'Supervisor'),
+    createSummaryCard('Status', sessionStatus),
+    createSummaryCard('Last saved', lastSaved),
+    createSummaryCard('Data provider', provider)
+  );
+  section.append(summaryGrid);
 
-    <div class="session-workflow-grid">
-      ${actionCard('Department Board', 'dashboard', 'Phase 10F editor UI next')}
-      ${actionCard('Budget', 'budgetMenu', 'Budget UI available via module menu')}
-      ${actionCard('Attachments', 'attachments', 'Phase 10H full workflow')}
-      ${actionCard('Preview / Reports', 'reports', 'Preview and reporting module')}
-    </div>
+  const actionsRow = createElement('div', 'session-actions-row');
+  const startLabel = modeLabel === 'Create' ? 'Start / Create Session' : modeLabel === 'Continue' ? 'Continue Session' : 'Open Session Lookup';
+  const startButton = createElement('button', 'btn btn-primary', startLabel);
+  startButton.dataset.action = 'start';
+  actionsRow.append(
+    startButton,
+    Object.assign(createElement('button', 'btn btn-ghost', 'Save Draft (Phase 10F+)'), { disabled: true }),
+    createButton('Back to Shift Dashboard', 'btn btn-ghost', sessionConfig.dashboardRoute),
+    createButton('Back to Home', 'btn btn-ghost', 'home')
+  );
+  section.append(actionsRow);
 
-    <div class="session-readiness-panel">
-      <h3>Runtime / Readiness</h3>
-      <div class="session-readiness-grid">
-        <span>Active provider</span><strong>${provider}</strong>
-        <span>Data root</span><strong title="${dataRoot}">${dataRoot}</strong>
-        <span>Lock status</span><strong>${lockStatus}</strong>
-        <span>Read / Write</span><strong>${canRead ? 'Read' : 'Blocked'} / ${canWrite ? 'Write' : 'Read-only'}</strong>
-        <span>AccessLegacy</span><strong>${accessPath ? 'Ready' : 'Unavailable'}</strong>
-        <span>SQLite readiness</span><strong>${sqliteReady ? 'Ready' : 'Not started'}</strong>
-      </div>
-    </div>
-  </section>`;
+  const workflowGrid = createElement('div', 'session-workflow-grid');
+  workflowGrid.append(
+    createActionCard('Department Board', 'departmentBoard', 'Supervisor handover board for this shift/session'),
+    createActionCard('Budget', 'budgetMenu', 'Budget UI available via module menu'),
+    createActionCard('Attachments', 'attachments', 'Phase 10H full workflow'),
+    createActionCard('Preview / Reports', 'reports', 'Preview and reporting module')
+  );
+  section.append(workflowGrid);
 
-  root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }));
-  }));
+  const readiness = createElement('div', 'session-readiness-panel');
+  readiness.append(createElement('h3', null, 'Runtime / Readiness'));
+  const readinessGrid = createElement('div', 'session-readiness-grid');
+  addReadinessRow(readinessGrid, 'Active provider', provider);
+  addReadinessRow(readinessGrid, 'Data root', dataRoot, dataRoot);
+  addReadinessRow(readinessGrid, 'Lock status', lockStatus);
+  addReadinessRow(readinessGrid, 'Read / Write', `${canRead ? 'Read' : 'Blocked'} / ${canWrite ? 'Write' : 'Read-only'}`);
+  addReadinessRow(readinessGrid, 'AccessLegacy', accessPath ? 'Ready' : 'Unavailable');
+  addReadinessRow(readinessGrid, 'SQLite readiness', sqliteReady ? 'Ready' : 'Not started');
+  readiness.append(readinessGrid);
+  section.append(readiness);
 
+  root.replaceChildren(section);
+
+  addNavigateHandlers(root);
   root.querySelector('[data-action="start"]')?.addEventListener('click', () => {
     const nextRoute = sessionConfig.mode === 'open' ? 'history' : 'dashboard';
     window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: nextRoute } }));
