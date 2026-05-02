@@ -19,7 +19,9 @@ test('Handover Session Department Board opens Department Status Board with shift
   }
 
   await page.getByRole('button', { name: /Open Department/i }).first().click();
-  await expect(page.getByText('Department Detail Entry')).toBeVisible();
+  const detail = page.locator('.department-detail-entry');
+  await expect(detail.getByRole('heading', { name: 'Department Detail Entry' })).toBeVisible();
+  await expect(detail.getByText(/Status:/)).toBeVisible();
   await page.getByRole('button', { name: /Back to Department Status Board/i }).click();
   await expect(page.getByText('DEPARTMENT STATUS')).toBeVisible();
 
