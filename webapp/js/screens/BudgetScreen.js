@@ -1,14 +1,66 @@
 import { budgetService } from '../services/budgetService.js';
 import { applyBudgetPayload, applyBudgetSummaryPayload } from '../state/appState.js';
-import {
-  iconBrandSvg, iconArrowLeft, iconBell, iconUser, iconCalendar,
-  iconClockSm, iconSave, iconRefresh, iconChart
-} from '../core/icons.js';
+
+const FALLBACK_BUDGET_ROWS = [
+  { budgetRowId: 1, deptName: 'Injection', plannedQty: 6, usedQty: 6, reasonText: '' },
+  { budgetRowId: 2, deptName: 'MetaPress', plannedQty: 4, usedQty: 4, reasonText: '' },
+  { budgetRowId: 3, deptName: 'Berks', plannedQty: 3, usedQty: 3, reasonText: '' },
+  { budgetRowId: 4, deptName: 'Wilts', plannedQty: 3, usedQty: 2, reasonText: 'Holiday' },
+  { budgetRowId: 5, deptName: 'Further Processing', plannedQty: 4, usedQty: 3, reasonText: 'Absent' },
+  { budgetRowId: 6, deptName: 'Brine operative', plannedQty: 2, usedQty: 2, reasonText: '' },
+  { budgetRowId: 7, deptName: 'Rack cleaner / domestic', plannedQty: 2, usedQty: 1, reasonText: 'Holiday' },
+  { budgetRowId: 8, deptName: 'Goods In', plannedQty: 2, usedQty: 2, reasonText: '' },
+  { budgetRowId: 9, deptName: 'Dry Goods', plannedQty: 2, usedQty: 1, reasonText: 'Agency cover' },
+  { budgetRowId: 10, deptName: 'Supervisors', plannedQty: 3, usedQty: 3, reasonText: '' },
+  { budgetRowId: 11, deptName: 'Admin', plannedQty: 2, usedQty: 2, reasonText: '' },
+  { budgetRowId: 12, deptName: 'Cleaners', plannedQty: 2, usedQty: 2, reasonText: '' },
+  { budgetRowId: 13, deptName: 'Stock controller', plannedQty: 1, usedQty: 1, reasonText: '' },
+  { budgetRowId: 14, deptName: 'Training', plannedQty: 1, usedQty: 1, reasonText: '' },
+  { budgetRowId: 15, deptName: 'Trolley Porter T1/T2', plannedQty: 2, usedQty: 2, reasonText: '' },
+  { budgetRowId: 16, deptName: 'Butchery', plannedQty: 2, usedQty: 2, reasonText: '' }
+];
+
+function createElement(tagName, className, text) {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  if (text !== undefined && text !== null) element.textContent = String(text);
+  return element;
+}
+
+function createButton(label, className, id) {
+  const button = createElement('button', className, label);
+  button.type = 'button';
+  if (id) button.id = id;
+  return button;
+}
+
+function createInfoItem(label, value) {
+  const item = createElement('div', 'infobar-item');
+  item.append(createElement('span', null, `${label}: ${value}`));
+  return item;
+}
+
+function createFieldCard(label, value, className = 'budget-summary-value') {
+  const card = createElement('div');
+  card.append(createElement('div', 'form-label', label), createElement('div', className, value));
+  return card;
+}
+
+function createSummaryLine(label, value, valueClass = '') {
+  const row = createElement('div', 'field-row');
+  row.append(createElement('span', 'field-label', label), createElement('span', `field-value ${valueClass}`.trim(), value));
+  return row;
+}
 
 function toNumberOrNull(value) {
   if (value === '' || value == null) return null;
   const n = Number(value);
   return Number.isNaN(n) ? null : n;
+}
+
+function asNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function fmt(value) {
@@ -17,361 +69,343 @@ function fmt(value) {
   return Number.isFinite(n) ? n.toFixed(0) : '—';
 }
 
-function formatDate(iso) {
-  if (!iso) return '—';
-  try { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; } catch { return iso; }
+function formatDate(value) {
+  if (!value) return new Date().toLocaleDateString();
+  if (String(value).includes('-')) {
+    const parts = String(value).split('T')[0].split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return String(value);
 }
 
-function varianceClass(v) {
-  if (v == null) return '';
-  const n = Number(v);
-  if (n > 0)  return 'variance-over';
-  if (n < 0)  return 'variance-under';
-  return 'variance-target';
+function formatTime(value) {
+  if (!value) return 'Not updated';
+  const text = String(value);
+  if (text.includes('T')) return text.split('T')[1]?.slice(0, 5) || text;
+  return text;
 }
 
-function budgetStatusClass(status) {
-  const s = (status || '').toLowerCase();
-  if (s === 'over')      return 'value-orange';
-  if (s === 'under')     return 'value-green';
-  if (s === 'on target') return 'value-green';
-  return 'value-muted';
+function clampReason(value) {
+  const reason = String(value || '').trim();
+  if (!reason) return '';
+  const lower = reason.toLowerCase();
+  if (lower.includes('holiday')) return 'Holiday';
+  if (lower.includes('absent')) return 'Absent';
+  if (lower.includes('agency')) return 'Agency cover';
+  if (lower.includes('other')) return 'Other reason';
+  return reason;
+}
+
+function varianceClass(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'value-muted';
+  if (n < 0) return 'value-red';
+  if (n > 0) return 'value-orange';
+  return 'value-green';
+}
+
+function normalizeRows(rows) {
+  const source = Array.isArray(rows) && rows.length ? rows : FALLBACK_BUDGET_ROWS;
+  return source.map((row, index) => {
+    const plannedQty = toNumberOrNull(row.plannedQty ?? row.budgetStaff ?? row.plannedStaff);
+    const usedQty = toNumberOrNull(row.usedQty ?? row.staffUsed);
+    const variance = asNumber(usedQty) - asNumber(plannedQty);
+    return {
+      budgetRowId: Number(row.budgetRowId ?? index + 1),
+      deptName: String(row.deptName || row.department || row.labourArea || FALLBACK_BUDGET_ROWS[index]?.deptName || `Row ${index + 1}`),
+      plannedQty,
+      usedQty,
+      variance,
+      reasonText: clampReason(row.reasonText ?? row.reason ?? '')
+    };
+  });
+}
+
+function deriveSummary(rows, meta = {}, existingSummary = {}) {
+  const plannedTotal = rows.reduce((sum, row) => sum + asNumber(row.plannedQty), 0);
+  const usedTotal = rows.reduce((sum, row) => sum + asNumber(row.usedQty), 0);
+  const varianceTotal = usedTotal - plannedTotal;
+  const reasons = rows.map((row) => String(row.reasonText || '').toLowerCase());
+  return {
+    linesPlanned: toNumberOrNull(meta.linesPlanned ?? existingSummary.linesPlanned ?? existingSummary.linesCount) ?? 3,
+    totalStaffOnRegister: toNumberOrNull(meta.totalStaffOnRegister ?? existingSummary.totalStaffOnRegister) ?? 44,
+    plannedTotal,
+    usedTotal,
+    varianceTotal,
+    holidayCount: reasons.filter((reason) => reason.includes('holiday')).length,
+    absentCount: reasons.filter((reason) => reason.includes('absent')).length,
+    agencyUsedCount: reasons.filter((reason) => reason.includes('agency')).length,
+    otherReasonCount: reasons.filter((reason) => reason && !reason.includes('holiday') && !reason.includes('absent') && !reason.includes('agency')).length,
+    comments: meta.comments ?? existingSummary.comments ?? 'One operator moved to cover line support.\nNo agency required.',
+    lastUpdatedAt: existingSummary.lastUpdatedAt || existingSummary.updatedAt || null,
+    status: varianceTotal === 0 ? 'On target' : varianceTotal < 0 ? 'Under' : 'Over'
+  };
+}
+
+function collectRows(tableBody) {
+  return [...tableBody.querySelectorAll('tr[data-row-id]')].map((tr) => ({
+    budgetRowId: Number(tr.dataset.rowId),
+    deptName: tr.dataset.deptName || '',
+    plannedQty: toNumberOrNull(tr.querySelector('input[name="plannedQty"]')?.value),
+    usedQty: toNumberOrNull(tr.querySelector('input[name="usedQty"]')?.value),
+    reasonText: clampReason(tr.querySelector('input[name="reasonText"]')?.value || '')
+  }));
 }
 
 function collectMeta(screen) {
   return {
     linesPlanned: toNumberOrNull(screen.querySelector('#sum-lines-input')?.value),
     totalStaffOnRegister: toNumberOrNull(screen.querySelector('#sum-register-input')?.value),
-    comments: screen.querySelector('#budget-comments')?.value || ""
+    comments: screen.querySelector('#budget-comments')?.value || ''
   };
-}
-
-function collectRows(tableBody) {
-  const rows = [];
-  tableBody.querySelectorAll('tr[data-row-id]').forEach((tr) => {
-    rows.push({
-      budgetRowId: Number(tr.dataset.rowId),
-      deptName:    tr.dataset.deptName || '',
-      plannedQty:  toNumberOrNull(tr.querySelector('input[name="plannedQty"]')?.value),
-      usedQty:     toNumberOrNull(tr.querySelector('input[name="usedQty"]')?.value),
-      reasonText:  tr.querySelector('textarea[name="reasonText"]')?.value || ''
-    });
-  });
-  return rows;
 }
 
 function validateRows(rows) {
   const errors = [];
-  rows.forEach((r) => {
-    if (r.plannedQty != null && r.plannedQty < 0) errors.push(`${r.deptName || 'Row'}: planned cannot be negative.`);
-    if (r.usedQty   != null && r.usedQty   < 0) errors.push(`${r.deptName || 'Row'}: used cannot be negative.`);
+  rows.forEach((row) => {
+    if (row.plannedQty != null && row.plannedQty < 0) errors.push(`${row.deptName || 'Row'}: planned cannot be negative.`);
+    if (row.usedQty != null && row.usedQty < 0) errors.push(`${row.deptName || 'Row'}: used cannot be negative.`);
   });
-  return { ok: errors.length === 0, errors };
+  return errors;
 }
 
 function validateMeta(meta) {
   const errors = [];
   if (meta.linesPlanned != null && meta.linesPlanned < 0) errors.push('Lines planned cannot be negative.');
   if (meta.totalStaffOnRegister != null && meta.totalStaffOnRegister < 0) errors.push('Total staff on register cannot be negative.');
-  return { ok: errors.length === 0, errors };
+  return errors;
 }
 
-function buildRows(tableBody, rows) {
-  tableBody.innerHTML = '';
+function addNavigate(button, route) {
+  button.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route } }));
+  });
+}
+
+function buildHeader(screen, session, dateLabel, shiftCode, linesPlanned, lastUpdated) {
+  const header = createElement('header', 'screen-header');
+  const back = createButton('‹', 'header-back', 'budget-back-hdr');
+  const brand = createElement('div', 'header-brand');
+  brand.append(createElement('div', 'header-brand-text', 'MOAT HOUSE\nOPERATIONS'));
+  header.append(back, brand, createElement('div', 'header-title', 'BUDGET SUMMARY'));
+  const actions = createElement('div', 'header-actions');
+  actions.append(createElement('span', null, session?.userName || 'Supervisor'));
+  header.append(actions);
+  screen.append(header);
+
+  const info = createElement('div', 'screen-infobar');
+  info.append(
+    createInfoItem('Date', dateLabel),
+    createInfoItem('Shift', shiftCode),
+    createInfoItem('Lines planned', linesPlanned),
+    createInfoItem('Last updated', lastUpdated)
+  );
+  screen.append(info);
+}
+
+function buildTableRows(tableBody, rows, editable) {
+  tableBody.replaceChildren();
   rows.forEach((row) => {
     const tr = document.createElement('tr');
-    tr.dataset.rowId   = String(row.budgetRowId);
-    tr.dataset.deptName = row.deptName || '';
-
-    const deptTd = document.createElement('td');
-    deptTd.textContent = row.deptName || '';
-    deptTd.className = 'budget-dept-name';
+    tr.dataset.rowId = String(row.budgetRowId);
+    tr.dataset.deptName = row.deptName;
+    tr.append(createElement('td', 'budget-dept-name', row.deptName));
 
     const plannedTd = document.createElement('td');
-    const plannedIn = document.createElement('input');
-    plannedIn.type = 'number'; plannedIn.name = 'plannedQty';
-    plannedIn.min = '0'; plannedIn.step = '1';
-    plannedIn.value = row.plannedQty ?? '';
-    plannedIn.placeholder = '0';
-    plannedTd.append(plannedIn);
+    const plannedInput = document.createElement('input');
+    plannedInput.type = 'number';
+    plannedInput.name = 'plannedQty';
+    plannedInput.min = '0';
+    plannedInput.step = '1';
+    plannedInput.value = row.plannedQty ?? '';
+    plannedInput.disabled = !editable;
+    plannedTd.append(plannedInput);
+    tr.append(plannedTd);
 
     const usedTd = document.createElement('td');
-    const usedIn = document.createElement('input');
-    usedIn.type = 'number'; usedIn.name = 'usedQty';
-    usedIn.min = '0'; usedIn.step = '1';
-    usedIn.value = row.usedQty ?? '';
-    usedIn.placeholder = '0';
-    usedTd.append(usedIn);
-
-    const varTd = document.createElement('td');
-    varTd.className = varianceClass(row.variance);
-    varTd.textContent = row.variance != null ? (Number(row.variance) > 0 ? '+' : '') + fmt(row.variance) : '—';
+    const usedInput = document.createElement('input');
+    usedInput.type = 'number';
+    usedInput.name = 'usedQty';
+    usedInput.min = '0';
+    usedInput.step = '1';
+    usedInput.value = row.usedQty ?? '';
+    usedInput.disabled = !editable;
+    usedTd.append(usedInput);
+    tr.append(usedTd);
 
     const reasonTd = document.createElement('td');
-    const reasonTa = document.createElement('textarea');
-    reasonTa.name = 'reasonText'; reasonTa.rows = 1;
-    reasonTa.value = row.reasonText || '';
-    reasonTa.placeholder = 'Reason…';
-    reasonTd.append(reasonTa);
-
-    tr.append(deptTd, plannedTd, usedTd, varTd, reasonTd);
+    const reasonInput = document.createElement('input');
+    reasonInput.type = 'text';
+    reasonInput.name = 'reasonText';
+    reasonInput.value = row.reasonText || '';
+    reasonInput.placeholder = 'Reason';
+    reasonInput.disabled = !editable;
+    reasonTd.append(reasonInput);
+    tr.append(reasonTd);
     tableBody.append(tr);
   });
+
+  const totals = deriveSummary(rows);
+  const totalRow = document.createElement('tr');
+  totalRow.className = 'budget-total-row';
+  totalRow.append(
+    createElement('td', 'budget-dept-name', 'Total number of staff'),
+    createElement('td', null, fmt(totals.plannedTotal)),
+    createElement('td', null, fmt(totals.usedTotal)),
+    createElement('td', varianceClass(totals.varianceTotal), totals.varianceTotal > 0 ? `+${fmt(totals.varianceTotal)}` : fmt(totals.varianceTotal))
+  );
+  tableBody.append(totalRow);
 }
 
 export function renderBudgetScreen(root, state) {
-  const session = state.session;
-  if (!session?.sessionId) {
-    root.innerHTML = `<div class="screen"><div class="screen-content" style="display:flex;align-items:center;justify-content:center;"><p class="status-line">Open a session first.</p></div></div>`;
-    return;
+  const session = state.session || {};
+  const shiftCode = state.selectedShift || session.shiftCode || 'PM';
+  const dateLabel = formatDate(state.activeSessionDate || session.shiftDate);
+  let editable = false;
+  let currentRows = normalizeRows(state.budgetRows);
+  let currentSummary = deriveSummary(currentRows, {}, state.budgetSummary || {});
+
+  const screen = createElement('div', 'screen shift-budget');
+  buildHeader(screen, session, dateLabel, shiftCode, currentSummary.linesPlanned, formatTime(currentSummary.lastUpdatedAt));
+
+  const content = createElement('div', 'screen-content two-col');
+  const left = createElement('div');
+  const right = createElement('aside');
+
+  const tableBlock = createElement('section', 'section-block budget-section budget-rows-section');
+  tableBlock.append(createElement('div', 'section-header', 'Department labour budget'));
+  const message = createElement('p', 'status-line', 'UI fallback/dev seed until persisted budget data is loaded.');
+  message.id = 'budget-message';
+  tableBlock.append(message);
+  const tableWrap = createElement('div', 'table-wrap budget-table-wrap');
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  ['Department', 'Budget Staff', 'Staff Used', 'Reason'].forEach((label) => headerRow.append(createElement('th', null, label)));
+  thead.append(headerRow);
+  const tableBody = document.createElement('tbody');
+  tableBody.id = 'budget-rows';
+  table.append(thead, tableBody);
+  tableWrap.append(table);
+  tableBlock.append(tableWrap);
+  left.append(tableBlock);
+
+  const summaryPanel = createElement('section', 'section-block budget-section');
+  summaryPanel.append(createElement('div', 'section-header', 'Summary'));
+  const summaryGrid = createElement('div', 'field-list');
+  summaryPanel.append(summaryGrid);
+  right.append(summaryPanel);
+
+  const commentsPanel = createElement('section', 'section-block budget-section');
+  commentsPanel.append(createElement('div', 'section-header', 'Comments'));
+  const comments = document.createElement('textarea');
+  comments.id = 'budget-comments';
+  comments.className = 'budget-comments';
+  comments.disabled = true;
+  commentsPanel.append(comments);
+  right.append(commentsPanel);
+
+  content.append(left, right);
+  screen.append(content);
+
+  const footer = createElement('footer', 'screen-footer');
+  const refreshBtn = createButton('Refresh', 'btn', 'budget-refresh');
+  const editBtn = createButton('Edit', 'btn', 'budget-edit');
+  const saveBtn = createButton('Save & Close', 'btn btn-primary', 'budget-save');
+  const printBtn = createButton('Print', 'btn', 'budget-print');
+  footer.append(refreshBtn, editBtn, saveBtn, printBtn);
+  screen.append(footer);
+
+  root.replaceChildren(screen);
+
+  function renderState(statusMessage = '') {
+    currentRows = normalizeRows(currentRows);
+    currentSummary = deriveSummary(currentRows, collectMeta(screen), currentSummary);
+    buildTableRows(tableBody, currentRows, editable);
+    summaryGrid.replaceChildren(
+      createSummaryLine('Date', dateLabel),
+      createSummaryLine('Shift', shiftCode),
+      createSummaryLine('Lines planned', fmt(currentSummary.linesPlanned)),
+      createSummaryLine('Total staff required', fmt(currentSummary.plannedTotal), 'value-orange'),
+      createSummaryLine('Total number of staff used', fmt(currentSummary.usedTotal), 'value-green'),
+      createSummaryLine('Total staff on register', fmt(currentSummary.totalStaffOnRegister), 'value-orange'),
+      createSummaryLine('Holiday', fmt(currentSummary.holidayCount), 'value-orange'),
+      createSummaryLine('Absent', fmt(currentSummary.absentCount), 'value-orange'),
+      createSummaryLine('Other reason', fmt(currentSummary.otherReasonCount)),
+      createSummaryLine('Agency used', fmt(currentSummary.agencyUsedCount)),
+      createSummaryLine('Variance', currentSummary.varianceTotal > 0 ? `+${fmt(currentSummary.varianceTotal)}` : fmt(currentSummary.varianceTotal), varianceClass(currentSummary.varianceTotal))
+    );
+    comments.value = currentSummary.comments || '';
+    comments.disabled = !editable;
+    message.textContent = statusMessage || (state.budgetRows?.length ? 'Loaded persisted budget rows.' : 'UI fallback/dev seed. Values are not production records until saved through the host service.');
+    message.className = `status-line ${state.budgetRows?.length ? 'success' : 'warn'}`;
+    editBtn.textContent = editable ? 'View' : 'Edit';
   }
 
-  root.innerHTML = '';
-  const screen = document.createElement('div');
-  screen.className = 'screen';
-
-  screen.innerHTML = `
-    <header class="screen-header">
-      <button class="header-back" id="budget-back-hdr" type="button">${iconArrowLeft}</button>
-      <div class="header-brand">
-        ${iconBrandSvg}
-        <div class="header-brand-text">
-          <span class="header-brand-sub">Moat House</span>
-          <span class="header-brand-name">Operations</span>
-        </div>
-      </div>
-      <div class="header-title">LABOUR BUDGET</div>
-      <div class="header-actions">
-        <button class="header-icon-btn" type="button">${iconBell}</button>
-        <span class="header-divider"></span>
-        <button class="header-icon-btn" type="button">${iconUser}</button>
-      </div>
-    </header>
-
-    <div class="screen-infobar">
-      <div class="infobar-item">
-        <span class="infobar-icon">${iconCalendar}</span>
-        <span>Date: ${formatDate(session.shiftDate)}</span>
-      </div>
-      <div class="infobar-item">
-        <span class="infobar-icon">${iconClockSm}</span>
-        <span>Shift: ${session.shiftCode}</span>
-      </div>
-      <div class="infobar-item">
-        <span class="infobar-icon">${iconUser}</span>
-        <span>Session #${session.sessionId}</span>
-      </div>
-      <div class="infobar-item" id="budget-status-badge"></div>
-    </div>
-
-    <div class="screen-content">
-      <div class="section-block budget-section">
-        <div class="section-header">
-          <span class="section-icon">${iconChart}</span>
-          <span class="section-title">Budget Summary</span>
-        </div>
-        <div class="budget-summary-grid" id="budget-totals-grid">
-          <div><div class="form-label">Lines planned</div><input id="sum-lines-input" type="number" min="0" step="1" placeholder="0" /></div>
-          <div><div class="form-label">Total staff required</div><div id="tot-planned" class="budget-summary-value">—</div></div>
-          <div><div class="form-label">Total staff used</div><div id="tot-used" class="budget-summary-value">—</div></div>
-          <div><div class="form-label">Total staff on register</div><input id="sum-register-input" type="number" min="0" step="1" placeholder="0" /></div>
-          <div><div class="form-label">Variance (Used - Required)</div><div id="tot-variance" class="budget-summary-value">—</div></div>
-        </div>
-        <div class="budget-summary-grid">
-          <div><div class="form-label">Holiday count</div><div id="sum-holiday">—</div></div>
-          <div><div class="form-label">Absent count</div><div id="sum-absent">—</div></div>
-          <div><div class="form-label">Other reason count</div><div id="sum-other">—</div></div>
-          <div><div class="form-label">Agency used count</div><div id="sum-agency">—</div></div>
-          <div><div class="form-label">Overall Status</div><div id="tot-status" class="budget-summary-value">—</div></div>
-        </div>
-        <div><label class="form-label" for="budget-comments">Comments</label><textarea id="budget-comments" rows="2" class="budget-comments"></textarea></div>
-        <p class="status-line budget-updated-line" id="budget-updated"></p>
-      </div>
-
-      <div class="section-block budget-section budget-rows-section">
-        <div class="section-header">
-          <span class="section-title">Labour Rows</span>
-        </div>
-        <p class="status-line" id="budget-message">Loading budget…</p>
-        <div class="table-wrap budget-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="budget-col-dept">Department</th>
-                <th class="budget-col-planned">Budget Staff / Planned Staff</th>
-                <th class="budget-col-used">Staff Used</th>
-                <th class="budget-col-variance">Variance</th>
-                <th class="budget-col-reason">Reason / note</th>
-              </tr>
-            </thead>
-            <tbody id="budget-rows"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <footer class="screen-footer">
-      <button class="btn btn-ghost" id="budget-back-footer" type="button">${iconArrowLeft}&nbsp; Dashboard</button>
-      <button class="btn" id="budget-recalc" type="button">${iconRefresh}&nbsp; Recalculate</button>
-      <button class="btn btn-primary" id="budget-save" type="button">${iconSave}&nbsp; Save Budget</button>
-    </footer>
-  `;
-
-  root.append(screen);
-
-  const message      = screen.querySelector('#budget-message');
-  const tableBody    = screen.querySelector('#budget-rows');
-  const updatedLine  = screen.querySelector('#budget-updated');
-  const statusBadge  = screen.querySelector('#budget-status-badge');
-  const totPlanned   = screen.querySelector('#tot-planned');
-  const totUsed      = screen.querySelector('#tot-used');
-  const totVariance  = screen.querySelector('#tot-variance');
-  const totStatus    = screen.querySelector('#tot-status');
-  const sumLines = screen.querySelector('#sum-lines-input');
-  const sumRegister = screen.querySelector('#sum-register-input');
-  const sumHoliday = screen.querySelector('#sum-holiday');
-  const sumAbsent = screen.querySelector('#sum-absent');
-  const sumOther = screen.querySelector('#sum-other');
-  const sumAgency = screen.querySelector('#sum-agency');
-  const comments = screen.querySelector('#budget-comments');
-  const recalcBtn = screen.querySelector('#budget-recalc');
-  const saveBtn = screen.querySelector('#budget-save');
-
-  const goBack = () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } }));
-  screen.querySelector('#budget-back-hdr')?.addEventListener('click', goBack);
-  screen.querySelector('#budget-back-footer')?.addEventListener('click', goBack);
-
-  function renderTotals(totals, summary) {
-    const variance = totals?.varianceTotal ?? 0;
-    const status   = totals?.status || summary?.status || 'Not set';
-
-    totPlanned.textContent  = fmt(totals?.plannedTotal);
-    totUsed.textContent     = fmt(totals?.usedTotal);
-    totVariance.textContent = (Number(variance) > 0 ? '+' : '') + fmt(variance);
-    totVariance.className   = varianceClass(variance);
-    totStatus.textContent   = status;
-    sumLines.value = summary?.linesPlanned ?? summary?.linesCount ?? "";
-    sumRegister.value = summary?.totalStaffOnRegister ?? "";
-    sumHoliday.textContent = fmt(summary?.holidayCount);
-    sumAbsent.textContent = fmt(summary?.absentCount);
-    sumOther.textContent = fmt(summary?.otherReasonCount);
-    sumAgency.textContent = fmt(summary?.agencyUsedCount);
-    comments.value = summary?.comments || '';
-    totStatus.className     = budgetStatusClass(status);
-
-    statusBadge.textContent = '';
-    const badge = document.createElement('span');
-    badge.className = 'status-badge budget-status-badge';
-    badge.append('Budget: ');
-    const strong = document.createElement('strong');
-    strong.className = budgetStatusClass(status);
-    strong.textContent = status;
-    badge.append(strong);
-    statusBadge.append(badge);
-    updatedLine.textContent = summary?.lastUpdatedAt
-      ? `Last saved: ${summary.lastUpdatedAt} by ${summary.lastUpdatedBy || 'n/a'}`
-      : '';
-  }
-
-  function refreshFromPayload(payload) {
-    applyBudgetPayload(payload);
-    buildRows(tableBody, payload.rows || []);
-    renderTotals(payload.totals, payload.summary);
-    applyBudgetSummaryPayload(payload.summary || null);
-  }
-
-  async function runRecalculate() {
+  function recalculateFromInputs() {
     const rows = collectRows(tableBody);
     const meta = collectMeta(screen);
-    const rowValidation = validateRows(rows);
-    const metaValidation = validateMeta(meta);
-    if (!rowValidation.ok || !metaValidation.ok) {
-      message.textContent = [...rowValidation.errors, ...metaValidation.errors].join(' ');
+    const errors = [...validateRows(rows), ...validateMeta(meta)];
+    if (errors.length) {
+      message.textContent = errors.join(' ');
       message.className = 'status-line error';
       return false;
     }
-
-    message.textContent = 'Recalculating…';
-    message.className = 'status-line';
-    recalcBtn.disabled = true;
-    saveBtn.disabled = true;
-    try {
-      const payload = await budgetService.recalculate(session.sessionId, rows, meta);
-      refreshFromPayload(payload);
-      message.textContent = 'Recalculated.';
-      message.className = 'status-line success';
-      return true;
-    } catch (e) {
-      message.textContent = e instanceof Error ? e.message : 'Recalculate failed.';
-      message.className = 'status-line error';
-      return false;
-    } finally {
-      recalcBtn.disabled = false;
-      saveBtn.disabled = false;
-    }
+    currentRows = normalizeRows(rows);
+    currentSummary = deriveSummary(currentRows, meta, currentSummary);
+    return true;
   }
 
   async function loadBudget() {
-    message.textContent = 'Loading budget from storage…';
-    message.className   = 'status-line';
+    if (!session.sessionId) {
+      renderState('No persisted session id yet. Showing UI fallback/dev seed for the active shift.');
+      return;
+    }
+    message.textContent = 'Loading budget from host service…';
+    message.className = 'status-line';
     try {
       const payload = await budgetService.loadBudget(session.sessionId, session.userName || '');
-      refreshFromPayload(payload);
-      message.textContent = `Loaded ${payload.rows?.length || 0} row(s).`;
-      message.className   = 'status-line success';
-    } catch (e) {
-      message.textContent = e instanceof Error ? e.message : 'Failed to load budget.';
-      message.className   = 'status-line error';
+      currentRows = normalizeRows(payload.rows);
+      currentSummary = deriveSummary(currentRows, {}, payload.summary || {});
+      applyBudgetPayload(payload);
+      applyBudgetSummaryPayload(currentSummary);
+      renderState('Loaded budget from host service.');
+    } catch (error) {
+      renderState(error instanceof Error ? `Host budget load unavailable. Showing UI fallback/dev seed. ${error.message}` : 'Host budget load unavailable. Showing UI fallback/dev seed.');
     }
   }
 
-  screen.querySelector('#budget-recalc')?.addEventListener('click', runRecalculate);
-
-  screen.querySelector('#budget-save')?.addEventListener('click', async () => {
-    const rows = collectRows(tableBody);
-    const meta = collectMeta(screen);
-    const rowValidation = validateRows(rows);
-    const metaValidation = validateMeta(meta);
-    if (!rowValidation.ok || !metaValidation.ok) {
-      message.textContent = [...rowValidation.errors, ...metaValidation.errors].join(' ');
-      message.className   = 'status-line error';
+  refreshBtn.addEventListener('click', loadBudget);
+  editBtn.addEventListener('click', () => {
+    editable = !editable;
+    renderState(editable ? 'Edit mode enabled. Save & Close validates rows before host save.' : 'View mode enabled.');
+  });
+  saveBtn.addEventListener('click', async () => {
+    if (!recalculateFromInputs()) return;
+    if (!session.sessionId) {
+      renderState('Save is not wired until a persisted session exists. No data was written.');
       return;
     }
-    message.textContent = 'Saving budget…';
-    message.className   = 'status-line';
-    recalcBtn.disabled = true;
-    saveBtn.disabled = true;
     try {
-      const payload = await budgetService.saveBudget(session.sessionId, rows, meta, session.userName || '');
-      refreshFromPayload(payload);
-      message.textContent = 'Budget saved.';
-      message.className   = 'status-line success';
-    } catch (e) {
-      message.textContent = e instanceof Error ? e.message : 'Save failed.';
-      message.className   = 'status-line error';
-    } finally {
-      recalcBtn.disabled = false;
-      saveBtn.disabled = false;
+      const payload = await budgetService.saveBudget(session.sessionId, currentRows, collectMeta(screen), session.userName || '');
+      currentRows = normalizeRows(payload.rows);
+      currentSummary = deriveSummary(currentRows, {}, payload.summary || {});
+      applyBudgetPayload(payload);
+      applyBudgetSummaryPayload(currentSummary);
+      editable = false;
+      renderState('Budget saved through host service.');
+    } catch (error) {
+      message.textContent = error instanceof Error ? error.message : 'Save failed.';
+      message.className = 'status-line error';
     }
   });
-
-  tableBody.addEventListener('input', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.matches('input[name="plannedQty"], input[name="usedQty"], textarea[name="reasonText"]')) {
-      message.textContent = 'Unsaved changes. Recalculate to refresh totals.';
-      message.className = 'status-line warn';
-    }
+  printBtn.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'reports' } }));
+  });
+  screen.querySelector('#budget-back-hdr')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'departmentBoard' } }));
   });
 
-  sumLines?.addEventListener('input', () => {
-    message.textContent = 'Unsaved changes. Recalculate to refresh totals.';
-    message.className = 'status-line warn';
-  });
-  sumRegister?.addEventListener('input', () => {
-    message.textContent = 'Unsaved changes. Recalculate to refresh totals.';
-    message.className = 'status-line warn';
-  });
-
+  renderState();
   loadBudget();
 }
