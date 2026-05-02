@@ -108,3 +108,11 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Handover Session UI implemented with Create/Continue/Open entry from AM/PM/Night dashboards.
 - [x] Session screen now shows shift/date/mode/status context and routes to Department Board, Budget, Attachments, Preview/Reports.
 - Next queued: Phase 10F — Department Board UI.
+
+
+## Phase 10F update
+- [x] Department Status Board UI implemented with `departmentBoard` route and exact 13 handover areas.
+- [x] Handover Session Department Board action now opens Department Status Board first.
+- [x] Board uses allowed status set only: Completed, Incomplete, Not updated, Not running.
+- [x] Board explicitly excludes labour allocation/support department list usage.
+- Next queued: Phase 10G — Budget UI.

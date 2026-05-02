@@ -10,6 +10,8 @@ import { renderHomeScreen } from '../screens/HomeScreen.js';
 import { renderModuleScreen } from '../screens/ModuleScreen.js';
 import { renderShiftDashboardScreen } from '../screens/ShiftDashboardScreen.js';
 import { renderHandoverSessionScreen } from '../screens/HandoverSessionScreen.js';
+import { renderDepartmentStatusBoardScreen } from '../screens/DepartmentStatusBoardScreen.js';
+import { renderDepartmentDetailEntryScreen } from '../screens/DepartmentDetailEntryScreen.js';
 
 export const routes = {
   home: { label: 'Home', renderer: renderHomeScreen },
@@ -20,6 +22,9 @@ export const routes = {
   sessionCreate: { label: 'Session Create', renderer: (root, state) => renderHandoverSessionScreen(root, state, { mode: 'create', shiftCode: state.selectedShift || 'AM', shiftLabel: state.selectedShiftLabel || `${state.selectedShift || 'AM'} Shift`, date: state.activeSessionDate || new Date().toLocaleDateString(), accent: (state.selectedShift || 'AM').toLowerCase() === 'ns' ? 'ns' : (state.selectedShift || 'AM').toLowerCase(), hours: state.selectedShift === 'PM' ? '14:00 – 22:00' : state.selectedShift === 'NS' ? '22:00 – 06:00' : '06:00 – 14:00', dashboardRoute: state.selectedShift === 'PM' ? 'pm' : state.selectedShift === 'NS' ? 'night' : 'am' }) },
   sessionContinue: { label: 'Session Continue', renderer: (root, state) => renderHandoverSessionScreen(root, state, { mode: 'continue', shiftCode: state.selectedShift || 'AM', shiftLabel: state.selectedShiftLabel || `${state.selectedShift || 'AM'} Shift`, date: state.activeSessionDate || new Date().toLocaleDateString(), accent: (state.selectedShift || 'AM').toLowerCase() === 'ns' ? 'ns' : (state.selectedShift || 'AM').toLowerCase(), hours: state.selectedShift === 'PM' ? '14:00 – 22:00' : state.selectedShift === 'NS' ? '22:00 – 06:00' : '06:00 – 14:00', dashboardRoute: state.selectedShift === 'PM' ? 'pm' : state.selectedShift === 'NS' ? 'night' : 'am' }) },
   sessionOpen: { label: 'Session Open', renderer: (root, state) => renderHandoverSessionScreen(root, state, { mode: 'open', shiftCode: state.selectedShift || 'AM', shiftLabel: state.selectedShiftLabel || `${state.selectedShift || 'AM'} Shift`, date: state.activeSessionDate || new Date().toLocaleDateString(), accent: (state.selectedShift || 'AM').toLowerCase() === 'ns' ? 'ns' : (state.selectedShift || 'AM').toLowerCase(), hours: state.selectedShift === 'PM' ? '14:00 – 22:00' : state.selectedShift === 'NS' ? '22:00 – 06:00' : '06:00 – 14:00', dashboardRoute: state.selectedShift === 'PM' ? 'pm' : state.selectedShift === 'NS' ? 'night' : 'am' }) },
+
+  departmentBoard: { label: 'Department Board', renderer: (root, state) => renderDepartmentStatusBoardScreen(root, state, { shiftCode: state.selectedShift || 'AM', shiftLabel: state.selectedShiftLabel || `${state.selectedShift || 'AM'} Shift`, sessionDate: state.activeSessionDate || new Date().toLocaleDateString(), sessionMode: state.activeSessionMode, sessionStatus: state.activeSessionStatus, accent: (state.selectedShift || 'AM').toLowerCase() === 'ns' ? 'ns' : (state.selectedShift || 'AM').toLowerCase() }) },
+  departmentDetailEntry: { label: 'Department Detail Entry', renderer: renderDepartmentDetailEntryScreen },
 
   reports: { label: 'Reports / Preview', renderer: renderPreviewScreen },
   budgetMenu: { label: 'Budget', renderer: renderBudgetScreen },

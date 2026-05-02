@@ -74,7 +74,7 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
     </div>
 
     <div class="session-workflow-grid">
-      ${actionCard('Department Board', 'dashboard', 'Phase 10F editor UI next')}
+      ${actionCard('Department Board', 'departmentBoard', 'Supervisor handover board for this shift/session')}
       ${actionCard('Budget', 'budgetMenu', 'Budget UI available via module menu')}
       ${actionCard('Attachments', 'attachments', 'Phase 10H full workflow')}
       ${actionCard('Preview / Reports', 'reports', 'Preview and reporting module')}

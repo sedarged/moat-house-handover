@@ -270,6 +270,18 @@ Must not:
 - open Dashboard without valid active session
 - expose Settings/Diagnostics as normal workflow
 
+### Phase 10F — Department Status Board UI
+
+Department Status Board is the supervisor/operator handover board between Handover Session and Department Detail entry.
+
+- Route: `departmentBoard`
+- Shift title: `AM SHIFT HANDOVER`, `PM SHIFT HANDOVER`, `NIGHT SHIFT HANDOVER`
+- Handover area cards must use only the 13 handover departments from Section 6 (not labour allocation/support department lists).
+- Allowed status labels: `Completed`, `Incomplete`, `Not updated`, `Not running`
+- Layout: top info strip, department status card grid, shift summary section, bottom action bar (`Save`, `Preview`, `Save & Send`, `Budget`)
+- Data may use persisted session/department summaries where available; otherwise UI fallback values are allowed and must be presented honestly as fallback.
+- Open Department from board routes to a detail entry point first; full detail editor remains a later phase.
+
 ## 10. Dashboard screen
 
 Purpose: main operational overview for the active shift/date/session.
