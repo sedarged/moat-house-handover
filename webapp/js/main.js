@@ -4,6 +4,13 @@ import { appState, setRuntimeStatus, setRuntimeStatusError, applySessionPayload,
 
 const root = document.getElementById('screen-root');
 
+function readRuntime(status, keys, fallback = 'Unknown') {
+  for (const key of keys) {
+    if (status && status[key] !== undefined && status[key] !== null && status[key] !== '') return status[key];
+  }
+  return fallback;
+}
+
 function navigate(route) {
   const next = routes[route] ? route : 'home';
   appState.currentRoute = next;
@@ -39,9 +46,9 @@ initializeHostBridge();
 renderShell();
 getRuntimeStatus().then((status)=>{
   setRuntimeStatus(status);
-  document.getElementById('provider-pill').textContent = status.effectiveProvider;
-  document.getElementById('lock-pill').textContent = status.appLockStatus;
-  document.getElementById('root-pill').textContent = status.approvedDataRoot;
+  document.getElementById('provider-pill').textContent = readRuntime(status, ['effectiveProvider', 'EffectiveProvider']);
+  document.getElementById('lock-pill').textContent = readRuntime(status, ['appLockStatus', 'AppLockStatus']);
+  document.getElementById('root-pill').textContent = readRuntime(status, ['approvedDataRoot', 'ApprovedDataRoot']);
   navigate(appState.currentRoute);
 }).catch((err)=>{
   setRuntimeStatusError(err?.message || 'Host bridge unavailable');

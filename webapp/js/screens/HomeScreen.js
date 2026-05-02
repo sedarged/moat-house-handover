@@ -1,3 +1,11 @@
+
+function readRuntime(status, keys, fallback = 'Unknown') {
+  for (const key of keys) {
+    if (status && status[key] !== undefined && status[key] !== null && status[key] !== '') return status[key];
+  }
+  return fallback;
+}
+
 function shiftCard(name, route, hours, cls) {
   return `<article class="mh-shift-card ${cls}"><div class="mh-shift-icon">◷</div><h3>${name}</h3><p>${hours}</p><span class="mh-ready">● Ready</span><button data-nav="${route}" class="btn btn-primary">Open</button></article>`;
 }
@@ -6,12 +14,20 @@ function statusContent(state) {
   if (state.runtimeStatusError) return `<p class="status-line warn">Status unavailable: ${state.runtimeStatusError}</p>`;
   const s = state.runtimeStatus;
   if (!s) return `<p class="status-line warn">Status unavailable in dev mode.</p>`;
-  return `<div class="paths-grid"><span class="paths-label">Active data root</span><span class="paths-value" title="${s.approvedDataRoot}">${s.approvedDataRoot}</span>
-  <span class="paths-label">Active provider</span><span class="paths-value">${s.effectiveProvider}</span>
-  <span class="paths-label">SQLite readiness</span><span class="paths-value">${s.sqliteBootstrapSucceeded ? 'Ready' : 'Warning'}</span>
-  <span class="paths-label">AccessLegacy</span><span class="paths-value">${s.accessDatabasePath ? 'Available' : 'Unavailable'}</span>
-  <span class="paths-label">Lock status</span><span class="paths-value">${s.appLockStatus} — ${s.appLockMessage || ''}</span>
-  <span class="paths-label">Read / Write</span><span class="paths-value">${s.appCanRead ? 'Read' : 'Blocked'} / ${s.appCanWrite ? 'Write' : 'Read-only'}</span></div>`;
+  const rootPath = readRuntime(s, ['approvedDataRoot', 'ApprovedDataRoot']);
+  const provider = readRuntime(s, ['effectiveProvider', 'EffectiveProvider']);
+  const sqliteReady = readRuntime(s, ['sqliteBootstrapSucceeded', 'SqliteBootstrapSucceeded'], false);
+  const accessPath = readRuntime(s, ['accessDatabasePath', 'AccessDatabasePath'], '');
+  const lockStatus = readRuntime(s, ['appLockStatus', 'AppLockStatus']);
+  const lockMessage = readRuntime(s, ['appLockMessage', 'AppLockMessage'], '');
+  const canRead = !!readRuntime(s, ['appCanRead', 'AppCanRead'], false);
+  const canWrite = !!readRuntime(s, ['appCanWrite', 'AppCanWrite'], false);
+  return `<div class="paths-grid"><span class="paths-label">Active data root</span><span class="paths-value" title="${rootPath}">${rootPath}</span>
+  <span class="paths-label">Active provider</span><span class="paths-value">${provider}</span>
+  <span class="paths-label">SQLite readiness</span><span class="paths-value">${sqliteReady ? 'Ready' : 'Warning'}</span>
+  <span class="paths-label">AccessLegacy</span><span class="paths-value">${accessPath ? 'Available' : 'Unavailable'}</span>
+  <span class="paths-label">Lock status</span><span class="paths-value">${lockStatus} — ${lockMessage}</span>
+  <span class="paths-label">Read / Write</span><span class="paths-value">${canRead ? 'Read' : 'Blocked'} / ${canWrite ? 'Write' : 'Read-only'}</span></div>`;
 }
 
 export function renderHomeScreen(root, state) {
