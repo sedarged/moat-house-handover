@@ -51,10 +51,11 @@ test('Night session open supports back navigation and workflow cards visible', a
   await openMockRoute(page, 'night');
   await page.getByRole('button', { name: /Open Existing Handover/i }).click();
   await expect(page.getByText('Night Shift Handover Session')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Department Board' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Budget' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Attachments' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Preview / Reports' })).toBeVisible();
+  const session = page.locator('.handover-session');
+  await expect(session.getByRole('button', { name: 'Department Board' })).toBeVisible();
+  await expect(session.getByRole('button', { name: 'Budget' })).toBeVisible();
+  await expect(session.getByRole('button', { name: 'Attachments' })).toBeVisible();
+  await expect(session.getByRole('button', { name: 'Preview / Reports' })).toBeVisible();
   await page.getByRole('button', { name: /Back to Shift Dashboard/i }).click();
   await expect(page.getByText('Night Shift Handover')).toBeVisible();
 });
