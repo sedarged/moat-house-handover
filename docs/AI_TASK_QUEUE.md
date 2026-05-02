@@ -97,4 +97,9 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 
 ## Phase 10C update
 - [x] Main Menu + App Shell UI implemented in webapp (home, nav shell, module placeholders, runtime status strip).
-- Next queued: Phase 10D — Shift Dashboards.
+
+## Phase 10D update
+- [x] AM/PM/Night placeholder routes replaced with real shift dashboard screens in the app shell.
+- [x] Shift dashboards include shift-specific headers, major workflow cards, and runtime/lock/provider readiness panel.
+- [x] Home shift cards route to AM/PM/Night dashboards with AM red, PM blue, NS green identity styling.
+- Next queued: Phase 10E — Handover Session UI.

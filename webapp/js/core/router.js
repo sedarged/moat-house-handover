@@ -8,12 +8,13 @@ import { renderSendScreen } from '../screens/SendScreen.js';
 import { renderDiagnosticsScreen } from '../screens/DiagnosticsScreen.js';
 import { renderHomeScreen } from '../screens/HomeScreen.js';
 import { renderModuleScreen } from '../screens/ModuleScreen.js';
+import { renderShiftDashboardScreen } from '../screens/ShiftDashboardScreen.js';
 
 export const routes = {
   home: { label: 'Home', renderer: renderHomeScreen },
-  am: { label: 'AM Handover', renderer: (root, state) => renderModuleScreen(root, state, { key: 'am-handover', title: 'AM Handover', phase: 'Phase 10D', accent: 'am' }) },
-  pm: { label: 'PM Handover', renderer: (root, state) => renderModuleScreen(root, state, { key: 'pm-handover', title: 'PM Handover', phase: 'Phase 10D', accent: 'pm' }) },
-  night: { label: 'Night Shift', renderer: (root, state) => renderModuleScreen(root, state, { key: 'night-handover', title: 'Night Shift Handover', phase: 'Phase 10D', accent: 'ns' }) },
+  am: { label: 'AM Handover', renderer: (root, state) => renderShiftDashboardScreen(root, state, { shiftCode: 'AM', title: 'AM Shift Handover', label: 'AM Shift', hours: '06:00 – 14:00', accent: 'am', statusLabel: 'Ready', description: 'Start AM handover tasks, continue draft progress, and review readiness before sign-off.' }) },
+  pm: { label: 'PM Handover', renderer: (root, state) => renderShiftDashboardScreen(root, state, { shiftCode: 'PM', title: 'PM Shift Handover', label: 'PM Shift', hours: '14:00 – 22:00', accent: 'pm', statusLabel: 'Draft not started', description: 'Prepare PM shift updates, continue draft entries, and open workflow modules from one dashboard.' }) },
+  night: { label: 'Night Shift', renderer: (root, state) => renderShiftDashboardScreen(root, state, { shiftCode: 'NS', title: 'Night Shift Handover', label: 'Night Shift', hours: '22:00 – 06:00', accent: 'ns', statusLabel: 'No active handover yet', description: 'Use Night dashboard to launch handover workflow, track readiness, and review carry-over items.' }) },
   reports: { label: 'Reports / Preview', renderer: renderPreviewScreen },
   budgetMenu: { label: 'Budget', renderer: renderBudgetScreen },
   attachments: { label: 'Attachments', renderer: (root, state) => renderModuleScreen(root, state, { key: 'attachments', title: 'Attachments', phase: 'Phase 10H' }) },

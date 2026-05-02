@@ -951,3 +951,29 @@ td textarea { min-width: 140px; min-height: 2.5rem; }
 .mh-quick{background:var(--surface);border:1px solid var(--border);padding:16px;border-radius:10px;color:var(--text);text-align:left;font-size:1.1rem;cursor:pointer}
 .mh-utility-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 @media (max-width:1280px){.shell-title{font-size:1.4rem}.shell-layout{grid-template-columns:180px 1fr}.mh-shift-grid,.mh-quick-grid{grid-template-columns:1fr}}
+
+/* Phase 10D shift dashboards */
+.shift-dashboard{display:grid;gap:14px}
+.shift-dashboard-header-card{background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--orange);border-radius:12px;padding:18px;box-shadow:0 10px 25px rgba(0,0,0,.22)}
+.shift-dashboard-kicker{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-light);margin-bottom:4px}
+.shift-dashboard-header-card h2{font-size:2rem;margin-bottom:6px}.shift-dashboard-hours{font-size:1.2rem;color:var(--muted-light);margin-bottom:4px}
+.shift-dashboard-meta{font-size:.95rem;color:var(--text);margin-bottom:8px}.shift-dashboard-desc{color:var(--muted-light)}
+.shift-dashboard-grid{display:grid;gap:12px}
+.primary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.workflow-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.secondary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.shift-action-card{background:linear-gradient(160deg,var(--surface),var(--surface-2));border:1px solid var(--border);border-radius:12px;padding:16px;display:grid;gap:8px;text-align:left;cursor:pointer;color:var(--text);min-height:96px}
+.shift-action-card:hover{filter:brightness(1.1)}.shift-action-title{font-size:1.15rem;font-weight:700}.shift-action-detail{color:var(--muted-light);font-size:.85rem}
+.shift-note-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}.shift-note-card h3{margin-bottom:6px}
+.shift-status-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}.shift-status-panel h3{margin-bottom:10px}
+.shift-status-grid{display:grid;grid-template-columns:180px 1fr;gap:8px 10px}.shift-status-grid span{color:var(--muted-light)}
+.shift-status-badges{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.shift-dashboard-badge{padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:.8rem}
+.shift-dashboard-badge.am{background:var(--shift-am-dim);border-color:rgba(220,38,38,.4)}
+.shift-dashboard-badge.pm{background:var(--shift-pm-dim);border-color:rgba(37,99,235,.4)}
+.shift-dashboard-badge.ns{background:var(--shift-ns-dim);border-color:rgba(22,163,74,.4)}
+.shift-am .shift-dashboard-header-card{border-left-color:var(--shift-am);box-shadow:0 0 0 1px rgba(220,38,38,.25),0 10px 25px rgba(0,0,0,.22)}
+.shift-pm .shift-dashboard-header-card{border-left-color:var(--shift-pm);box-shadow:0 0 0 1px rgba(37,99,235,.25),0 10px 25px rgba(0,0,0,.22)}
+.shift-ns .shift-dashboard-header-card{border-left-color:var(--shift-ns);box-shadow:0 0 0 1px rgba(22,163,74,.25),0 10px 25px rgba(0,0,0,.22)}
+.shift-am .shift-action-card{border-top:3px solid rgba(220,38,38,.55)}
+.shift-pm .shift-action-card{border-top:3px solid rgba(37,99,235,.55)}
+.shift-ns .shift-action-card{border-top:3px solid rgba(22,163,74,.55)}
+@media (max-width:1280px){.primary-grid,.workflow-grid,.secondary-grid{grid-template-columns:1fr 1fr}.shift-status-grid{grid-template-columns:1fr}}
