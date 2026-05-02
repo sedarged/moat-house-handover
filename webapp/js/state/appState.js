@@ -3,6 +3,12 @@ import { createInitialSessionState } from '../models/contracts.js';
 export const appState = {
   currentRoute: 'home',
   selectedShift: null,
+  selectedShiftLabel: null,
+  activeSessionMode: null,
+  activeSessionDate: null,
+  activeSessionStatus: null,
+  activeSessionId: null,
+  activeSessionSummary: null,
   runtimeStatus: null,
   runtimeStatusError: null,
   session: createInitialSessionState(),
@@ -70,3 +76,13 @@ export function applyBudgetSummaryPayload(payload) { appState.budgetSummary = pa
 export function applyPreviewPayload(payload) { appState.preview = payload || null; }
 export function appendGeneratedReport(result) { if (!result) return; const existing = Array.isArray(appState.generatedReports) ? appState.generatedReports : []; appState.generatedReports = [result, ...existing].slice(0, 10); }
 export function applySendPackagePayload(payload) { appState.sendPackage = payload || null; }
+
+export function setActiveSessionContext(context = {}) {
+  appState.selectedShift = context.selectedShift || appState.selectedShift || null;
+  appState.selectedShiftLabel = context.selectedShiftLabel || null;
+  appState.activeSessionMode = context.activeSessionMode || null;
+  appState.activeSessionDate = context.activeSessionDate || null;
+  appState.activeSessionStatus = context.activeSessionStatus || null;
+  appState.activeSessionId = context.activeSessionId ?? null;
+  appState.activeSessionSummary = context.activeSessionSummary || null;
+}

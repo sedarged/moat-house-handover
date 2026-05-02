@@ -868,3 +868,10 @@ Screenshot rules:
 - Dashboard actions route honestly to currently available modules/legacy routes while labeling future implementation phases (10E+).
 - Home shift cards open the corresponding AM/PM/Night dashboard routes inside the existing Phase 10C shell.
 - Next phase: Phase 10E Handover Session UI.
+
+
+### Phase 10E — Handover Session UI
+- Added shift-specific Handover Session screen entry routes: create, continue, open.
+- Shift dashboards now route first into session context before department/budget/attachments/report workflow modules.
+- Session screen shows selected shift/date/mode/status plus provider/readiness panel.
+- Department Board/Budget/Attachments/Preview actions are real navigation entry points; full editors remain phased (10F+).
