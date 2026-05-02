@@ -861,4 +861,10 @@ Screenshot rules:
 - Main Menu/App Shell UI is implemented with routed placeholders for Home, AM, PM, Night, Reports, Budget, Attachments, History, Admin, and Settings.
 - Shift colour rules: AM red, PM blue, NS green.
 - Runtime/data/lock summary appears in shell/home using runtime status payload with dev fallback when bridge is unavailable.
-- Next phase: Phase 10D Shift Dashboards.
+
+## Phase 10D delivery note
+- AM/PM/Night routes now render real shift dashboard screens (not generic module placeholders).
+- Each dashboard shows shift identity (title/label/hours/date/status), large workflow action cards, and compact runtime readiness details.
+- Dashboard actions route honestly to currently available modules/legacy routes while labeling future implementation phases (10E+).
+- Home shift cards open the corresponding AM/PM/Night dashboard routes inside the existing Phase 10C shell.
+- Next phase: Phase 10E Handover Session UI.
