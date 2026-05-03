@@ -146,3 +146,11 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Screen includes context strip, readiness cards, recipients, subject/body preview, output list, validation panel, and navigation actions.
 - [x] Send and draft actions are intentionally disabled/future where host send wiring is unavailable; UI states no email was sent.
 - Next queued: Phase 10K — Data Entry / Department Detail Editor UI.
+
+
+## Phase 10K update
+- [x] Department Detail Editor UI implemented as a real supervisor/operator data-entry screen in the app shell route `departmentDetailEntry`.
+- [x] Department Status Board `Open Department` now lands on a full editor with status selector, notes/issues/actions fields, metric fields for metric departments only, validation panel, and action bar.
+- [x] Attachment summary/shortcut added, with safe fallback when attachment data is unavailable.
+- [x] Save behaviour is honest: real save path when service responds; explicit no-write message when save is not wired.
+- Next queued: Phase 10L — Admin / Diagnostics / Settings UI (or Phase 10K.1 Department Save Service / Data Contract Wiring if host save contract gaps remain).
