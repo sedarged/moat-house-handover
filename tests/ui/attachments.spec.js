@@ -25,7 +25,7 @@ test('attachments screen renders flow from session and board navigation', async 
     expect(optionTexts).not.toContain(blocked);
   }
 
-  await expect(attachments.getByText('Add attachment')).toBeVisible();
+  await expect(attachments.getByRole('heading', { name: 'Add attachment' })).toBeVisible();
   for (const button of ['Refresh', 'Add Attachment', 'Preview / Reports', 'Back to Handover Session', 'Back to Department Status Board']) {
     await expect(attachments.getByRole('button', { name: button })).toBeVisible();
   }
