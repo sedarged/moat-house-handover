@@ -123,3 +123,11 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Budget rows use granular labour/staff areas such as Injection, MetaPress, Berks, Wilts, Further Processing, Brine operative, Rack cleaner / domestic, Goods In, Dry Goods, Supervisors, Admin, Cleaners, Stock controller, Training, Trolley Porter T1/T2, and Butchery.
 - [x] UI fallback/dev seed is clearly separated from persisted host data; no fake production records are written by fallback rendering.
 - Next queued: Phase 10H — Attachments UI.
+
+
+## Phase 10H update
+- [x] Attachments UI implemented with a real app-shell screen, session context strip, summary cards, handover-area filter, list/actions, add panel, and status panel.
+- [x] Attachments entry points wired from Handover Session and Department Status Board.
+- [x] Handover-area list uses Department Status Board areas + General Handover; budget-only labour areas are excluded from fallback filter list.
+- [x] Upload/delete/preview actions remain capability-gated and honest when host wiring is unavailable.
+- Next queued: Phase 10I — Preview / Reports UI.

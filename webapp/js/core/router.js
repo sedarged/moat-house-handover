@@ -12,6 +12,7 @@ import { renderShiftDashboardScreen } from '../screens/ShiftDashboardScreen.js';
 import { renderHandoverSessionScreen } from '../screens/HandoverSessionScreen.js';
 import { renderDepartmentStatusBoardScreen } from '../screens/DepartmentStatusBoardScreen.js';
 import { renderDepartmentDetailEntryScreen } from '../screens/DepartmentDetailEntryScreen.js';
+import { renderAttachmentsScreen } from '../screens/AttachmentsScreen.js';
 
 export const routes = {
   home: { label: 'Home', renderer: renderHomeScreen },
@@ -28,7 +29,7 @@ export const routes = {
 
   reports: { label: 'Reports / Preview', renderer: renderPreviewScreen },
   budgetMenu: { label: 'Budget', renderer: renderBudgetScreen },
-  attachments: { label: 'Attachments', renderer: (root, state) => renderModuleScreen(root, state, { key: 'attachments', title: 'Attachments', phase: 'Phase 10H' }) },
+  attachments: { label: 'Attachments', renderer: renderAttachmentsScreen },
   history: { label: 'History / Search', renderer: (root, state) => renderModuleScreen(root, state, { key: 'history', title: 'History / Search', phase: 'Future phase' }) },
   admin: { label: 'Admin / Diagnostics', adminOnly: true, renderer: renderDiagnosticsScreen },
   settings: { label: 'Settings', adminOnly: true, renderer: (root, state) => renderModuleScreen(root, state, { key: 'settings', title: 'Settings', phase: 'Phase 10J', adminOnly: true }) },
