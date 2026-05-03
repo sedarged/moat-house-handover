@@ -9,6 +9,7 @@ export const appState = {
   activeSessionStatus: null,
   activeSessionId: null,
   activeSessionSummary: null,
+  lastPersistenceStatus: null,
   runtimeStatus: null,
   runtimeStatusError: null,
   activeDiagnosticsStatus: null,
@@ -30,11 +31,16 @@ export const appState = {
   sendPackage: null
 };
 
+function shiftLabelFromCode(shiftCode) {
+  if (!shiftCode) return null;
+  return shiftCode === 'NS' ? 'Night Shift' : `${shiftCode} Shift`;
+}
+
 export function setSelectedShift(shiftCode) { appState.selectedShift = shiftCode || null; }
 export function setRuntimeStatus(status) { appState.runtimeStatus = status || null; appState.runtimeStatusError = null; }
 export function setRuntimeStatusError(message) { appState.runtimeStatusError = message || 'Status unavailable'; }
 
-export function applySessionPayload(sessionPayload) {
+export function applySessionPayload(sessionPayload = {}) {
   appState.activeDepartmentName = null;
   appState.activeDepartment = null;
   appState.activeAttachments = [];
@@ -59,6 +65,20 @@ export function applySessionPayload(sessionPayload) {
     updatedAt: sessionPayload.updatedAt,
     updatedBy: sessionPayload.updatedBy
   };
+
+  appState.selectedShift = sessionPayload.shiftCode || appState.selectedShift || null;
+  appState.selectedShiftLabel = shiftLabelFromCode(sessionPayload.shiftCode) || appState.selectedShiftLabel || null;
+  appState.activeSessionDate = sessionPayload.shiftDate || appState.activeSessionDate || null;
+  appState.activeSessionStatus = sessionPayload.sessionStatus || appState.activeSessionStatus || null;
+  appState.activeSessionId = sessionPayload.sessionId ?? null;
+  appState.activeSessionSummary = {
+    status: sessionPayload.sessionStatus || null,
+    updatedAt: sessionPayload.updatedAt || sessionPayload.createdAt || null,
+    updatedBy: sessionPayload.updatedBy || sessionPayload.createdBy || null
+  };
+  appState.lastPersistenceStatus = sessionPayload.sessionId
+    ? `Loaded session ${sessionPayload.sessionId}.`
+    : 'Session payload loaded without a persisted id.';
 }
 
 export function setActiveDepartmentName(deptName) { appState.activeDepartmentName = deptName || null; }
@@ -68,6 +88,19 @@ export function applyDepartmentSummaryPayload(departments) {
   appState.session.departments = departments;
   const latest = departments.filter((dept) => dept?.updatedAt).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
   if (latest) { appState.session.updatedAt = latest.updatedAt; appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy; }
+}
+export function upsertSessionDepartmentPayload(payload) {
+  if (!payload?.deptName) return;
+  const current = Array.isArray(appState.session?.departments) ? appState.session.departments : [];
+  const index = current.findIndex((dept) => dept?.deptName === payload.deptName);
+  const merged = index >= 0 ? { ...current[index], ...payload } : { ...payload };
+  appState.session.departments = index >= 0
+    ? current.map((dept, i) => (i === index ? merged : dept))
+    : [...current, merged];
+  appState.session.updatedAt = merged.updatedAt || appState.session.updatedAt;
+  appState.session.updatedBy = merged.updatedBy || appState.session.updatedBy;
+  applyActiveDepartmentPayload(merged);
+  appState.lastPersistenceStatus = `Department saved: ${merged.deptName}`;
 }
 export function applyAttachmentListPayload(listPayload) {
   appState.activeAttachments = Array.isArray(listPayload?.attachments) ? listPayload.attachments : [];
@@ -85,10 +118,10 @@ export function applySendPackagePayload(payload) { appState.sendPackage = payloa
 
 export function setActiveSessionContext(context = {}) {
   appState.selectedShift = context.selectedShift || appState.selectedShift || null;
-  appState.selectedShiftLabel = context.selectedShiftLabel || null;
-  appState.activeSessionMode = context.activeSessionMode || null;
-  appState.activeSessionDate = context.activeSessionDate || null;
-  appState.activeSessionStatus = context.activeSessionStatus || null;
-  appState.activeSessionId = context.activeSessionId ?? null;
-  appState.activeSessionSummary = context.activeSessionSummary || null;
+  appState.selectedShiftLabel = context.selectedShiftLabel || appState.selectedShiftLabel || null;
+  appState.activeSessionMode = context.activeSessionMode || appState.activeSessionMode || null;
+  appState.activeSessionDate = context.activeSessionDate || appState.activeSessionDate || null;
+  appState.activeSessionStatus = context.activeSessionStatus || appState.activeSessionStatus || null;
+  appState.activeSessionId = context.activeSessionId ?? appState.activeSessionId ?? null;
+  appState.activeSessionSummary = context.activeSessionSummary || appState.activeSessionSummary || null;
 }
