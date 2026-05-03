@@ -339,8 +339,6 @@ export function renderPreviewScreen(root, state) {
   const allBtn = createButton('Generate All Reports', 'btn btn-primary');
   const folderBtn = createButton('Open Reports Folder', 'btn btn-secondary');
   const sendBtn = createButton('Continue to Send', 'btn btn-primary');
-  sendBtn.disabled = true;
-  sendBtn.title = 'Send / Email Review UI comes in Phase 10J.';
   actionGrid.append(handoverBtn, budgetBtn, attachmentPackBtn, allBtn, folderBtn, sendBtn);
   actionSection.append(actionGrid);
   content.append(actionSection);
@@ -387,7 +385,7 @@ export function renderPreviewScreen(root, state) {
       createReadinessCard('Attachments', attachmentStatus, attachmentDetail),
       createReadinessCard('Comments / Notes', departments.some((dept) => dept.notes || dept.deptNotes) ? 'Ready' : 'Needs review', 'Department notes are summarised below'),
       createReadinessCard('Export readiness', session?.sessionId ? 'Ready' : 'Missing', session?.sessionId ? 'Reports can be requested from host service' : 'Open a session first'),
-      createReadinessCard('Send readiness', 'Future phase', 'Email review/send workflow is Phase 10J')
+      createReadinessCard('Send readiness', session?.sessionId ? 'Needs review' : 'Missing', session?.sessionId ? 'Continue to Send opens final review screen' : 'Open a session first')
     );
 
     renderDepartmentPreview(departmentBody, departments);
@@ -452,6 +450,7 @@ export function renderPreviewScreen(root, state) {
   budgetBtn.addEventListener('click', () => runReport('Budget report', () => reportsService.generateBudgetReport(sessionId, state.session?.userName || '')));
   allBtn.addEventListener('click', () => runReport('All reports', () => reportsService.generateAllReports(sessionId, state.session?.userName || '')));
   folderBtn.addEventListener('click', () => runReport('Open Reports Folder', () => reportsService.openReportsFolder(sessionId)));
+  sendBtn.addEventListener('click', () => navigate('send'));
 
   loadPreview();
 }

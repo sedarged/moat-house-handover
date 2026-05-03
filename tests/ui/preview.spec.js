@@ -40,7 +40,6 @@ test('preview reports renders persisted session, readiness, department, budget, 
   for (const button of ['Generate Handover Report', 'Generate Budget Report', 'Generate Attachment Pack / Evidence Pack', 'Generate All Reports', 'Open Reports Folder', 'Continue to Send']) {
     await expect(actions.getByRole('button', { name: button })).toBeVisible();
   }
-  await expect(actions.getByRole('button', { name: 'Continue to Send' })).toBeDisabled();
   await expect(actions.getByRole('button', { name: 'Generate Attachment Pack / Evidence Pack' })).toBeDisabled();
 
   await actions.getByRole('button', { name: 'Generate Handover Report' }).click();

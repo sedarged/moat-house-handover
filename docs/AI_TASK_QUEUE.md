@@ -136,5 +136,13 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Preview / Reports UI implemented as the final review screen before export/send.
 - [x] Preview shows session context, report readiness cards, Department Status preview, Budget Summary preview, Attachments preview, report actions, and report output/status panel.
 - [x] Entry points are covered from Handover Session, Department Status Board, Budget Print, and Attachments Preview / Reports.
-- [x] Report actions are honest: generated file paths are shown only when returned by the host/report service, and Continue to Send remains disabled/future until Phase 10J.
-- Next queued: Phase 10J — Send / Email Review UI.
+- [x] Report actions are honest: generated file paths are shown only when returned by the host/report service, and Continue to Send now opens Send / Email Review.
+- Next queued: Phase 10K — Data Entry / Department Detail Editor UI.
+
+
+## Phase 10J update
+- [x] Send / Email Review UI implemented as a final confirmation screen in the app shell.
+- [x] Preview / Reports Continue to Send now navigates to route `send`.
+- [x] Screen includes context strip, readiness cards, recipients, subject/body preview, output list, validation panel, and navigation actions.
+- [x] Send and draft actions are intentionally disabled/future where host send wiring is unavailable; UI states no email was sent.
+- Next queued: Phase 10K — Data Entry / Department Detail Editor UI.

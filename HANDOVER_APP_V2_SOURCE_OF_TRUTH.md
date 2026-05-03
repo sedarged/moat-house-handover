@@ -854,7 +854,7 @@ Screenshot rules:
 
 ## Roadmap update — Phase 10 foundation
 - Data foundation: app-owned data root, SQLite app-owned DB, AccessLegacy fallback/import source, backups, diagnostics.
-- UI roadmap: Phase 10C Main Menu + App Shell UI; 10D Shift Dashboards; 10E Handover Session; 10F Department Board; 10G Budget; 10H Attachments; 10I Preview/Reports/Export; 10J Admin/Diagnostics/Settings.
+- UI roadmap: Phase 10C Main Menu + App Shell UI; 10D Shift Dashboards; 10E Handover Session; 10F Department Board; 10G Budget; 10H Attachments; 10I Preview/Reports UI; 10J Send/Email Review UI; 10K Admin/Diagnostics/Settings.
 
 ## Roadmap update — Phase 10A to 10J
 - Phase 10A: app-owned data root.
@@ -866,7 +866,8 @@ Screenshot rules:
 - Phase 10G: Budget UI.
 - Phase 10H: Attachments UI.
 - Phase 10I: Preview/Reports/Export UI.
-- Phase 10J: Admin/Diagnostics/Settings UI.
+- Phase 10J: Send / Email Review UI.
+- Phase 10K: Admin/Diagnostics/Settings UI.
 
 
 ## Phase 10C delivery note
@@ -896,4 +897,4 @@ Screenshot rules:
 - Attachment statuses are clamped to: Ready, Missing, Needs review, Unsupported, Not uploaded.
 - Add Attachment panel is honest: upload remains future until desktop host file picker/storage wiring is confirmed end-to-end.
 - Entry points include Handover Session and Department Status Board.
-- Next phase remains Phase 10I — Preview / Reports UI (or 10H.1 attachment data contract/storage wiring if host service gaps are found).
+- Next phase remains Phase 10K — Data Entry / Department Detail Editor UI (or 10J.1 Email Profile / Draft Service Wiring if host service gaps are found).
