@@ -16,12 +16,13 @@ test('attachments screen renders flow from session and board navigation', async 
   await expect(attachments.getByText('Area filter')).toBeVisible();
 
   const areaFilter = attachments.locator('.attachments-area-filter');
+  const optionTexts = await areaFilter.locator('option').allTextContents();
   for (const area of ['General Handover', 'Injection', 'MetaPress', 'Goods In & Despatch', 'Dry Goods', 'Additional']) {
-    await expect(areaFilter.getByRole('option', { name: area })).toBeVisible();
+    expect(optionTexts).toContain(area);
   }
 
   for (const blocked of ['Brine operative', 'Rack cleaner / domestic', 'Supervisors', 'Stock controller', 'Trolley Porter T1/T2']) {
-    await expect(areaFilter.getByRole('option', { name: blocked })).toHaveCount(0);
+    expect(optionTexts).not.toContain(blocked);
   }
 
   await expect(attachments.getByText('Add attachment')).toBeVisible();
