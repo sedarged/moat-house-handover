@@ -1,4 +1,4 @@
-import { iconBrandSvg, iconArrowLeft, iconBell, iconUser } from '../core/icons.js';
+import { iconArrowLeft } from '../core/icons.js';
 
 function formatDate(iso) {
   if (!iso) return 'Not available';
@@ -98,7 +98,8 @@ export function renderSendScreen(root, state) {
   const brand = document.createElement('div');
   brand.className = 'header-brand';
   const brandIcon = document.createElement('span');
-  brandIcon.innerHTML = iconBrandSvg;
+  brandIcon.className = 'header-brand-icon';
+  brandIcon.textContent = 'MH';
   const brandText = document.createElement('div');
   brandText.className = 'header-brand-text';
   const sub = document.createElement('span'); sub.className = 'header-brand-sub'; sub.textContent = 'Moat House';
@@ -112,9 +113,9 @@ export function renderSendScreen(root, state) {
 
   const actions = document.createElement('div');
   actions.className = 'header-actions';
-  const bellBtn = document.createElement('button'); bellBtn.className = 'header-icon-btn'; bellBtn.type = 'button'; bellBtn.textContent = '🔔';
+  const bellBtn = document.createElement('button'); bellBtn.className = 'header-icon-btn'; bellBtn.type = 'button'; bellBtn.setAttribute('aria-label', 'Alerts'); bellBtn.textContent = '•';
   const divider = document.createElement('span'); divider.className = 'header-divider';
-  const userBtn = document.createElement('button'); userBtn.className = 'header-icon-btn'; userBtn.type = 'button'; userBtn.textContent = '👤';
+  const userBtn = document.createElement('button'); userBtn.className = 'header-icon-btn'; userBtn.type = 'button'; userBtn.setAttribute('aria-label', 'User'); userBtn.textContent = '•';
   actions.append(bellBtn, divider, userBtn);
   header.append(backBtn, brand, title, actions);
 

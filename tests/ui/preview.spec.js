@@ -15,7 +15,9 @@ test('preview reports renders persisted session, readiness, department, budget, 
   await expect(readiness.getByText('Budget Summary')).toBeVisible();
   await expect(readiness.getByText('Attachments', { exact: true })).toBeVisible();
   await expect(readiness.getByText('Send readiness')).toBeVisible();
-  await expect(readiness.getByText('Future phase')).toBeVisible();
+  const sendReadinessCard = readiness.locator('.preview-readiness-card').filter({ hasText: 'Send readiness' });
+  await expect(sendReadinessCard.getByText('Needs review')).toBeVisible();
+  await expect(sendReadinessCard.getByText('Continue to Send opens final review screen')).toBeVisible();
 
   const departments = preview.locator('.preview-departments-section');
   await expect(departments.getByText('Department Status preview')).toBeVisible();
@@ -28,7 +30,7 @@ test('preview reports renders persisted session, readiness, department, budget, 
   await expect(budget.getByText('Total staff required')).toBeVisible();
   await expect(budget.getByText('Total staff used')).toBeVisible();
   await expect(budget.getByText('Variance')).toBeVisible();
-  await expect(budget.getByText('Holiday')).toBeVisible();
+  await expect(budget.getByText('Holiday', { exact: true }).first()).toBeVisible();
   await expect(budget.getByText('Agency used')).toBeVisible();
 
   const attachments = preview.locator('.preview-attachments-section');
@@ -44,7 +46,7 @@ test('preview reports renders persisted session, readiness, department, budget, 
 
   await actions.getByRole('button', { name: 'Generate Handover Report' }).click();
   const output = preview.locator('.preview-output-section');
-  await expect(output.getByText('handover')).toBeVisible();
+  await expect(output.getByText('handover', { exact: true })).toBeVisible();
   await expect(output.getByText('C:/Mock/Handover.html')).toBeVisible();
 });
 

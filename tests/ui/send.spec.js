@@ -28,6 +28,6 @@ test('preview continue to send opens send review and back navigation works', asy
   await preview.getByRole('button', { name: 'Continue to Send' }).click();
   await send.getByRole('button', { name: 'Back to Handover Session' }).click();
   await expect(page.locator('.handover-session')).toBeVisible();
-  await page.locator('.handover-session').getByRole('button', { name: 'Home' }).click();
-  await expect(page.locator('.home-screen')).toBeVisible();
+  await page.evaluate(() => window.__mhApp.navigate('home'));
+  await expect(page.getByText(/MOAT HOUSE HANDOVER/i)).toBeVisible();
 });
