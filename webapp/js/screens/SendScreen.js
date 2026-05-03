@@ -1,234 +1,235 @@
-import { sendService } from '../services/sendService.js';
-import { applySendPackagePayload } from '../state/appState.js';
-import {
-  iconBrandSvg, iconArrowLeft, iconBell, iconUser, iconCalendar,
-  iconClockSm, iconSend, iconRefresh, iconClipboard, iconChart
-} from '../core/icons.js';
+import { iconArrowLeft } from '../core/icons.js';
 
 function formatDate(iso) {
-  if (!iso) return '—';
-  try { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; } catch { return iso; }
+  if (!iso) return 'Not available';
+  const parts = String(iso).split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return String(iso);
 }
 
-function fieldRow(label, value, valueCls = '') {
-  return `<div class="field-row">
-    <span class="field-label">${label}</span>
-    <span class="field-value ${valueCls}">${value || '—'}</span>
-  </div>`;
+function safeText(v, fallback = 'Not available') {
+  if (v == null) return fallback;
+  const s = String(v).trim();
+  return s ? s : fallback;
+}
+
+function mapStatus(value) {
+  const valid = new Set(['Ready', 'Needs review', 'Missing', 'Not available', 'Future phase']);
+  return valid.has(value) ? value : 'Needs review';
+}
+
+function normaliseReportType(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'handover' || raw === 'handover report') return 'handover';
+  if (raw === 'budget' || raw === 'budget report') return 'budget';
+  return raw;
+}
+
+function statusTag(status) {
+  const span = document.createElement('span');
+  span.className = 'readiness-chip';
+  span.textContent = mapStatus(status);
+  return span;
+}
+
+function infoItem(label, value) {
+  const row = document.createElement('div');
+  row.className = 'send-info-item';
+  const k = document.createElement('span');
+  k.className = 'send-info-label';
+  k.textContent = `${label}: `;
+  const v = document.createElement('span');
+  v.className = 'send-info-value';
+  v.textContent = safeText(value);
+  row.append(k, v);
+  return row;
+}
+
+function reportRowsFromState(state) {
+  const reports = Array.isArray(state.generatedReports) ? state.generatedReports : [];
+  const rows = [];
+  reports.forEach((report) => {
+    const filePaths = Array.isArray(report?.filePaths) ? report.filePaths : [];
+    filePaths.forEach((path) => {
+      rows.push({
+        reportType: normaliseReportType(report?.reportType),
+        reportTypeLabel: safeText(report?.reportType, 'Not available'),
+        filePath: safeText(path),
+        generatedAt: safeText(report?.generatedAt),
+        status: 'Ready'
+      });
+    });
+  });
+  return rows;
+}
+
+function navigate(route) {
+  window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route } }));
 }
 
 export function renderSendScreen(root, state) {
-  const sessionId = state?.session?.sessionId;
+  const session = state?.session || {};
+  const sessionId = session.sessionId;
+  const shiftCode = safeText(session.shiftCode, state.selectedShift || 'Not available');
+  const shiftDate = formatDate(session.shiftDate || state.activeSessionDate);
+  const reportRows = reportRowsFromState(state);
+  const recipients = { to: 'Not configured', cc: 'Not configured', bcc: 'Not configured', profile: 'UI fallback / not configured' };
+  const recipientRows = [
+    ['TO', recipients.to],
+    ['CC', recipients.cc],
+    ['BCC', recipients.bcc],
+    ['Profile/source', recipients.profile]
+  ];
 
-  root.innerHTML = '';
+  let subject = `${shiftCode} Shift Handover — ${shiftDate}`;
+  let body = `Hello,\n\nPlease find attached the shift handover package for:\n- Date: ${shiftDate}\n- Shift: ${shiftCode}\n- Session: ${safeText(sessionId, 'Not opened')}\n\nIncluded:\n- Handover report: Needs review\n- Budget report: Needs review\n- Attachments/evidence: Needs review\n\nRegards,\nSupervisor\n\nThis is a preview. No email was sent.`;
+
+  root.replaceChildren();
   const screen = document.createElement('div');
-  screen.className = 'screen';
+  screen.className = 'screen send-email-review-screen';
 
-  screen.innerHTML = `
-    <header class="screen-header">
-      <button class="header-back" id="send-back-hdr" type="button">${iconArrowLeft}</button>
-      <div class="header-brand">
-        ${iconBrandSvg}
-        <div class="header-brand-text">
-          <span class="header-brand-sub">Moat House</span>
-          <span class="header-brand-name">Operations</span>
-        </div>
-      </div>
-      <div class="header-title">SEND — OUTLOOK DRAFT</div>
-      <div class="header-actions">
-        <button class="header-icon-btn" type="button">${iconBell}</button>
-        <span class="header-divider"></span>
-        <button class="header-icon-btn" type="button">${iconUser}</button>
-      </div>
-    </header>
+  const header = document.createElement('header');
+  header.className = 'screen-header';
+  const backBtn = document.createElement('button');
+  backBtn.className = 'header-back';
+  backBtn.type = 'button';
+  backBtn.textContent = '←';
 
-    <div class="screen-infobar">
-      <div class="infobar-item">
-        <span class="infobar-icon">${iconCalendar}</span>
-        <span>Date: ${formatDate(state?.session?.shiftDate)}</span>
-      </div>
-      <div class="infobar-item">
-        <span class="infobar-icon">${iconClockSm}</span>
-        <span>Shift: ${state?.session?.shiftCode || '—'}</span>
-      </div>
-      <div class="infobar-item">
-        <span class="infobar-icon">${iconSend}</span>
-        <span>Draft only — no automatic send</span>
-      </div>
-      <div class="infobar-item" id="readiness-badge"></div>
-    </div>
+  const brand = document.createElement('div');
+  brand.className = 'header-brand';
+  const brandIcon = document.createElement('span');
+  brandIcon.className = 'header-brand-icon';
+  brandIcon.textContent = 'MH';
+  const brandText = document.createElement('div');
+  brandText.className = 'header-brand-text';
+  const sub = document.createElement('span'); sub.className = 'header-brand-sub'; sub.textContent = 'Moat House';
+  const name = document.createElement('span'); name.className = 'header-brand-name'; name.textContent = 'Operations';
+  brandText.append(sub, name);
+  brand.append(brandIcon, brandText);
 
-    <div class="screen-content">
-      <p class="status-line" id="send-message" style="margin-bottom:0.75rem;"></p>
+  const title = document.createElement('div');
+  title.className = 'header-title';
+  title.textContent = 'SEND / EMAIL REVIEW';
 
-      ${!sessionId ? `<div class="section-block"><p class="status-line error">No active session. Open a shift session first.</p></div>` : ''}
+  const actions = document.createElement('div');
+  actions.className = 'header-actions';
+  const bellBtn = document.createElement('button'); bellBtn.className = 'header-icon-btn'; bellBtn.type = 'button'; bellBtn.setAttribute('aria-label', 'Alerts'); bellBtn.textContent = '•';
+  const divider = document.createElement('span'); divider.className = 'header-divider';
+  const userBtn = document.createElement('button'); userBtn.className = 'header-icon-btn'; userBtn.type = 'button'; userBtn.setAttribute('aria-label', 'User'); userBtn.textContent = '•';
+  actions.append(bellBtn, divider, userBtn);
+  header.append(backBtn, brand, title, actions);
 
-      <div class="two-col" id="send-main" ${!sessionId ? 'style="display:none"' : ''}>
-        <!-- LEFT column -->
-        <div>
-          <div class="section-block">
-            <div class="section-header">
-              <span class="section-icon">${iconClipboard}</span>
-              <span class="section-title">Package Overview</span>
-            </div>
-            <div id="pkg-overview"></div>
-          </div>
+  const info = document.createElement('div');
+  info.className = 'screen-infobar';
+  info.append(
+    infoItem('Date', shiftDate),
+    infoItem('Shift', shiftCode),
+    infoItem('Session', safeText(sessionId, 'Not opened')),
+    infoItem('Report readiness', reportRows.length ? 'Ready' : 'Missing'),
+    infoItem('Send readiness', 'Future phase'),
+    infoItem('Last report action', safeText(state.generatedReports?.[0]?.generatedAt, 'Not available'))
+  );
 
-          <div class="section-block">
-            <div class="section-header">
-              <span class="section-icon">${iconChart}</span>
-              <span class="section-title">Report Attachments</span>
-            </div>
-            <ul id="pkg-attachments" style="list-style:none;font-size:0.85rem;color:var(--muted);"></ul>
-          </div>
+  const content = document.createElement('div');
+  content.className = 'screen-content';
+  const status = document.createElement('p');
+  status.className = 'status-line warn';
+  status.textContent = 'Email sending is not wired in this phase. No email was sent.';
+  content.append(status);
 
-          <div class="section-block">
-            <div class="section-header">
-              <span class="section-icon">${iconClipboard}</span>
-              <span class="section-title">Validation Messages</span>
-            </div>
-            <ul id="pkg-validation" style="list-style:none;font-size:0.85rem;"></ul>
-          </div>
-        </div>
+  const cards = document.createElement('div'); cards.className = 'preview-readiness-grid';
+  const hasHandover = reportRows.some((r) => r.reportType === 'handover');
+  const hasBudget = reportRows.some((r) => r.reportType === 'budget');
+  const cardDefs = [
+    ['Handover report', hasHandover ? 'Ready' : 'Missing'],
+    ['Budget report', hasBudget ? 'Ready' : 'Missing'],
+    ['Attachment evidence', 'Needs review'],
+    ['Recipients', 'Needs review'],
+    ['Subject/body', 'Ready'],
+    ['Send service', 'Future phase']
+  ];
+  cardDefs.forEach(([label, st]) => {
+    const card = document.createElement('article');
+    card.className = 'preview-readiness-card';
+    const h = document.createElement('h4');
+    h.textContent = label;
+    card.append(h, statusTag(st));
+    cards.append(card);
+  });
+  const cardWrap = document.createElement('section');
+  cardWrap.className = 'section-block';
+  const t = document.createElement('h3'); t.className = 'section-title'; t.textContent = 'Send readiness';
+  cardWrap.append(t, cards);
+  content.append(cardWrap);
 
-        <!-- RIGHT column -->
-        <div>
-          <div class="section-block">
-            <div class="section-header">
-              <span class="section-title">Email Subject</span>
-            </div>
-            <textarea class="send-textarea" id="send-subject" rows="2" readonly placeholder="Prepare package to populate…"></textarea>
-          </div>
-          <div class="section-block">
-            <div class="section-header">
-              <span class="section-title">Email Body Preview</span>
-            </div>
-            <textarea class="send-textarea" id="send-body" rows="12" readonly placeholder="Prepare package to populate…"></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
+  const rec = document.createElement('section'); rec.className = 'section-block send-recipients-section';
+  recipientRows.forEach(([label, value]) => rec.append(infoItem(label, value)));
+  content.append(rec);
 
-    <footer class="screen-footer">
-      <button class="btn btn-ghost"   id="send-back-preview"   type="button">${iconArrowLeft}&nbsp; Preview</button>
-      <button class="btn btn-ghost"   id="send-back-dashboard" type="button">${iconArrowLeft}&nbsp; Dashboard</button>
-      <button class="btn"             id="send-prepare"        type="button" ${!sessionId ? 'disabled' : ''}>${iconRefresh}&nbsp; Prepare Package</button>
-      <button class="btn btn-primary" id="send-draft"          type="button" ${!sessionId ? 'disabled' : ''}>${iconSend}&nbsp; Create Outlook Draft</button>
-    </footer>
-  `;
+  const subj = document.createElement('section'); subj.className = 'section-block send-subject-section';
+  const sh = document.createElement('h3'); sh.className = 'section-title'; sh.textContent = 'Email subject';
+  const si = document.createElement('textarea'); si.className = 'send-textarea'; si.value = subject;
+  si.addEventListener('input', () => { subject = si.value; });
+  subj.append(sh, si);
+  content.append(subj);
 
+  const bodySec = document.createElement('section'); bodySec.className = 'section-block send-body-section';
+  const bh = document.createElement('h3'); bh.className = 'section-title'; bh.textContent = 'Email body preview';
+  const bi = document.createElement('textarea'); bi.className = 'send-textarea'; bi.rows = 10; bi.value = body;
+  bi.addEventListener('input', () => { body = bi.value; });
+  bodySec.append(bh, bi);
+  content.append(bodySec);
+
+  const outputs = document.createElement('section'); outputs.className = 'section-block send-output-section';
+  const oh = document.createElement('h3'); oh.className = 'section-title'; oh.textContent = 'Generated report outputs / attachments';
+  const list = document.createElement('div');
+  if (!reportRows.length) {
+    const p = document.createElement('p');
+    p.className = 'status-line';
+    p.textContent = 'No generated reports available yet. Generate reports in Preview / Reports before sending.';
+    list.append(p);
+  } else {
+    reportRows.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'send-info-item';
+      row.textContent = `${r.reportTypeLabel} · ${r.filePath} · ${r.generatedAt} · ${r.status}`;
+      list.append(row);
+    });
+  }
+  outputs.append(oh, list);
+  content.append(outputs);
+
+  const action = document.createElement('section'); action.className = 'section-block';
+  const ah = document.createElement('h3'); ah.className = 'section-title'; ah.textContent = 'Final send action panel';
+  const bar = document.createElement('div'); bar.className = 'preview-report-actions-grid';
+  const mk = (name, disabled = false) => { const b = document.createElement('button'); b.className = 'btn btn-secondary'; b.textContent = name; b.disabled = disabled; return b; };
+  const refresh = mk('Refresh Send Review');
+  const validate = mk('Validate Email Package');
+  const draft = mk('Create Draft / Prepare Email', true);
+  const send = mk('Send Email', true);
+  const backPrev = mk('Back to Preview / Reports');
+  refresh.addEventListener('click', () => renderSendScreen(root, state));
+  validate.addEventListener('click', () => {
+    const blockers = [];
+    if (!reportRows.length) blockers.push('Missing generated reports.');
+    if (recipients.to === 'Not configured') blockers.push('Missing recipients.');
+    blockers.push('Send service unavailable in this phase.');
+    status.className = 'status-line warn';
+    status.textContent = `Validation: ${blockers.join(' ')}`;
+  });
+  backPrev.addEventListener('click', () => navigate('preview'));
+  bar.append(refresh, validate, draft, send, backPrev);
+  action.append(ah, bar);
+  content.append(action);
+
+  const footer = document.createElement('footer'); footer.className = 'screen-footer';
+  [['Back to Preview / Reports', 'preview'], ['Back to Handover Session', 'sessionContinue'], ['Home', 'home']].forEach(([n, r]) => {
+    const b = document.createElement('button'); b.className = 'btn btn-ghost'; b.textContent = n;
+    b.addEventListener('click', () => navigate(r));
+    footer.append(b);
+  });
+
+  backBtn.addEventListener('click', () => navigate('preview'));
+  screen.append(header, info, content, footer);
   root.append(screen);
-
-  if (!sessionId) {
-    screen.querySelector('#send-back-hdr')?.addEventListener('click', () =>
-      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'dashboard' } })));
-    return;
-  }
-
-  const msg            = screen.querySelector('#send-message');
-  const pkgOverview    = screen.querySelector('#pkg-overview');
-  const pkgAttachments = screen.querySelector('#pkg-attachments');
-  const pkgValidation  = screen.querySelector('#pkg-validation');
-  const subjectBox     = screen.querySelector('#send-subject');
-  const bodyBox        = screen.querySelector('#send-body');
-  const readinessBadge = screen.querySelector('#readiness-badge');
-  const prepareBtn     = screen.querySelector('#send-prepare');
-  const draftBtn       = screen.querySelector('#send-draft');
-
-  const goBack = (route) => () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route } }));
-  screen.querySelector('#send-back-hdr')?.addEventListener('click', goBack('dashboard'));
-  screen.querySelector('#send-back-preview')?.addEventListener('click', goBack('preview'));
-  screen.querySelector('#send-back-dashboard')?.addEventListener('click', goBack('dashboard'));
-
-  const setBusy = (busy) => { prepareBtn.disabled = busy; draftBtn.disabled = busy; };
-
-  function renderReadinessBadge(pkg) {
-    if (!pkg) { readinessBadge.innerHTML = ''; return; }
-    const isReady = pkg.isReady;
-    const cls = isReady ? 'value-green' : 'value-orange';
-    readinessBadge.innerHTML = `<span style="font-size:0.76rem;padding:0.2rem 0.55rem;border-radius:4px;border:1px solid var(--border);background:var(--surface-2);">
-      Status: <strong class="${cls}">${pkg.readinessStatus || (isReady ? 'Ready' : 'Not ready')}</strong>
-    </span>`;
-  }
-
-  function renderPackage(pkg) {
-    if (!pkg) return;
-
-    pkgOverview.innerHTML =
-      fieldRow('Session', String(pkg.sessionId || sessionId || '—')) +
-      fieldRow('Shift', `${pkg.shiftCode || state?.session?.shiftCode || '—'} · ${pkg.shiftDate || state?.session?.shiftDate || '—'}`) +
-      fieldRow('Email Profile', pkg.emailProfileKey || '—') +
-      fieldRow('To', pkg.toList || '—') +
-      fieldRow('CC', pkg.ccList || '—') +
-      fieldRow('Generated', `${pkg.generatedAt || '—'} by ${pkg.generatedBy || '—'}`);
-
-    pkgAttachments.innerHTML = '';
-    const paths = Array.isArray(pkg.attachmentPaths) ? pkg.attachmentPaths : [];
-    if (!paths.length) {
-      pkgAttachments.innerHTML = '<li style="color:var(--muted)">No report attachments prepared.</li>';
-    } else {
-      paths.forEach((p) => {
-        const li = document.createElement('li');
-        li.style.cssText = 'padding:0.25rem 0;border-bottom:1px solid var(--border);word-break:break-all;';
-        li.textContent = p;
-        pkgAttachments.append(li);
-      });
-    }
-
-    pkgValidation.innerHTML = '';
-    const msgs = Array.isArray(pkg.validationMessages) ? pkg.validationMessages : [];
-    if (!msgs.length) {
-      pkgValidation.innerHTML = '<li style="color:var(--muted-light)">No validation messages — package is ready.</li>';
-    } else {
-      msgs.forEach((m) => {
-        const li = document.createElement('li');
-        li.style.cssText = 'padding:0.25rem 0;color:#f87171;';
-        li.textContent = m;
-        pkgValidation.append(li);
-      });
-    }
-
-    subjectBox.value = pkg.subject || '';
-    bodyBox.value    = pkg.body    || '';
-    renderReadinessBadge(pkg);
-  }
-
-  /* show existing package if already prepared */
-  if (state.sendPackage) renderPackage(state.sendPackage);
-
-  prepareBtn.addEventListener('click', async () => {
-    setBusy(true);
-    msg.textContent = 'Preparing send package…';
-    msg.className   = 'status-line';
-    try {
-      const result = await sendService.preparePackage(sessionId, state.session?.userName || '');
-      applySendPackagePayload(result.package);
-      renderPackage(result.package);
-      msg.textContent = result.success
-        ? 'Package prepared and validated.'
-        : 'Package prepared with validation warnings. Review before creating draft.';
-      msg.className = result.success ? 'status-line success' : 'status-line warn';
-    } catch (e) {
-      msg.textContent = e instanceof Error ? e.message : 'Failed to prepare package.';
-      msg.className   = 'status-line error';
-    } finally { setBusy(false); }
-  });
-
-  draftBtn.addEventListener('click', async () => {
-    setBusy(true);
-    msg.textContent = 'Creating Outlook draft…';
-    msg.className   = 'status-line';
-    try {
-      const result = await sendService.createOutlookDraft(sessionId, state.session?.userName || '');
-      applySendPackagePayload(result.package);
-      renderPackage(result.package);
-      msg.textContent = result.success
-        ? result.draft?.message || 'Outlook draft created. Email was NOT sent.'
-        : result.draft?.message || 'Draft not created. Review validation messages and retry.';
-      msg.className = result.success ? 'status-line success' : 'status-line error';
-    } catch (e) {
-      msg.textContent = e instanceof Error ? e.message : 'Failed to create Outlook draft.';
-      msg.className   = 'status-line error';
-    } finally { setBusy(false); }
-  });
 }
