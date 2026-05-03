@@ -69,8 +69,8 @@ test('admin route renders diagnostics cards and actions', async ({ page }) => {
   await expect(admin.locator('dt').getByText('Effective provider', { exact: true })).toBeVisible();
   await expect(admin.locator('dt').getByText('Approved data root', { exact: true })).toBeVisible();
   await expect(admin.locator('dt').getByText('App lock status', { exact: true })).toBeVisible();
-  await expect(admin.locator('dt').getByText('Reports folder', { exact: true })).toBeVisible();
-  await expect(admin.locator('dt').getByText('Attachments folder', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Reports folder', { exact: true }).first()).toBeVisible();
+  await expect(admin.locator('dt').getByText('Attachments folder', { exact: true }).first()).toBeVisible();
   await expect(admin.locator('dt').getByText('Backup readiness', { exact: true })).toBeVisible();
   await expect(admin.locator('h3').getByText('Email / send readiness', { exact: true })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Refresh Diagnostics' })).toBeVisible();
