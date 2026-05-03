@@ -887,3 +887,13 @@ Screenshot rules:
 - Shift dashboards now route first into session context before department/budget/attachments/report workflow modules.
 - Session screen shows selected shift/date/mode/status plus provider/readiness panel.
 - Department Board/Budget/Attachments/Preview actions are real navigation entry points; full editors remain phased (10F+).
+
+
+## Phase 10H Attachments UI update
+
+- New in-app `attachments` route provides a supervisor/operator attachments screen linked to shift/session context.
+- Attachments area filter uses handover areas (`General Handover` + 13 Department Status Board areas), not labour budget-only areas.
+- Attachment statuses are clamped to: Ready, Missing, Needs review, Unsupported, Not uploaded.
+- Add Attachment panel is honest: upload remains future until desktop host file picker/storage wiring is confirmed end-to-end.
+- Entry points include Handover Session and Department Status Board.
+- Next phase remains Phase 10I — Preview / Reports UI (or 10H.1 attachment data contract/storage wiring if host service gaps are found).

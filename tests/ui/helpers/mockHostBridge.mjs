@@ -202,6 +202,13 @@ export async function installMockHostBridge(page, fixture = richFixture) {
           return state.budgetPayload.summary;
         case 'preview.load':
           return previewPayload();
+
+        case 'attachment.list':
+          return { attachments: [
+            { attachmentId: 11, deptName: 'Injection', displayName: 'injector-reading.png', fileType: 'Image', fileSizeBytes: 245221, addedBy: 'Mock Host', addedAt: '2026-04-29T14:10:00', status: 'Ready' },
+            { attachmentId: 12, deptName: 'MetaPress', displayName: 'metapress-note.pdf', fileType: 'Document', fileSizeBytes: 14520, addedBy: 'Mock Host', addedAt: '2026-04-29T14:12:00', status: 'Needs review' },
+            { attachmentId: 13, deptName: 'Goods In & Despatch', displayName: 'dispatch-checklist.docx', fileType: 'Document', fileSizeBytes: 50000, addedBy: 'Mock Host', addedAt: '2026-04-29T14:20:00', status: 'Missing' }
+          ] };
         case 'reports.generateHandover':
           return { reportType: 'handover', generatedAt: '2026-04-29T14:40:00', generatedBy: 'Mock Host', filePaths: ['C:/Mock/Handover.html'] };
         case 'reports.generateBudget':

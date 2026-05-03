@@ -188,7 +188,8 @@ export function renderDepartmentStatusBoardScreen(root, state, boardConfig) {
     Object.assign(createElement('button', 'btn btn-primary', 'Save'), { disabled: true, title: 'Save workflow comes next' }),
     createButton('Preview', 'btn btn-secondary', 'reports'),
     Object.assign(createElement('button', 'btn btn-primary', 'Save & Send'), { disabled: true, title: 'Send workflow remains legacy/future' }),
-    createButton('Budget', 'btn btn-secondary', 'budgetMenu')
+    createButton('Budget', 'btn btn-secondary', 'budgetMenu'),
+    createButton('Attachments', 'btn btn-secondary', 'attachments')
   );
   section.append(actions);
 
