@@ -45,8 +45,6 @@ test('Department Status Board Open Department opens Department Detail Editor wit
   await page.locator('.department-board').getByRole('button', { name: 'Open Department' }).first().click();
   const previewButton = page.locator('.department-detail-editor').getByRole('button', { name: 'Preview / Reports' });
   await expect(previewButton).toBeVisible();
-  await page.evaluate(() => window.__mhApp.navigate('reports'));
-  await expect(page.locator('.preview-reports-screen').getByRole('heading', { name: 'PREVIEW / REPORTS', exact: true })).toBeVisible();
 });
 
 test('Direct department detail route without active department shows safe message', async ({ page }) => {

@@ -59,3 +59,43 @@ test('Night session open supports back navigation and workflow cards visible', a
   await page.getByRole('button', { name: /Back to Shift Dashboard/i }).click();
   await expect(page.getByText('Night Shift Handover')).toBeVisible();
 });
+
+test('admin route renders diagnostics cards and actions', async ({ page }) => {
+  await openMockRoute(page, 'admin');
+  const admin = page.locator('.admin-diagnostics-screen');
+  await expect(admin.getByRole('heading', { name: 'ADMIN / DIAGNOSTICS' })).toBeVisible();
+  await expect(admin.getByText('Runtime health')).toBeVisible();
+  await expect(admin.locator('dt').getByText('Host bridge', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Effective provider', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Approved data root', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('App lock status', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Reports folder', { exact: true }).first()).toBeVisible();
+  await expect(admin.locator('dt').getByText('Attachments folder', { exact: true }).first()).toBeVisible();
+  await expect(admin.locator('dt').getByText('Backup readiness', { exact: true })).toBeVisible();
+  await expect(admin.locator('h3').getByText('Email / send readiness', { exact: true })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Refresh Diagnostics' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Check Runtime Status' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Check Data Root' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Open Settings' }).first()).toBeVisible();
+  const output = admin.locator('.admin-output .status-line');
+  const before = await output.textContent();
+  await admin.getByRole('button', { name: 'Refresh Diagnostics' }).click();
+  await expect(output).not.toHaveText(before || '');
+});
+
+test('settings route renders settings and supports navigation', async ({ page }) => {
+  await openMockRoute(page, 'settings');
+  const settings = page.locator('.settings-screen');
+  await expect(settings.getByRole('heading', { name: 'SETTINGS' })).toBeVisible();
+  await expect(settings.getByText('Provider mode')).toBeVisible();
+  await expect(settings.getByText('App data root')).toBeVisible();
+  await expect(settings.getByText('Reports path')).toBeVisible();
+  await expect(settings.getByText('Attachments path')).toBeVisible();
+  await expect(settings.getByText('Email profile readiness')).toBeVisible();
+  await settings.getByRole('button', { name: 'Refresh Settings' }).click();
+  await expect(settings.locator('.status-line')).toHaveText('Refresh Settings: Host diagnostic action is not wired in this environment.');
+  await settings.getByRole('button', { name: 'Back to Admin / Diagnostics' }).click();
+  await expect(page.locator('.admin-diagnostics-screen').getByRole('heading', { name: 'ADMIN / DIAGNOSTICS' })).toBeVisible();
+  await page.locator('.admin-diagnostics-screen .department-board-actions').getByRole('button', { name: 'Home' }).click();
+  await expect(page.locator('.mh-home-wrap')).toBeVisible();
+});
