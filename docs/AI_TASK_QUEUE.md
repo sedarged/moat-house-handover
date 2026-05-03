@@ -131,3 +131,10 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Handover-area list uses Department Status Board areas + General Handover; budget-only labour areas are excluded from fallback filter list.
 - [x] Upload/delete/preview actions remain capability-gated and honest when host wiring is unavailable.
 - Next queued: Phase 10I — Preview / Reports UI.
+
+## Phase 10I update
+- [x] Preview / Reports UI implemented as the final review screen before export/send.
+- [x] Preview shows session context, report readiness cards, Department Status preview, Budget Summary preview, Attachments preview, report actions, and report output/status panel.
+- [x] Entry points are covered from Handover Session, Department Status Board, Budget Print, and Attachments Preview / Reports.
+- [x] Report actions are honest: generated file paths are shown only when returned by the host/report service, and Continue to Send remains disabled/future until Phase 10J.
+- Next queued: Phase 10J — Send / Email Review UI.
