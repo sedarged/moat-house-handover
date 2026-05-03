@@ -1,4 +1,5 @@
-import { setActiveSessionContext } from '../state/appState.js';
+import { applySessionPayload, setActiveSessionContext } from '../state/appState.js';
+import { sessionService } from '../services/sessionService.js';
 
 function readRuntime(status, keys, fallback = 'Unknown') {
   for (const key of keys) {
@@ -52,9 +53,44 @@ function addNavigateHandlers(root) {
   }));
 }
 
+function normaliseDateForService(value) {
+  const text = String(value || '').trim();
+  if (!text) return new Date().toISOString().slice(0, 10);
+  if (text.includes('-')) return text.split('T')[0];
+  const parts = text.split('/');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    return `${year.padStart(4, '20')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return text;
+}
+
+function sessionStatusMessage(mode, payload) {
+  if (mode === 'create') return `Session created. Active session: ${payload?.sessionId || 'host returned no id'}.`;
+  if (mode === 'continue') return `Existing draft loaded. Active session: ${payload?.sessionId || 'host returned no id'}.`;
+  return 'Existing handover lookup is not wired yet. No session was opened.';
+}
+
+function applyLoadedSession(mode, payload, fallback) {
+  applySessionPayload(payload);
+  setActiveSessionContext({
+    selectedShift: payload?.shiftCode || fallback.shiftCode,
+    selectedShiftLabel: fallback.shiftLabel,
+    activeSessionMode: mode,
+    activeSessionDate: payload?.shiftDate || fallback.date,
+    activeSessionStatus: payload?.sessionStatus || statusFromMode(mode),
+    activeSessionId: payload?.sessionId ?? null,
+    activeSessionSummary: {
+      status: payload?.sessionStatus || statusFromMode(mode),
+      updatedAt: payload?.updatedAt || payload?.createdAt || null,
+      updatedBy: payload?.updatedBy || payload?.createdBy || fallback.userName
+    }
+  });
+}
+
 export function renderHandoverSessionScreen(root, state, sessionConfig) {
   const dateLabel = sessionConfig.date || new Date().toLocaleDateString();
-  const sessionStatus = statusFromMode(sessionConfig.mode);
+  const sessionStatus = state.session?.sessionStatus || statusFromMode(sessionConfig.mode);
   setActiveSessionContext({
     selectedShift: sessionConfig.shiftCode,
     selectedShiftLabel: sessionConfig.shiftLabel,
@@ -70,7 +106,7 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   });
 
   const runtime = state.runtimeStatus;
-  const provider = readRuntime(runtime, ['effectiveProvider', 'EffectiveProvider']);
+  const provider = readRuntime(runtime, ['effectiveProvider', 'EffectiveProvider'], readRuntime(runtime, ['mode'], 'Unknown'));
   const dataRoot = readRuntime(runtime, ['approvedDataRoot', 'ApprovedDataRoot']);
   const lockStatus = readRuntime(runtime, ['appLockStatus', 'AppLockStatus']);
   const canRead = !!readRuntime(runtime, ['appCanRead', 'AppCanRead'], false);
@@ -95,6 +131,7 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   summaryGrid.append(
     createSummaryCard('Session date', dateLabel),
     createSummaryCard('Shift', sessionConfig.shiftCode),
+    createSummaryCard('Session ID', state.session?.sessionId || 'Not persisted yet'),
     createSummaryCard('Supervisor/User', state.session?.updatedBy || state.session?.createdBy || 'Supervisor'),
     createSummaryCard('Status', sessionStatus),
     createSummaryCard('Last saved', lastSaved),
@@ -108,18 +145,23 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   startButton.dataset.action = 'start';
   actionsRow.append(
     startButton,
-    Object.assign(createElement('button', 'btn btn-ghost', 'Save Draft (Phase 10F+)'), { disabled: true }),
+    Object.assign(createElement('button', 'btn btn-ghost', 'Save Draft (auto after edits)'), { disabled: true, title: 'Draft saving happens through Department/Budget/Attachment save flows.' }),
     createButton('Back to Shift Dashboard', 'btn btn-ghost', sessionConfig.dashboardRoute),
     createButton('Back to Home', 'btn btn-ghost', 'home')
   );
   section.append(actionsRow);
 
+  const statusLine = createElement('p', 'status-line', state.session?.sessionId
+    ? `Loaded active session context: ${state.session.sessionId}.`
+    : 'No persisted session id yet. Use Start / Continue to load host session context.');
+  section.append(statusLine);
+
   const workflowGrid = createElement('div', 'session-workflow-grid');
   workflowGrid.append(
     createActionCard('Department Board', 'departmentBoard', 'Supervisor handover board for this shift/session'),
-    createActionCard('Budget', 'budgetMenu', 'Budget UI available via module menu'),
-    createActionCard('Attachments', 'attachments', 'Phase 10H full workflow'),
-    createActionCard('Preview / Reports', 'reports', 'Preview and reporting module')
+    createActionCard('Budget', 'budgetMenu', 'Budget UI for active session context'),
+    createActionCard('Attachments', 'attachments', 'Attachment metadata for active session'),
+    createActionCard('Preview / Reports', 'reports', 'Preview saved handover package')
   );
   section.append(workflowGrid);
 
@@ -138,8 +180,39 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   root.replaceChildren(section);
 
   addNavigateHandlers(root);
-  root.querySelector('[data-action="start"]')?.addEventListener('click', () => {
-    const nextRoute = sessionConfig.mode === 'open' ? 'history' : 'dashboard';
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: nextRoute } }));
+  root.querySelector('[data-action="start"]')?.addEventListener('click', async () => {
+    if (sessionConfig.mode === 'open') {
+      statusLine.className = 'status-line warn';
+      statusLine.textContent = 'Open Existing handover picker is not wired yet. No session was opened.';
+      return;
+    }
+
+    startButton.disabled = true;
+    statusLine.className = 'status-line';
+    statusLine.textContent = sessionConfig.mode === 'create' ? 'Creating session through host service…' : 'Loading existing draft through host service…';
+
+    const userName = state.session?.updatedBy || state.session?.createdBy || 'Supervisor';
+    const serviceDate = normaliseDateForService(dateLabel);
+
+    try {
+      const payload = sessionConfig.mode === 'create'
+        ? await sessionService.createBlankSession(sessionConfig.shiftCode, serviceDate, userName)
+        : await sessionService.openSession(sessionConfig.shiftCode, serviceDate, userName);
+      applyLoadedSession(sessionConfig.mode, payload, {
+        shiftCode: sessionConfig.shiftCode,
+        shiftLabel: sessionConfig.shiftLabel,
+        date: serviceDate,
+        userName
+      });
+      statusLine.className = 'status-line success';
+      statusLine.textContent = sessionStatusMessage(sessionConfig.mode, payload);
+      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'departmentBoard' } }));
+    } catch (error) {
+      startButton.disabled = false;
+      statusLine.className = 'status-line warn';
+      statusLine.textContent = error instanceof Error
+        ? `Host persistence is not wired in this environment. No data was written. ${error.message}`
+        : 'Host persistence is not wired in this environment. No data was written.';
+    }
   });
 }
