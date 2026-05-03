@@ -11,7 +11,7 @@ test('Department Status Board Open Department opens Department Detail Editor wit
   await board.getByRole('button', { name: /Open Department/i }).first().click();
 
   const detail = page.locator('.department-detail-editor');
-  await expect(detail.getByRole('heading', { name: 'DEPARTMENT DETAIL' })).toBeVisible();
+  await expect(detail.getByRole('heading', { name: 'DEPARTMENT DETAIL', exact: true })).toBeVisible();
   await expect(detail.getByText('Date:')).toBeVisible();
   await expect(detail.getByText('Shift:')).toBeVisible();
   await expect(detail.getByText('Session:')).toBeVisible();

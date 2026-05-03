@@ -39,6 +39,10 @@ function metricDept(deptName) {
   return METRIC_DEPARTMENTS.has(String(deptName || ''));
 }
 
+function bindDataNav(root) {
+  root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }))));
+}
+
 export function renderDepartmentDetailEntryScreen(root, state) {
   const source = state.activeDepartment || null;
   const deptName = String(source?.deptName || state.activeDepartmentName || '').trim();
@@ -72,7 +76,7 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   if (!hasDepartment) {
     section.append(createElement('p', 'status-line warn', 'No department selected. Return to Department Status Board.'));
     root.replaceChildren(section);
-    root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }))));
+    bindDataNav(root);
     return;
   }
 
@@ -93,6 +97,9 @@ export function renderDepartmentDetailEntryScreen(root, state) {
 
   const draft = { ...initial };
   const isMetric = metricDept(deptName);
+  let downtimeInput = null;
+  let efficiencyInput = null;
+  let yieldInput = null;
 
   const form = createElement('section', 'department-board-section');
   form.append(createElement('h3', null, 'Department detail editor'));
@@ -128,10 +135,13 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   if (isMetric) {
     const down = createElement('input'); down.type = 'number'; down.min = '0'; down.value = draft.downtimeMin ?? ''; down.addEventListener('input', () => { draft.downtimeMin = toNumberOrNull(down.value); });
     addField(right, 'Downtime minutes', down);
+    downtimeInput = down;
     const eff = createElement('input'); eff.type = 'number'; eff.min = '0'; eff.max = '100'; eff.value = draft.efficiencyPct ?? ''; eff.addEventListener('input', () => { draft.efficiencyPct = toNumberOrNull(eff.value); });
     addField(right, 'Efficiency %', eff);
+    efficiencyInput = eff;
     const yld = createElement('input'); yld.type = 'number'; yld.min = '0'; yld.max = '100'; yld.value = draft.yieldPct ?? ''; yld.addEventListener('input', () => { draft.yieldPct = toNumberOrNull(yld.value); });
     addField(right, 'Yield %', yld);
+    yieldInput = yld;
   }
 
   grid.append(left, right);
@@ -172,6 +182,9 @@ export function renderDepartmentDetailEntryScreen(root, state) {
     };
     const errors = [];
     if (!ALLOWED_STATUSES.includes(payload.deptStatus)) errors.push('Status must be one of Completed, Incomplete, Not updated, Not running.');
+    if (payload.downtimeMin != null && (Number.isNaN(payload.downtimeMin) || payload.downtimeMin < 0)) errors.push('Downtime minutes must be blank or a non-negative number.');
+    if (payload.efficiencyPct != null && (Number.isNaN(payload.efficiencyPct) || payload.efficiencyPct < 0 || payload.efficiencyPct > 100)) errors.push('Efficiency % must be blank or between 0 and 100.');
+    if (payload.yieldPct != null && (Number.isNaN(payload.yieldPct) || payload.yieldPct < 0 || payload.yieldPct > 100)) errors.push('Yield % must be blank or between 0 and 100.');
     const serviceValidation = departmentsService.validateDepartment(payload);
     if (!serviceValidation.ok) errors.push(...serviceValidation.errors);
     return { payload, errors };
@@ -199,6 +212,10 @@ export function renderDepartmentDetailEntryScreen(root, state) {
     issues.value = initial.issues;
     actions.value = initial.actionsRequired;
     updatedBy.value = initial.updatedBy;
+    lastUpdated.value = initial.lastUpdated;
+    if (downtimeInput) downtimeInput.value = initial.downtimeMin ?? '';
+    if (efficiencyInput) efficiencyInput.value = initial.efficiencyPct ?? '';
+    if (yieldInput) yieldInput.value = initial.yieldPct ?? '';
     errList.replaceChildren();
     saveLine.className = 'status-line'; saveLine.textContent = 'Changes reset to last loaded values.';
   });
@@ -210,7 +227,7 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   });
 
   root.replaceChildren(section);
-  root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }))));
+  bindDataNav(root);
 
   attachmentsService.listAttachments(state.session?.sessionId || null, source?.deptRecordId || null, deptName)
     .then((result) => {
