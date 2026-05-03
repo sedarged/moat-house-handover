@@ -35,7 +35,9 @@ test('Department Status Board Open Department opens Department Detail Editor wit
 
   await board.getByRole('button', { name: 'Open Department' }).first().click();
   await page.locator('.department-detail-editor').getByRole('button', { name: 'Open Attachments' }).click();
-  await expect(page.locator('.attachments-screen').getByText('ATTACHMENTS')).toBeVisible();
+  await expect(
+    page.locator('.attachments-screen').getByRole('heading', { name: 'ATTACHMENTS', exact: true })
+  ).toBeVisible();
 
   await openMockRoute(page, 'pm');
   await page.getByRole('button', { name: /Create Today's Handover/i }).click();
