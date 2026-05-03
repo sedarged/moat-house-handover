@@ -65,18 +65,22 @@ test('admin route renders diagnostics cards and actions', async ({ page }) => {
   const admin = page.locator('.admin-diagnostics-screen');
   await expect(admin.getByRole('heading', { name: 'ADMIN / DIAGNOSTICS' })).toBeVisible();
   await expect(admin.getByText('Runtime health')).toBeVisible();
-  await expect(admin.getByText('Host bridge')).toBeVisible();
-  await expect(admin.getByText('Effective provider')).toBeVisible();
-  await expect(admin.getByText('Data root')).toBeVisible();
-  await expect(admin.getByText('App lock')).toBeVisible();
-  await expect(admin.getByText('Reports folder')).toBeVisible();
-  await expect(admin.getByText('Attachments folder')).toBeVisible();
-  await expect(admin.getByText('Backup readiness')).toBeVisible();
-  await expect(admin.getByText('Email / send readiness')).toBeVisible();
+  await expect(admin.locator('dt').getByText('Host bridge', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Effective provider', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Approved data root', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('App lock status', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Reports folder', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Attachments folder', { exact: true })).toBeVisible();
+  await expect(admin.locator('dt').getByText('Backup readiness', { exact: true })).toBeVisible();
+  await expect(admin.locator('h3').getByText('Email / send readiness', { exact: true })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Refresh Diagnostics' })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Check Runtime Status' })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Check Data Root' })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Open Settings' })).toBeVisible();
+  const output = admin.locator('.admin-output .status-line');
+  const before = await output.textContent();
+  await admin.getByRole('button', { name: 'Refresh Diagnostics' }).click();
+  await expect(output).not.toHaveText(before || '');
 });
 
 test('settings route renders settings and supports navigation', async ({ page }) => {
@@ -88,8 +92,10 @@ test('settings route renders settings and supports navigation', async ({ page })
   await expect(settings.getByText('Reports path')).toBeVisible();
   await expect(settings.getByText('Attachments path')).toBeVisible();
   await expect(settings.getByText('Email profile readiness')).toBeVisible();
+  await settings.getByRole('button', { name: 'Refresh Settings' }).click();
+  await expect(settings.locator('.status-line')).toHaveText('Refresh Settings: Host diagnostic action is not wired in this environment.');
   await settings.getByRole('button', { name: 'Back to Admin / Diagnostics' }).click();
   await expect(page.locator('.admin-diagnostics-screen').getByRole('heading', { name: 'ADMIN / DIAGNOSTICS' })).toBeVisible();
-  await page.locator('.admin-diagnostics-screen').getByRole('button', { name: 'Home' }).click();
+  await page.locator('.admin-diagnostics-screen .department-board-actions').getByRole('button', { name: 'Home' }).click();
   await expect(page.locator('.mh-home-wrap')).toBeVisible();
 });
