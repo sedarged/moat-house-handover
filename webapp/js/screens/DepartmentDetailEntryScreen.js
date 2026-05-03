@@ -161,7 +161,7 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   validationPanel.append(saveLine, errList);
   section.append(validationPanel);
 
-  const actionsBar = createElement('div', 'department-board-actions');
+  const actionsBar = createElement('div', 'department-board-actions screen-footer');
   const saveBtn = createElement('button', 'btn btn-primary', 'Save Department');
   const resetBtn = createElement('button', 'btn btn-secondary', 'Reset changes');
   const openAttachBtn = createElement('button', 'btn btn-secondary', 'Open Attachments');

@@ -28,7 +28,9 @@ test('Department Status Board Open Department opens Department Detail Editor wit
   await expect(detail.getByRole('button', { name: 'Open Attachments' })).toBeVisible();
   await expect(detail.getByRole('button', { name: 'Preview / Reports' })).toBeVisible();
 
-  await detail.getByRole('button', { name: 'Back to Department Status Board' }).click();
+  await detail.locator('.screen-footer')
+    .getByRole('button', { name: 'Back to Department Status Board' })
+    .click();
   await expect(board.getByText('DEPARTMENT STATUS')).toBeVisible();
 
   await board.getByRole('button', { name: 'Open Department' }).first().click();
