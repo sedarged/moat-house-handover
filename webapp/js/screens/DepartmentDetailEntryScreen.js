@@ -12,6 +12,16 @@ function createElement(tagName, className, text) {
   return element;
 }
 
+function createButton(className, text) {
+  const button = createElement('button', className, text);
+  button.type = 'button';
+  return button;
+}
+
+function navigate(route) {
+  window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route } }));
+}
+
 function normaliseStatus(status) {
   const clean = String(status || '').trim().toLowerCase();
   if (clean === 'completed' || clean === 'complete') return 'Completed';
@@ -40,7 +50,7 @@ function metricDept(deptName) {
 }
 
 function bindDataNav(root) {
-  root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: button.dataset.nav } }))));
+  root.querySelectorAll('[data-nav]').forEach((button) => button.addEventListener('click', () => navigate(button.dataset.nav)));
 }
 
 export function renderDepartmentDetailEntryScreen(root, state) {
@@ -62,7 +72,7 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   );
   const nav = createElement('div', 'department-board-nav');
   [['Back to Department Status Board', 'departmentBoard'], ['Back to Handover Session', 'sessionContinue'], ['Home', 'home']].forEach(([label, route]) => {
-    const b = createElement('button', 'btn btn-ghost', label); b.dataset.nav = route; nav.append(b);
+    const b = createButton('btn btn-ghost', label); b.dataset.nav = route; nav.append(b);
   });
   header.append(titleBlock, nav);
   section.append(header);
@@ -162,12 +172,12 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   section.append(validationPanel);
 
   const actionsBar = createElement('div', 'department-board-actions screen-footer');
-  const saveBtn = createElement('button', 'btn btn-primary', 'Save Department');
-  const resetBtn = createElement('button', 'btn btn-secondary', 'Reset changes');
-  const openAttachBtn = createElement('button', 'btn btn-secondary', 'Open Attachments');
-  const previewBtn = createElement('button', 'btn btn-secondary', 'Preview / Reports');
-  const backBtn = createElement('button', 'btn btn-secondary', 'Back to Department Status Board');
-  [previewBtn, backBtn].forEach((button, i) => { button.dataset.nav = i === 0 ? 'reports' : 'departmentBoard'; });
+  const saveBtn = createButton('btn btn-primary', 'Save Department');
+  const resetBtn = createButton('btn btn-secondary', 'Reset changes');
+  const openAttachBtn = createButton('btn btn-secondary', 'Open Attachments');
+  const previewBtn = createButton('btn btn-secondary', 'Preview / Reports');
+  const backBtn = createButton('btn btn-secondary', 'Back to Department Status Board');
+  backBtn.dataset.nav = 'departmentBoard';
   actionsBar.append(saveBtn, resetBtn, openAttachBtn, previewBtn, backBtn);
   section.append(actionsBar);
 
@@ -223,8 +233,10 @@ export function renderDepartmentDetailEntryScreen(root, state) {
   openAttachBtn.addEventListener('click', () => {
     state.activeDepartmentName = deptName;
     setSelectedAttachmentId(null);
-    window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'attachments' } }));
+    navigate('attachments');
   });
+
+  previewBtn.addEventListener('click', () => navigate('reports'));
 
   root.replaceChildren(section);
   bindDataNav(root);
