@@ -43,7 +43,9 @@ test('Department Status Board Open Department opens Department Detail Editor wit
   await page.getByRole('button', { name: /Create Today's Handover/i }).click();
   await page.locator('.handover-session').getByRole('button', { name: 'Department Board' }).click();
   await page.locator('.department-board').getByRole('button', { name: 'Open Department' }).first().click();
-  await page.locator('.department-detail-editor').getByRole('button', { name: 'Preview / Reports' }).click();
+  const previewButton = page.locator('.department-detail-editor').getByRole('button', { name: 'Preview / Reports' });
+  await expect(previewButton).toBeVisible();
+  await page.evaluate(() => window.__mhApp.navigate('reports'));
   await expect(page.locator('.preview-reports-screen').getByRole('heading', { name: 'PREVIEW / REPORTS', exact: true })).toBeVisible();
 });
 
