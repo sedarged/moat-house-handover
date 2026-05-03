@@ -26,19 +26,19 @@ export const richFixture = {
   },
   budgetPayload: {
     summary: {
-      linesPlanned: 4,
-      linesCount: 4,
+      linesPlanned: 3,
+      linesCount: 3,
       plannedTotal: 41,
       usedTotal: 38,
-      totalStaffOnRegister: 46,
-      holidayCount: 3,
-      absentCount: 2,
-      otherReasonCount: 1,
-      agencyUsedCount: 4,
+      totalStaffOnRegister: 44,
+      holidayCount: 2,
+      absentCount: 1,
+      otherReasonCount: 0,
+      agencyUsedCount: 1,
       varianceTotal: -3,
       status: 'under',
-      comments: 'Short on FP due to holiday cover. Agency requested for Berks.',
-      lastUpdatedAt: '2026-04-29T14:25:00',
+      comments: 'One operator moved to cover line support.\nNo agency required.',
+      lastUpdatedAt: '2026-04-29T19:12:00',
       lastUpdatedBy: 'Supervisor'
     },
     totals: {
@@ -49,13 +49,21 @@ export const richFixture = {
     },
     rows: [
       { budgetRowId: 1, deptName: 'Injection', plannedQty: 6, usedQty: 6, variance: 0, status: 'on target', reasonText: '' },
-      { budgetRowId: 2, deptName: 'MP / MetaPress', plannedQty: 5, usedQty: 4, variance: -1, status: 'under', reasonText: 'Holiday' },
-      { budgetRowId: 3, deptName: 'Berks', plannedQty: 8, usedQty: 7, variance: -1, status: 'under', reasonText: 'Agency Cover' },
-      { budgetRowId: 4, deptName: 'Wilts', plannedQty: 5, usedQty: 5, variance: 0, status: 'on target', reasonText: '' },
-      { budgetRowId: 5, deptName: 'FP / Further Processing', plannedQty: 10, usedQty: 8, variance: -2, status: 'under', reasonText: 'Absent' },
-      { budgetRowId: 6, deptName: 'Goods in', plannedQty: 3, usedQty: 3, variance: 0, status: 'on target', reasonText: '' },
-      { budgetRowId: 7, deptName: 'Dry Goods', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' },
-      { budgetRowId: 8, deptName: 'Supervisors', plannedQty: 2, usedQty: 3, variance: 1, status: 'over', reasonText: 'Other reason' }
+      { budgetRowId: 2, deptName: 'MetaPress', plannedQty: 4, usedQty: 4, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 3, deptName: 'Berks', plannedQty: 3, usedQty: 3, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 4, deptName: 'Wilts', plannedQty: 3, usedQty: 2, variance: -1, status: 'under', reasonText: 'Holiday' },
+      { budgetRowId: 5, deptName: 'Further Processing', plannedQty: 4, usedQty: 3, variance: -1, status: 'under', reasonText: 'Absent' },
+      { budgetRowId: 6, deptName: 'Brine operative', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 7, deptName: 'Rack cleaner / domestic', plannedQty: 2, usedQty: 1, variance: -1, status: 'under', reasonText: 'Holiday' },
+      { budgetRowId: 8, deptName: 'Goods In', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 9, deptName: 'Dry Goods', plannedQty: 2, usedQty: 1, variance: -1, status: 'under', reasonText: 'Agency cover' },
+      { budgetRowId: 10, deptName: 'Supervisors', plannedQty: 3, usedQty: 3, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 11, deptName: 'Admin', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 12, deptName: 'Cleaners', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 13, deptName: 'Stock controller', plannedQty: 1, usedQty: 1, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 14, deptName: 'Training', plannedQty: 1, usedQty: 1, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 15, deptName: 'Trolley Porter T1/T2', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' },
+      { budgetRowId: 16, deptName: 'Butchery', plannedQty: 2, usedQty: 2, variance: 0, status: 'on target', reasonText: '' }
     ]
   }
 };
@@ -93,12 +101,12 @@ function calculateBudget(rows, meta = {}) {
     totalStaffOnRegister: meta?.totalStaffOnRegister ?? richFixture.budgetPayload.summary.totalStaffOnRegister,
     holidayCount: reasonText.filter((item) => item.includes('holiday')).length,
     absentCount: reasonText.filter((item) => item.includes('absent')).length,
-    otherReasonCount: reasonText.filter((item) => item.includes('other')).length,
+    otherReasonCount: reasonText.filter((item) => item && !item.includes('holiday') && !item.includes('absent') && !item.includes('agency')).length,
     agencyUsedCount: reasonText.filter((item) => item.includes('agency')).length,
     varianceTotal,
     status: varianceTotal > 0 ? 'over' : varianceTotal < 0 ? 'under' : 'on target',
     comments: meta?.comments ?? richFixture.budgetPayload.summary.comments,
-    lastUpdatedAt: '2026-04-29T14:30:00',
+    lastUpdatedAt: '2026-04-29T19:12:00',
     lastUpdatedBy: 'Mock Host'
   };
 
@@ -150,12 +158,12 @@ export async function installMockHostBridge(page, fixture = richFixture) {
         totalStaffOnRegister: meta?.totalStaffOnRegister ?? state.budgetPayload.summary.totalStaffOnRegister,
         holidayCount: reasonText.filter((item) => item.includes('holiday')).length,
         absentCount: reasonText.filter((item) => item.includes('absent')).length,
-        otherReasonCount: reasonText.filter((item) => item.includes('other')).length,
+        otherReasonCount: reasonText.filter((item) => item && !item.includes('holiday') && !item.includes('absent') && !item.includes('agency')).length,
         agencyUsedCount: reasonText.filter((item) => item.includes('agency')).length,
         varianceTotal,
         status: varianceTotal > 0 ? 'over' : varianceTotal < 0 ? 'under' : 'on target',
         comments: meta?.comments ?? state.budgetPayload.summary.comments,
-        lastUpdatedAt: '2026-04-29T14:30:00',
+        lastUpdatedAt: '2026-04-29T19:12:00',
         lastUpdatedBy: 'Mock Host'
       };
       return { summary, totals: { plannedTotal, usedTotal, varianceTotal, status: summary.status }, rows: normalisedRows };

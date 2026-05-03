@@ -16,7 +16,7 @@ This preparation work must be merged before using Codex Web for the next impleme
 - Add `.github/ISSUE_TEMPLATE/codex-task.yml`.
 
 ## Completed migration setup
-- PR 22: Phase 0 — ADR/source-of-truth update for SQLite target and `M:\` storage policy.
+- PR 22: Phase 0 — ADR/source-of-truth update for SQLite target and `M:\\` storage policy.
 - PR 23: Phase 1 — Access schema inventory and SQLite target schema mapping.
 
 ## Current implementation PR
@@ -31,10 +31,10 @@ This preparation work must be merged before using Codex Web for the next impleme
 
 ## Phase 2 intended scope
 - Create one host-side source of truth for operational paths.
-- Use `M:\Moat House\MoatHouse Handover\` as the primary live data root.
+- Use `M:\\Moat House\\MoatHouse Handover\\` as the primary live data root.
 - Create/validate expected folders: Data, Attachments, Reports, Backups, Logs, Config, Imports, Migration.
 - Add diagnostics-ready path validation.
-- Do not silently fall back to `C:\ProgramData`.
+- Do not silently fall back to `C:\\ProgramData`.
 - Do not implement SQLite runtime repositories yet.
 - Do not redesign UI.
 
@@ -116,3 +116,10 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Board uses allowed status set only: Completed, Incomplete, Not updated, Not running.
 - [x] Board explicitly excludes labour allocation/support department list usage.
 - Next queued: Phase 10G — Budget UI.
+
+## Phase 10G update
+- [x] Shift Labour Budget Summary UI implemented as the per-shift staff budget screen, not the 13-area handover status board.
+- [x] Budget screen shows `BUDGET SUMMARY`, Date, Shift, Lines planned, Last updated, staff budget table, Summary panel, Comments panel, and bottom actions: Refresh, Edit, Save & Close, Print.
+- [x] Budget rows use granular labour/staff areas such as Injection, MetaPress, Berks, Wilts, Further Processing, Brine operative, Rack cleaner / domestic, Goods In, Dry Goods, Supervisors, Admin, Cleaners, Stock controller, Training, Trolley Porter T1/T2, and Butchery.
+- [x] UI fallback/dev seed is clearly separated from persisted host data; no fake production records are written by fallback rendering.
+- Next queued: Phase 10H — Attachments UI.
