@@ -854,7 +854,7 @@ Screenshot rules:
 
 ## Roadmap update — Phase 10 foundation
 - Data foundation: app-owned data root, SQLite app-owned DB, AccessLegacy fallback/import source, backups, diagnostics.
-- UI roadmap: Phase 10C Main Menu + App Shell UI; 10D Shift Dashboards; 10E Handover Session; 10F Department Board; 10G Budget; 10H Attachments; 10I Preview/Reports UI; 10J Send/Email Review UI; 10K Admin/Diagnostics/Settings.
+- UI roadmap: Phase 10C Main Menu + App Shell UI; 10D Shift Dashboards; 10E Handover Session; 10F Department Board; 10G Budget; 10H Attachments; 10I Preview/Reports UI; 10J Send/Email Review UI; 10K Department Detail Editor UI; 10L Admin/Diagnostics/Settings.
 
 ## Roadmap update — Phase 10A to 10K
 - Phase 10A: app-owned data root.
@@ -867,7 +867,8 @@ Screenshot rules:
 - Phase 10H: Attachments UI.
 - Phase 10I: Preview/Reports/Export UI.
 - Phase 10J: Send / Email Review UI.
-- Phase 10K: Admin/Diagnostics/Settings UI.
+- Phase 10K: Department Detail Editor UI.
+- Phase 10L: Admin/Diagnostics/Settings UI.
 
 
 ## Phase 10C delivery note
@@ -898,3 +899,17 @@ Screenshot rules:
 - Add Attachment panel is honest: upload remains future until desktop host file picker/storage wiring is confirmed end-to-end.
 - Entry points include Handover Session and Department Status Board.
 - Next phase remains Phase 10K — Data Entry / Department Detail Editor UI (or 10J.1 Email Profile / Draft Service Wiring if host service gaps are found).
+
+
+## Phase 10K Department Detail Editor UI update
+
+- Route: `departmentDetailEntry`, opened from Department Status Board `Open Department`.
+- Screen title: `DEPARTMENT DETAIL` with session context (date, shift, session, session status) and selected handover area.
+- Allowed statuses are clamped to: Completed, Incomplete, Not updated, Not running.
+- Uses only the 13 handover areas (Injection, MetaPress, Berks, Wilts, Racking, Butchery, Further Processing, Tumblers, Smoke Tumbler, Minimums & Samples, Goods In & Despatch, Dry Goods, Additional).
+- Supervisor fields include status, handover notes, issues/blockers, actions required, updated by, and last updated.
+- Metric-only fields (downtime/efficiency/yield) are shown only for Injection/MetaPress/Berks/Wilts.
+- Attachment summary card includes count/needs-review/last-attachment when available and can route to `attachments`.
+- Save behaviour is honest: calls service when available; otherwise shows that no data was written.
+- Not included yet: final export/send workflow changes, email sending, and admin/settings tooling.
+- Next phase: Phase 10L — Admin / Diagnostics / Settings UI (or 10K.1 service wiring if save contract gaps are found).
