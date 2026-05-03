@@ -15,7 +15,9 @@ test('Department Status Board Open Department opens Department Detail Editor wit
   await expect(detail.getByText('Date:')).toBeVisible();
   await expect(detail.getByText('Shift:')).toBeVisible();
   await expect(detail.getByText('Session:')).toBeVisible();
-  await expect(detail.getByText('Department status')).toBeVisible();
+  await expect(
+    detail.locator('.form-label').getByText('Department status', { exact: true })
+  ).toBeVisible();
   await expect(detail.locator('select').first().locator('option')).toContainText(['Completed', 'Incomplete', 'Not updated', 'Not running']);
   await expect(detail.getByText('Handover notes')).toBeVisible();
   await expect(detail.getByText('Issues / blockers')).toBeVisible();
