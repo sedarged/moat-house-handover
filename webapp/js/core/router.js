@@ -13,6 +13,7 @@ import { renderHandoverSessionScreen } from '../screens/HandoverSessionScreen.js
 import { renderDepartmentStatusBoardScreen } from '../screens/DepartmentStatusBoardScreen.js';
 import { renderDepartmentDetailEntryScreen } from '../screens/DepartmentDetailEntryScreen.js';
 import { renderAttachmentsScreen } from '../screens/AttachmentsScreen.js';
+import { renderSettingsScreen } from '../screens/SettingsScreen.js';
 
 export const routes = {
   home: { label: 'Home', renderer: renderHomeScreen },
@@ -32,7 +33,7 @@ export const routes = {
   attachments: { label: 'Attachments', renderer: renderAttachmentsScreen },
   history: { label: 'History / Search', renderer: (root, state) => renderModuleScreen(root, state, { key: 'history', title: 'History / Search', phase: 'Future phase' }) },
   admin: { label: 'Admin / Diagnostics', adminOnly: true, renderer: renderDiagnosticsScreen },
-  settings: { label: 'Settings', adminOnly: true, renderer: (root, state) => renderModuleScreen(root, state, { key: 'settings', title: 'Settings', phase: 'Phase 10J', adminOnly: true }) },
+  settings: { label: 'Settings', adminOnly: true, renderer: renderSettingsScreen },
 
   shift: { label: 'Shift', legacy: true, renderer: renderShiftScreen },
   dashboard: { label: 'Dashboard', legacy: true, renderer: renderDashboardScreen },

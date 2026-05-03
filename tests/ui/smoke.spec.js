@@ -59,3 +59,37 @@ test('Night session open supports back navigation and workflow cards visible', a
   await page.getByRole('button', { name: /Back to Shift Dashboard/i }).click();
   await expect(page.getByText('Night Shift Handover')).toBeVisible();
 });
+
+test('admin route renders diagnostics cards and actions', async ({ page }) => {
+  await openMockRoute(page, 'admin');
+  const admin = page.locator('.admin-diagnostics-screen');
+  await expect(admin.getByRole('heading', { name: 'ADMIN / DIAGNOSTICS' })).toBeVisible();
+  await expect(admin.getByText('Runtime health')).toBeVisible();
+  await expect(admin.getByText('Host bridge')).toBeVisible();
+  await expect(admin.getByText('Effective provider')).toBeVisible();
+  await expect(admin.getByText('Data root')).toBeVisible();
+  await expect(admin.getByText('App lock')).toBeVisible();
+  await expect(admin.getByText('Reports folder')).toBeVisible();
+  await expect(admin.getByText('Attachments folder')).toBeVisible();
+  await expect(admin.getByText('Backup readiness')).toBeVisible();
+  await expect(admin.getByText('Email / send readiness')).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Refresh Diagnostics' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Check Runtime Status' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Check Data Root' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Open Settings' })).toBeVisible();
+});
+
+test('settings route renders settings and supports navigation', async ({ page }) => {
+  await openMockRoute(page, 'settings');
+  const settings = page.locator('.settings-screen');
+  await expect(settings.getByRole('heading', { name: 'SETTINGS' })).toBeVisible();
+  await expect(settings.getByText('Provider mode')).toBeVisible();
+  await expect(settings.getByText('App data root')).toBeVisible();
+  await expect(settings.getByText('Reports path')).toBeVisible();
+  await expect(settings.getByText('Attachments path')).toBeVisible();
+  await expect(settings.getByText('Email profile readiness')).toBeVisible();
+  await settings.getByRole('button', { name: 'Back to Admin / Diagnostics' }).click();
+  await expect(page.locator('.admin-diagnostics-screen').getByRole('heading', { name: 'ADMIN / DIAGNOSTICS' })).toBeVisible();
+  await page.locator('.admin-diagnostics-screen').getByRole('button', { name: 'Home' }).click();
+  await expect(page.locator('.mh-home-wrap')).toBeVisible();
+});
