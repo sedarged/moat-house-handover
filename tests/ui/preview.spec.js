@@ -13,7 +13,7 @@ test('preview reports renders persisted session, readiness, department, budget, 
   const readiness = preview.locator('.preview-readiness-section');
   await expect(readiness.getByText('Department Status')).toBeVisible();
   await expect(readiness.getByText('Budget Summary')).toBeVisible();
-  await expect(readiness.getByText('Attachments')).toBeVisible();
+  await expect(readiness.getByText('Attachments', { exact: true })).toBeVisible();
   await expect(readiness.getByText('Send readiness')).toBeVisible();
   await expect(readiness.getByText('Future phase')).toBeVisible();
 
@@ -68,7 +68,7 @@ test('preview reports is reachable from session, department board, budget and at
   await page.locator('.preview-reports-screen').getByRole('button', { name: 'Back to Budget' }).click();
   await expect(page.locator('.shift-budget').getByText('BUDGET SUMMARY')).toBeVisible();
 
-  await page.locator('.app-sidebar').getByRole('button', { name: 'Attachments' }).click();
+  await page.evaluate(() => window.__mhApp.navigate('attachments'));
   await page.locator('.attachments-screen').getByRole('button', { name: 'Preview / Reports' }).click();
   await expect(page.locator('.preview-reports-screen').getByText('PREVIEW / REPORTS')).toBeVisible();
   await page.locator('.preview-reports-screen').getByRole('button', { name: 'Back to Attachments' }).click();

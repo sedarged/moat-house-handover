@@ -23,7 +23,7 @@ test('preview continue to send opens send review and back navigation works', asy
   await preview.getByRole('button', { name: 'Continue to Send' }).click();
   const send = page.locator('.send-email-review-screen');
   await expect(send.getByText('SEND / EMAIL REVIEW')).toBeVisible();
-  await send.getByRole('button', { name: 'Back to Preview / Reports' }).click();
+  await send.locator('.screen-footer').getByRole('button', { name: 'Back to Preview / Reports' }).click();
   await expect(preview.getByText('PREVIEW / REPORTS')).toBeVisible();
   await preview.getByRole('button', { name: 'Continue to Send' }).click();
   await send.getByRole('button', { name: 'Back to Handover Session' }).click();
