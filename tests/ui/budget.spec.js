@@ -19,11 +19,11 @@ test('budget summary renders shift labour budget table and validates negative st
     await expect(budget.getByText(name)).toBeVisible();
   }
 
-  await expect(budget.getByText('Summary')).toBeVisible();
+  await expect(budget.locator('.section-header').getByText('Summary', { exact: true })).toBeVisible();
   await expect(budget.getByText('Total staff required')).toBeVisible();
   await expect(budget.getByText('Total number of staff used')).toBeVisible();
   await expect(budget.getByText('Variance')).toBeVisible();
-  await expect(budget.getByText('Comments')).toBeVisible();
+  await expect(budget.locator('.section-header').getByText('Comments', { exact: true })).toBeVisible();
 
   for (const action of ['Refresh', 'Edit', 'Save & Close', 'Print']) {
     await expect(budget.getByRole('button', { name: action })).toBeVisible();
