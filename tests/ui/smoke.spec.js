@@ -76,7 +76,7 @@ test('admin route renders diagnostics cards and actions', async ({ page }) => {
   await expect(admin.getByRole('button', { name: 'Refresh Diagnostics' })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Check Runtime Status' })).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Check Data Root' })).toBeVisible();
-  await expect(admin.getByRole('button', { name: 'Open Settings' })).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Open Settings' }).first()).toBeVisible();
   const output = admin.locator('.admin-output .status-line');
   const before = await output.textContent();
   await admin.getByRole('button', { name: 'Refresh Diagnostics' }).click();
