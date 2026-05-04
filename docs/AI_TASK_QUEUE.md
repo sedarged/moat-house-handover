@@ -161,3 +161,10 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - [x] Settings UI implemented as a real app-shell screen with configuration/readiness overview and explicit host-controlled setting message.
 - [x] Admin/settings routes and shell icon navigation now open dedicated screens while legacy diagnostics route remains available.
 - Next queued: Phase 10M — History / Search UI (or Phase 10L.1 host diagnostics contract wiring if host diagnostics gaps are identified).
+
+
+## Phase 10N.1 update
+- Existing Handover Picker host contract now supports `session.list` and `session.openById` against the active runtime provider.
+- AccessLegacy and guarded SQLite repositories both implement list/open-by-id session persistence reads using real saved session headers/payloads.
+- No provider default switch and no migration step were performed in this phase.
+- If a configured provider cannot serve persisted sessions, host returns an honest operation error rather than synthetic session data.

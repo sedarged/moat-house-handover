@@ -913,3 +913,10 @@ Screenshot rules:
 - Save behaviour is honest: calls service when available; otherwise shows that no data was written.
 - Not included yet: final export/send workflow changes, email sending, and admin/settings tooling.
 - Next phase: Phase 10L — Admin / Diagnostics / Settings UI (or 10K.1 service wiring if save contract gaps are found).
+
+
+## Phase 10N.1 update
+- Existing Handover Picker host contract now supports `session.list` and `session.openById` against the active runtime provider.
+- AccessLegacy and guarded SQLite repositories both implement list/open-by-id session persistence reads using real saved session headers/payloads.
+- No provider default switch and no migration step were performed in this phase.
+- If a configured provider cannot serve persisted sessions, host returns an honest operation error rather than synthetic session data.

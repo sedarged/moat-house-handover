@@ -76,6 +76,40 @@ public sealed class SessionService
         return payload;
     }
 
+
+    public IReadOnlyList<SessionListItem> ListSessions(SessionListFilters filters)
+    {
+        var normalized = filters with
+        {
+            ShiftCode = string.IsNullOrWhiteSpace(filters.ShiftCode) ? null : NormalizeShiftCode(filters.ShiftCode),
+            ShiftDate = string.IsNullOrWhiteSpace(filters.ShiftDate) ? null : ParseShiftDate(filters.ShiftDate).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            SessionStatus = string.IsNullOrWhiteSpace(filters.SessionStatus) ? null : filters.SessionStatus.Trim(),
+            Search = string.IsNullOrWhiteSpace(filters.Search) ? null : filters.Search.Trim()
+        };
+
+        return _repository.ListSessions(normalized);
+    }
+
+    public SessionPayload OpenSessionById(SessionOpenByIdRequest request)
+    {
+        if (request.SessionId <= 0)
+        {
+            throw new InvalidOperationException("SessionId is required.");
+        }
+
+        var userName = Environment.UserName;
+        var session = _repository.OpenSessionById(request.SessionId, userName)
+            ?? throw new InvalidOperationException($"Session '{request.SessionId}' not found.");
+
+        _auditLogService.BestEffortLog(
+            actionType: "session.open",
+            entityType: "HandoverHeader",
+            entityKey: AuditLogService.BuildSessionKey(session.SessionId),
+            userName: userName,
+            details: new { sessionId = session.SessionId, shiftCode = session.ShiftCode, shiftDate = session.ShiftDate, mode = "openById" });
+
+        return session;
+    }
     private static DateTime ParseShiftDate(string shiftDate)
     {
         if (!DateTime.TryParseExact(shiftDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
