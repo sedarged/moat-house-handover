@@ -28,6 +28,8 @@ internal sealed class GuardedSqliteSessionRepository : ISessionRepository
     public SessionPayload? OpenExistingSession(string shiftCode, DateTime shiftDate, string userName) => _inner.OpenExistingSession(shiftCode, shiftDate, userName);
     public SessionCreateResult CreateBlankSession(string shiftCode, DateTime shiftDate, string userName){ SqliteWriteGuardHelpers.EnsureWriteAllowed(_guard); return _inner.CreateBlankSession(shiftCode, shiftDate, userName);}    
     public SessionPayload ClearDay(long sessionId, string userName){ SqliteWriteGuardHelpers.EnsureWriteAllowed(_guard); return _inner.ClearDay(sessionId, userName);}    
+    public IReadOnlyList<SessionListItem> ListSessions(SessionListFilters filters)=>_inner.ListSessions(filters);
+    public SessionPayload? OpenSessionById(long sessionId, string userName)=>_inner.OpenSessionById(sessionId, userName);
 }
 
 internal sealed class GuardedSqliteDepartmentRepository : IDepartmentRepository

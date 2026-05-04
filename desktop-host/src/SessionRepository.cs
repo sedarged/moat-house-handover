@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.OleDb;
 using System.Globalization;
+using System.Linq;
 
 namespace MoatHouseHandover.Host;
 
@@ -116,6 +117,48 @@ VALUES (?, ?, 'Open', ?, ?, ?, ?)";
         return payload;
     }
 
+
+    public IReadOnlyList<SessionListItem> ListSessions(SessionListFilters filters)
+    {
+        using var connection = OpenConnection();
+        const string sql = @"SELECT HandoverID, ShiftCode, ShiftDate, SessionStatus, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy FROM tblHandoverHeader";
+        var items = new List<SessionListItem>();
+        using var cmd = new OleDbCommand(sql, connection);
+        using var reader = cmd.ExecuteReader();
+        while (reader!.Read())
+        {
+            var shiftCode = Convert.ToString(reader["ShiftCode"]) ?? string.Empty;
+            var shiftDate = Convert.ToDateTime(reader["ShiftDate"]).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var createdAt = ToIso(reader["CreatedAt"] == DBNull.Value ? DateTime.Now : reader["CreatedAt"]);
+            var createdBy = reader["CreatedBy"] == DBNull.Value ? string.Empty : (Convert.ToString(reader["CreatedBy"]) ?? string.Empty);
+            var updatedAt = ToIso(reader["UpdatedAt"] == DBNull.Value ? createdAt : reader["UpdatedAt"]);
+            var updatedBy = reader["UpdatedBy"] == DBNull.Value ? createdBy : (Convert.ToString(reader["UpdatedBy"]) ?? string.Empty);
+            items.Add(new SessionListItem(Convert.ToInt64(reader["HandoverID"]), shiftCode, ShiftLabel(shiftCode), shiftDate, Convert.ToString(reader["SessionStatus"]) ?? "Open", createdAt, createdBy, updatedAt, updatedBy));
+        }
+
+        IEnumerable<SessionListItem> filtered = items;
+        if (!string.IsNullOrWhiteSpace(filters.ShiftCode)) filtered = filtered.Where(i => i.ShiftCode.Equals(filters.ShiftCode, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(filters.ShiftDate)) filtered = filtered.Where(i => i.ShiftDate == filters.ShiftDate);
+        if (!string.IsNullOrWhiteSpace(filters.SessionStatus)) filtered = filtered.Where(i => i.SessionStatus.Equals(filters.SessionStatus, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(filters.Search))
+        {
+            var search = filters.Search.Trim();
+            filtered = filtered.Where(i => i.SessionId.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)
+                || i.CreatedBy.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || i.UpdatedBy.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return filtered.OrderByDescending(i => i.ShiftDate).ThenByDescending(i => i.SessionId).ToList();
+    }
+
+    public SessionPayload? OpenSessionById(long sessionId, string userName)
+    {
+        using var connection = OpenConnection();
+        EnsureDepartmentRows(connection, sessionId, userName);
+        return LoadSessionPayload(connection, sessionId);
+    }
+
+    private static string ShiftLabel(string shiftCode) => shiftCode == "NS" ? "Night Shift" : string.IsNullOrWhiteSpace(shiftCode) ? string.Empty : $"{shiftCode} Shift";
     private void EnsureDepartmentRows(OleDbConnection connection, long sessionId, string userName)
     {
         var activeDepartments = new List<string>();

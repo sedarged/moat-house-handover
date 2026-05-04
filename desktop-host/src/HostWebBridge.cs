@@ -168,6 +168,25 @@ public sealed class HostWebBridge
                     break;
                 }
 
+
+                case "session.list":
+                {
+                    var payload = request.Payload is null
+                        ? new SessionListFilters(null, null, null, null)
+                        : DeserializePayload<SessionListFilters>(request.Payload);
+                    var result = _sessionService.ListSessions(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
+                case "session.openById":
+                {
+                    var payload = DeserializePayload<SessionOpenByIdRequest>(request.Payload);
+                    var result = _sessionService.OpenSessionById(payload);
+                    SendResponse(webView, request.RequestId, true, null, result);
+                    break;
+                }
+
                 case "department.load":
                 {
                     var payload = DeserializePayload<DepartmentLoadRequest>(request.Payload);

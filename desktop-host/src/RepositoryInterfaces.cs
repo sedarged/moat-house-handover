@@ -8,6 +8,8 @@ public interface ISessionRepository
     SessionPayload? OpenExistingSession(string shiftCode, DateTime shiftDate, string userName);
     SessionCreateResult CreateBlankSession(string shiftCode, DateTime shiftDate, string userName);
     SessionPayload ClearDay(long sessionId, string userName);
+    IReadOnlyList<SessionListItem> ListSessions(SessionListFilters filters);
+    SessionPayload? OpenSessionById(long sessionId, string userName);
 }
 public interface IDepartmentRepository
 {

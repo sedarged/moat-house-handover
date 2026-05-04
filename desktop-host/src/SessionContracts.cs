@@ -30,3 +30,22 @@ public sealed record SessionOpenRequest(string ShiftCode, string ShiftDate, stri
 public sealed record SessionCreateBlankRequest(string ShiftCode, string ShiftDate, string UserName);
 
 public sealed record SessionClearDayRequest(long SessionId, string UserName);
+
+public sealed record SessionListItem(
+    long SessionId,
+    string ShiftCode,
+    string? ShiftLabel,
+    string ShiftDate,
+    string SessionStatus,
+    string CreatedAt,
+    string CreatedBy,
+    string UpdatedAt,
+    string UpdatedBy);
+
+public sealed record SessionListFilters(
+    string? ShiftCode,
+    string? ShiftDate,
+    string? SessionStatus,
+    string? Search);
+
+public sealed record SessionOpenByIdRequest(long SessionId);

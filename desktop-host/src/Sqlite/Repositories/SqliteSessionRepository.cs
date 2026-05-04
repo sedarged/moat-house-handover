@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq;
 using Microsoft.Data.Sqlite;
 
 namespace MoatHouseHandover.Host.Sqlite.Repositories;
@@ -75,6 +76,49 @@ VALUES ($date, $shift, 'Open', $now, $user, $now, $user)";
         return LoadSessionPayload(connection, sessionId) ?? throw new InvalidOperationException();
     }
 
+
+    public IReadOnlyList<SessionListItem> ListSessions(SessionListFilters filters)
+    {
+        using var c = OpenConnection();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = "SELECT HandoverID,ShiftCode,ShiftDate,SessionStatus,CreatedAt,CreatedBy,UpdatedAt,UpdatedBy FROM tblHandoverHeader";
+        var items = new List<SessionListItem>();
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            var shiftCode = r.IsDBNull(1) ? string.Empty : r.GetString(1);
+            items.Add(new SessionListItem(
+                r.GetInt64(0),
+                shiftCode,
+                shiftCode == "NS" ? "Night Shift" : string.IsNullOrWhiteSpace(shiftCode) ? string.Empty : $"{shiftCode} Shift",
+                r.IsDBNull(2) ? string.Empty : r.GetString(2),
+                r.IsDBNull(3) ? "Open" : r.GetString(3),
+                r.IsDBNull(4) ? DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) : r.GetString(4),
+                r.IsDBNull(5) ? string.Empty : r.GetString(5),
+                r.IsDBNull(6) ? DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) : r.GetString(6),
+                r.IsDBNull(7) ? string.Empty : r.GetString(7)));
+        }
+
+        IEnumerable<SessionListItem> filtered = items;
+        if (!string.IsNullOrWhiteSpace(filters.ShiftCode)) filtered = filtered.Where(i => i.ShiftCode.Equals(filters.ShiftCode, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(filters.ShiftDate)) filtered = filtered.Where(i => i.ShiftDate == filters.ShiftDate);
+        if (!string.IsNullOrWhiteSpace(filters.SessionStatus)) filtered = filtered.Where(i => i.SessionStatus.Equals(filters.SessionStatus, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(filters.Search))
+        {
+            var search = filters.Search.Trim();
+            filtered = filtered.Where(i => i.SessionId.ToString().Contains(search, StringComparison.OrdinalIgnoreCase)
+                || i.CreatedBy.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || i.UpdatedBy.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+        return filtered.OrderByDescending(i => i.ShiftDate).ThenByDescending(i => i.SessionId).ToList();
+    }
+
+    public SessionPayload? OpenSessionById(long sessionId, string userName)
+    {
+        using var c = OpenConnection();
+        EnsureDepartmentRows(c, sessionId, userName);
+        return LoadSessionPayload(c, sessionId);
+    }
     private static void EnsureDepartmentRows(SqliteConnection connection, long sessionId, string userName)
     {
         var depts = new List<string>();
