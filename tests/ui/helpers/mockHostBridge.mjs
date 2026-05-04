@@ -68,6 +68,19 @@ export const richFixture = {
   }
 };
 
+
+export const pickerFixture = {
+  ...richFixture,
+  sessions: [
+    { sessionId: 2001, shiftCode: 'NS', shiftLabel: 'Night Shift', shiftDate: '2026-05-01', sessionStatus: 'Open', createdAt: '2026-05-01T21:55:00', createdBy: 'Lead A', updatedAt: '2026-05-01T23:10:00', updatedBy: 'Lead A' },
+    { sessionId: 2002, shiftCode: 'NS', shiftLabel: 'Night Shift', shiftDate: '2026-05-02', sessionStatus: 'Draft', createdAt: '2026-05-02T21:50:00', createdBy: 'Lead B', updatedAt: '2026-05-02T22:20:00', updatedBy: 'Lead B' }
+  ],
+  openByIdPayloads: {
+    2001: { ...richFixture.sessionPayload, sessionId: 2001, shiftCode: 'NS', shiftDate: '2026-05-01', sessionStatus: 'Open', updatedBy: 'Lead A' },
+    2002: { ...richFixture.sessionPayload, sessionId: 2002, shiftCode: 'NS', shiftDate: '2026-05-02', sessionStatus: 'Draft', updatedBy: 'Lead B' }
+  }
+};
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -127,7 +140,10 @@ export async function installMockHostBridge(page, fixture = richFixture) {
     const listeners = new Set();
     const state = {
       sessionPayload: JSON.parse(JSON.stringify(seed.sessionPayload)),
-      budgetPayload: JSON.parse(JSON.stringify(seed.budgetPayload))
+      budgetPayload: JSON.parse(JSON.stringify(seed.budgetPayload)),
+      sessions: JSON.parse(JSON.stringify(seed.sessions || [])),
+      openByIdPayloads: JSON.parse(JSON.stringify(seed.openByIdPayloads || {})),
+      failSessionList: !!seed.failSessionList
     };
 
     function calculateBudget(rows, meta = {}) {
@@ -191,6 +207,11 @@ export async function installMockHostBridge(page, fixture = richFixture) {
           return state.sessionPayload;
         case 'session.clearDay':
           return state.sessionPayload;
+        case 'session.list':
+          if (state.failSessionList) throw new Error('Mock list failure');
+          return state.sessions;
+        case 'session.openById':
+          return state.openByIdPayloads[payload?.sessionId] || state.sessionPayload;
         case 'budget.load':
           return state.budgetPayload;
         case 'budget.recalculate':
