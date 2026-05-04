@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openMockRoute } from './helpers/mockHostBridge.mjs';
+import { budgetSaveFailureFixture, budgetUnavailableFixture, openMockRoute } from './helpers/mockHostBridge.mjs';
 
 test('budget summary renders shift labour budget table and validates negative staff values', async ({ page }) => {
   await openMockRoute(page, 'budgetMenu');
@@ -33,6 +33,37 @@ test('budget summary renders shift labour budget table and validates negative st
   await budget.locator('tr[data-row-id="1"] input[name="usedQty"]').fill('-1');
   await budget.getByRole('button', { name: 'Save & Close' }).click();
   await expect(budget.locator('#budget-message')).toContainText('used cannot be negative');
+});
+
+test('budget loads host-backed payload and saves edited rows', async ({ page }) => {
+  await openMockRoute(page, 'budgetMenu');
+  const budget = page.locator('.shift-budget');
+
+  await expect(budget.locator('#budget-message')).toContainText('Budget loaded from host.');
+  await budget.getByRole('button', { name: 'Edit' }).click();
+  await budget.locator('tr[data-row-id="1"] input[name="usedQty"]').fill('7');
+  await budget.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(budget.locator('#budget-message')).toContainText('Budget saved.');
+  await expect(budget.getByText('Total number of staff used').locator('..')).toContainText('39');
+});
+
+test('budget save failure reports honest no-write message', async ({ page }) => {
+  await openMockRoute(page, 'budgetMenu', budgetSaveFailureFixture);
+  const budget = page.locator('.shift-budget');
+  await budget.getByRole('button', { name: 'Edit' }).click();
+  await budget.getByRole('button', { name: 'Save & Close' }).click();
+  await expect(budget.locator('#budget-message')).toContainText('Budget save is not wired in this environment. No data was written.');
+});
+
+test('budget screen shows safe message when no active session exists', async ({ page }) => {
+  await openMockRoute(page, 'shift');
+  await page.evaluate(() => window.__mhApp.navigate('budgetMenu'));
+  await expect(page.locator('#budget-message')).toContainText('No active handover session. Create, continue, or open a handover first.');
+});
+
+test('budget load failure shows persistence unavailable status', async ({ page }) => {
+  await openMockRoute(page, 'budgetMenu', budgetUnavailableFixture);
+  await expect(page.locator('#budget-message')).toContainText('Budget persistence is not wired in this environment.');
 });
 
 test('budget summary opens from handover session and department status board', async ({ page }) => {

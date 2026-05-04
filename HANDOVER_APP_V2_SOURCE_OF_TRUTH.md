@@ -920,3 +920,10 @@ Screenshot rules:
 - AccessLegacy and guarded SQLite repositories both implement list/open-by-id session persistence reads using real saved session headers/payloads.
 - No provider default switch and no migration step were performed in this phase.
 - If a configured provider cannot serve persisted sessions, host returns an honest operation error rather than synthetic session data.
+
+## Phase 10O update
+- Budget Summary screen now uses active session context (`activeSessionId` / session id + selected shift/date/status) and does not create synthetic sessions.
+- Budget load/save/recalculate wiring is host-backed through existing bridge commands: `budget.load`, `budget.save`, and `budget.recalculate`.
+- Budget status messaging is now explicit: load/save success is shown only when host confirms, and no-write fallback is shown when persistence is unavailable.
+- AccessLegacy and guarded SQLite providers both continue to provide budget repository persistence; no provider default switch or migration step is included in this phase.
+- Report export is not part of this phase.
