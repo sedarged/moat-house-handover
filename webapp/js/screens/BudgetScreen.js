@@ -388,10 +388,13 @@ export function renderBudgetScreen(root, state) {
       return;
     }
     try {
-      const payload = await budgetService.saveBudget(activeSessionId, currentRows, collectMeta(screen), session.userName || '');
-      currentRows = normalizeRows(payload.rows);
-      currentSummary = deriveSummary(currentRows, {}, payload.summary || {});
-      applyBudgetPayload(payload);
+      const editedRows = normalizeRows(currentRows);
+      const editedMeta = collectMeta(screen);
+      const payload = await budgetService.saveBudget(activeSessionId, editedRows, editedMeta, session.userName || '');
+      const payloadRows = Array.isArray(payload?.rows) && payload.rows.length ? payload.rows : editedRows;
+      currentRows = normalizeRows(payloadRows);
+      currentSummary = deriveSummary(currentRows, editedMeta, payload?.summary || {});
+      applyBudgetPayload({ ...(payload || {}), rows: currentRows, summary: currentSummary });
       applyBudgetSummaryPayload(currentSummary);
       editable = false;
       renderState('Budget saved.', 'success');
