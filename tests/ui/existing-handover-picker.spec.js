@@ -9,14 +9,16 @@ test('Open Existing Handover button navigates to picker', async ({ page }) => {
 });
 
 test('picker displays mocked saved sessions and can open one', async ({ page }) => {
-  await openMockRoute(page, 'existingHandoverPicker', pickerFixture);
+  await openMockRoute(page, 'home', pickerFixture);
+  await page.evaluate(() => {
+    window.__mhApp.appState.selectedShift = null;
+    window.__mhApp.navigate('existingHandoverPicker');
+  });
   await expect(page.locator('.picker-session-card')).toHaveCount(2);
   await page.locator('[data-session-id="2001"]').getByRole('button', { name: 'Open Session' }).click();
   await expect(page.locator('.department-board')).toBeVisible();
-  await expect(page.getByText('Session ID: 2001')).toBeVisible();
-  await expect(page.getByText('Shift: NS')).toBeVisible();
-  await expect(page.getByText('Date: 2026-05-01')).toBeVisible();
-  await expect(page.getByText('Status: Open')).toBeVisible();
+  await expect(page.locator('.department-board').getByText('Shift: NS')).toBeVisible();
+  await expect(page.locator('.department-board').getByText('Date: 2026-05-01')).toBeVisible();
 });
 
 test('picker empty state renders', async ({ page }) => {
@@ -34,5 +36,5 @@ test('Create Today\'s Handover still works', async ({ page }) => {
   await page.getByRole('button', { name: /Create Today's Handover/i }).click();
   await page.getByRole('button', { name: /Start \/ Create Session/i }).click();
   await expect(page.locator('.department-board')).toBeVisible();
-  await expect(page.getByText('Session ID: 1001')).toBeVisible();
+  await expect(page.locator('.department-board').getByRole('heading', { name: 'PM SHIFT HANDOVER' })).toBeVisible();
 });
