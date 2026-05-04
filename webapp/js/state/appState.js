@@ -36,6 +36,24 @@ function shiftLabelFromCode(shiftCode) {
   return shiftCode === 'NS' ? 'Night Shift' : `${shiftCode} Shift`;
 }
 
+function applyActiveDepartmentOnly(payload) {
+  appState.activeDepartment = payload || null;
+  appState.activeDepartmentName = payload?.deptName || appState.activeDepartmentName;
+}
+
+function upsertDepartmentIntoSession(payload) {
+  if (!payload?.deptName) return null;
+  const current = Array.isArray(appState.session?.departments) ? appState.session.departments : [];
+  const index = current.findIndex((dept) => dept?.deptName === payload.deptName);
+  const merged = index >= 0 ? { ...current[index], ...payload } : { ...payload };
+  appState.session.departments = index >= 0
+    ? current.map((dept, i) => (i === index ? merged : dept))
+    : [...current, merged];
+  appState.session.updatedAt = merged.updatedAt || appState.session.updatedAt;
+  appState.session.updatedBy = merged.updatedBy || appState.session.updatedBy;
+  return merged;
+}
+
 export function setSelectedShift(shiftCode) { appState.selectedShift = shiftCode || null; }
 export function setRuntimeStatus(status) { appState.runtimeStatus = status || null; appState.runtimeStatusError = null; }
 export function setRuntimeStatusError(message) { appState.runtimeStatusError = message || 'Status unavailable'; }
@@ -82,7 +100,14 @@ export function applySessionPayload(sessionPayload = {}) {
 }
 
 export function setActiveDepartmentName(deptName) { appState.activeDepartmentName = deptName || null; }
-export function applyActiveDepartmentPayload(payload) { appState.activeDepartment = payload || null; appState.activeDepartmentName = payload?.deptName || appState.activeDepartmentName; }
+export function applyActiveDepartmentPayload(payload) {
+  applyActiveDepartmentOnly(payload);
+  const merged = upsertDepartmentIntoSession(payload);
+  if (merged) {
+    applyActiveDepartmentOnly(merged);
+    appState.lastPersistenceStatus = `Department updated: ${merged.deptName}`;
+  }
+}
 export function applyDepartmentSummaryPayload(departments) {
   if (!Array.isArray(departments)) return;
   appState.session.departments = departments;
@@ -90,16 +115,9 @@ export function applyDepartmentSummaryPayload(departments) {
   if (latest) { appState.session.updatedAt = latest.updatedAt; appState.session.updatedBy = latest.updatedBy || appState.session.updatedBy; }
 }
 export function upsertSessionDepartmentPayload(payload) {
-  if (!payload?.deptName) return;
-  const current = Array.isArray(appState.session?.departments) ? appState.session.departments : [];
-  const index = current.findIndex((dept) => dept?.deptName === payload.deptName);
-  const merged = index >= 0 ? { ...current[index], ...payload } : { ...payload };
-  appState.session.departments = index >= 0
-    ? current.map((dept, i) => (i === index ? merged : dept))
-    : [...current, merged];
-  appState.session.updatedAt = merged.updatedAt || appState.session.updatedAt;
-  appState.session.updatedBy = merged.updatedBy || appState.session.updatedBy;
-  applyActiveDepartmentPayload(merged);
+  const merged = upsertDepartmentIntoSession(payload);
+  if (!merged) return;
+  applyActiveDepartmentOnly(merged);
   appState.lastPersistenceStatus = `Department saved: ${merged.deptName}`;
 }
 export function applyAttachmentListPayload(listPayload) {
