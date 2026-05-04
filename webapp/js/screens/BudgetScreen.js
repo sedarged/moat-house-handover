@@ -259,10 +259,11 @@ function buildTableRows(tableBody, rows, editable) {
 
 export function renderBudgetScreen(root, state) {
   const session = state.session || {};
+  const activeSessionId = state.activeSessionId ?? session.sessionId ?? null;
   const shiftCode = state.selectedShift || session.shiftCode || 'PM';
   const dateLabel = formatDate(state.activeSessionDate || session.shiftDate);
   let editable = false;
-  let currentRows = normalizeRows(state.budgetRows);
+  let currentRows = normalizeRows(state.activeBudget?.rows || state.budgetRows);
   let currentSummary = deriveSummary(currentRows, {}, state.budgetSummary || {});
 
   const screen = createElement('div', 'screen shift-budget');
@@ -274,7 +275,7 @@ export function renderBudgetScreen(root, state) {
 
   const tableBlock = createElement('section', 'section-block budget-section budget-rows-section');
   tableBlock.append(createElement('div', 'section-header', 'Department labour budget'));
-  const message = createElement('p', 'status-line', 'UI fallback/dev seed until persisted budget data is loaded.');
+  const message = createElement('p', 'status-line', 'Budget persistence is not wired in this environment.');
   message.id = 'budget-message';
   tableBlock.append(message);
   const tableWrap = createElement('div', 'table-wrap budget-table-wrap');
@@ -318,7 +319,7 @@ export function renderBudgetScreen(root, state) {
 
   root.replaceChildren(screen);
 
-  function renderState(statusMessage = '') {
+  function renderState(statusMessage = '', messageClass = 'warn') {
     currentRows = normalizeRows(currentRows);
     currentSummary = deriveSummary(currentRows, collectMeta(screen), currentSummary);
     buildTableRows(tableBody, currentRows, editable);
@@ -337,8 +338,8 @@ export function renderBudgetScreen(root, state) {
     );
     comments.value = currentSummary.comments || '';
     comments.disabled = !editable;
-    message.textContent = statusMessage || (state.budgetRows?.length ? 'Loaded persisted budget rows.' : 'UI fallback/dev seed. Values are not production records until saved through the host service.');
-    message.className = `status-line ${state.budgetRows?.length ? 'success' : 'warn'}`;
+    message.textContent = statusMessage || 'Budget persistence is not wired in this environment.';
+    message.className = `status-line ${messageClass}`;
     editBtn.textContent = editable ? 'View' : 'Edit';
   }
 
@@ -357,21 +358,21 @@ export function renderBudgetScreen(root, state) {
   }
 
   async function loadBudget() {
-    if (!session.sessionId) {
-      renderState('No persisted session id yet. Showing UI fallback/dev seed for the active shift.');
+    if (!activeSessionId) {
+      renderState('No active handover session. Create, continue, or open a handover first.', 'warn');
       return;
     }
     message.textContent = 'Loading budget from host service…';
     message.className = 'status-line';
     try {
-      const payload = await budgetService.loadBudget(session.sessionId, session.userName || '');
+      const payload = await budgetService.loadBudget(activeSessionId, session.userName || '');
       currentRows = normalizeRows(payload.rows);
       currentSummary = deriveSummary(currentRows, {}, payload.summary || {});
       applyBudgetPayload(payload);
       applyBudgetSummaryPayload(currentSummary);
-      renderState('Loaded budget from host service.');
+      renderState('Budget loaded from host.', 'success');
     } catch (error) {
-      renderState(error instanceof Error ? `Host budget load unavailable. Showing UI fallback/dev seed. ${error.message}` : 'Host budget load unavailable. Showing UI fallback/dev seed.');
+      renderState(error instanceof Error ? `Budget persistence is not wired in this environment. ${error.message}` : 'Budget persistence is not wired in this environment.', 'warn');
     }
   }
 
@@ -382,21 +383,25 @@ export function renderBudgetScreen(root, state) {
   });
   saveBtn.addEventListener('click', async () => {
     if (!recalculateFromInputs()) return;
-    if (!session.sessionId) {
-      renderState('Save is not wired until a persisted session exists. No data was written.');
+    if (!activeSessionId) {
+      renderState('No active handover session. Create, continue, or open a handover first.', 'warn');
       return;
     }
     try {
-      const payload = await budgetService.saveBudget(session.sessionId, currentRows, collectMeta(screen), session.userName || '');
+      const payload = await budgetService.saveBudget(activeSessionId, currentRows, collectMeta(screen), session.userName || '');
       currentRows = normalizeRows(payload.rows);
       currentSummary = deriveSummary(currentRows, {}, payload.summary || {});
       applyBudgetPayload(payload);
       applyBudgetSummaryPayload(currentSummary);
       editable = false;
-      renderState('Budget saved through host service.');
+      renderState('Budget saved.', 'success');
     } catch (error) {
-      message.textContent = error instanceof Error ? error.message : 'Save failed.';
-      message.className = 'status-line error';
+      renderState(
+        error instanceof Error
+          ? `Budget save is not wired in this environment. No data was written. ${error.message}`
+          : 'Budget save is not wired in this environment. No data was written.',
+        'error'
+      );
     }
   });
   printBtn.addEventListener('click', () => {

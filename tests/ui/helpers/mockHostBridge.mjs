@@ -81,6 +81,16 @@ export const pickerFixture = {
   }
 };
 
+export const budgetUnavailableFixture = {
+  ...richFixture,
+  failBudgetLoad: true
+};
+
+export const budgetSaveFailureFixture = {
+  ...richFixture,
+  failBudgetSave: true
+};
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -143,7 +153,9 @@ export async function installMockHostBridge(page, fixture = richFixture) {
       budgetPayload: JSON.parse(JSON.stringify(seed.budgetPayload)),
       sessions: JSON.parse(JSON.stringify(seed.sessions || [])),
       openByIdPayloads: JSON.parse(JSON.stringify(seed.openByIdPayloads || {})),
-      failSessionList: !!seed.failSessionList
+      failSessionList: !!seed.failSessionList,
+      failBudgetLoad: !!seed.failBudgetLoad,
+      failBudgetSave: !!seed.failBudgetSave
     };
 
     function calculateBudget(rows, meta = {}) {
@@ -213,10 +225,12 @@ export async function installMockHostBridge(page, fixture = richFixture) {
         case 'session.openById':
           return state.openByIdPayloads[payload?.sessionId] || state.sessionPayload;
         case 'budget.load':
+          if (state.failBudgetLoad) throw new Error('Mock budget load unavailable');
           return state.budgetPayload;
         case 'budget.recalculate':
           return calculateBudget(payload?.rows, payload?.meta);
         case 'budget.save':
+          if (state.failBudgetSave) throw new Error('Mock budget save unavailable');
           state.budgetPayload = calculateBudget(payload?.rows, payload?.meta);
           return state.budgetPayload;
         case 'dashboard.budgetSummary':

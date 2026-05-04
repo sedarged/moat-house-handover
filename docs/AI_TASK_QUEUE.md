@@ -168,3 +168,10 @@ Do not accept advice-only answers for implementation tasks unless the task expli
 - AccessLegacy and guarded SQLite repositories both implement list/open-by-id session persistence reads using real saved session headers/payloads.
 - No provider default switch and no migration step were performed in this phase.
 - If a configured provider cannot serve persisted sessions, host returns an honest operation error rather than synthetic session data.
+
+## Phase 10O update
+- [x] Budget persistence wiring completed for active session context (load/save with host-backed session id).
+- [x] Budget screen now reports honest persistence states: host load success, host save success, and explicit no-write fallback when unavailable.
+- [x] UI tests expanded for budget load/save/failure/no-active-session flows using mock host bridge budget responses.
+- AccessLegacy remains current runtime default and SQLite remains guarded/opt-in; no provider switch in this phase.
+- Next queued: Phase 10P — Attachment File Storage / Metadata Persistence.
