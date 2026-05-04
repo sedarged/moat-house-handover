@@ -44,7 +44,7 @@ function addReadinessRow(parent, label, value, title) {
 function statusFromMode(mode) {
   if (mode === 'create') return 'Draft not started';
   if (mode === 'continue') return 'Draft in progress';
-  return 'Existing handover lookup';
+  return 'Existing handover picker';
 }
 
 function addNavigateHandlers(root) {
@@ -68,7 +68,7 @@ function normaliseDateForService(value) {
 function sessionStatusMessage(mode, payload) {
   if (mode === 'create') return `Session created. Active session: ${payload?.sessionId || 'host returned no id'}.`;
   if (mode === 'continue') return `Existing draft loaded. Active session: ${payload?.sessionId || 'host returned no id'}.`;
-  return 'Existing handover lookup is not wired yet. No session was opened.';
+  return `Existing handover loaded. Active session: ${payload?.sessionId || 'host returned no id'}.`; 
 }
 
 function applyLoadedSession(mode, payload, fallback) {
@@ -140,7 +140,7 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   section.append(summaryGrid);
 
   const actionsRow = createElement('div', 'session-actions-row');
-  const startLabel = modeLabel === 'Create' ? 'Start / Create Session' : modeLabel === 'Continue' ? 'Continue Session' : 'Open Session Lookup';
+  const startLabel = modeLabel === 'Create' ? 'Start / Create Session' : modeLabel === 'Continue' ? 'Continue Session' : 'Open Existing Handover Picker';
   const startButton = createElement('button', 'btn btn-primary', startLabel);
   startButton.dataset.action = 'start';
   actionsRow.append(
@@ -182,8 +182,7 @@ export function renderHandoverSessionScreen(root, state, sessionConfig) {
   addNavigateHandlers(root);
   root.querySelector('[data-action="start"]')?.addEventListener('click', async () => {
     if (sessionConfig.mode === 'open') {
-      statusLine.className = 'status-line warn';
-      statusLine.textContent = 'Open Existing handover picker is not wired yet. No session was opened.';
+      window.dispatchEvent(new CustomEvent('app:navigate', { detail: { route: 'existingHandoverPicker' } }));
       return;
     }
 

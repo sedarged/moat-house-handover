@@ -11,5 +11,13 @@ export const sessionService = {
 
   async clearDay(sessionId, userName) {
     return hostRequest('session.clearDay', { sessionId, userName });
+  },
+
+  async listSessions(filters = {}) {
+    return hostRequest('session.list', filters);
+  },
+
+  async openSessionById(sessionId) {
+    return hostRequest('session.openById', { sessionId });
   }
 };
